@@ -15,6 +15,7 @@
     <modules>
         <module>matrix-client</module>
         <module>matrix-cloud</module>
+        <module>matrix-local</module>
     </modules>
 
 </project>

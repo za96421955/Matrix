@@ -1,0 +1,56 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: matrix-local
+
+  # 关闭 Nacos
+  cloud:
+    nacos:
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+
+  # 关闭 Redis（不配置即不启用）
+
+  # 数据源 - SQLite
+  datasource:
+    url: jdbc:sqlite:${user.dir}/data/matrix-local.db
+    driver-class-name: org.sqlite.JDBC
+    username:
+    password:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 600000
+
+  # 自动初始化 schema
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+  # 关闭 Security
+  security:
+    basic:
+      enabled: false
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      table-prefix: tbl_
+
+# 关闭 Actuator 安全（如启用）
+management:
+  security:
+    enabled: false

@@ -1,0 +1,6 @@
+name: VBScript_print
+description: VBScript 直接打印输入的内容
+path: VBScript_print.vbs
+risk-level: 0
+input:
+  print: 直接打印输入的内容

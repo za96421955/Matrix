@@ -1,0 +1,6 @@
+name: Batch_print
+description: Batch 直接打印输入的内容
+path: Batch_print.bat
+risk-level: 0
+input:
+  print: 直接打印输入的内容

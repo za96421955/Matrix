@@ -1,0 +1,6 @@
+name: Perl_print
+description: Perl 直接打印输入的内容
+path: Perl_print.pl
+risk-level: 0
+input:
+  print: 直接打印输入的内容

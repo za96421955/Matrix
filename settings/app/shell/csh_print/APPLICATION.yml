@@ -1,0 +1,6 @@
+name: csh_print
+description: csh 直接打印输入的内容
+path: csh_print.csh
+risk-level: 0
+input:
+  print: 直接打印输入的内容

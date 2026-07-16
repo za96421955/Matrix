@@ -1,0 +1,6 @@
+name: Lua_print
+description: Lua 直接打印输入的内容
+path: Lua_print.lua
+risk-level: 0
+input:
+  print: 直接打印输入的内容

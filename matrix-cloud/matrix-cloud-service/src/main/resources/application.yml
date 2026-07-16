@@ -1,0 +1,55 @@
+server:
+  port: 8091
+management:
+  server:
+    port: 8002
+
+---
+spring:
+  codec:
+    max-in-memory-size: 10MB
+  application:
+    name: matrix-cloud-service
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        namespace: 84cff818-c738-4803-8877-419fbbd350b6
+      discovery:
+        namespace: ${spring.cloud.nacos.config.namespace}
+        username: ${spring.cloud.nacos.config.username}
+        password: ${spring.cloud.nacos.config.password}
+        group: matrix
+  config:
+    import:
+      - "nacos:public.yaml?group=matrix"
+      - "nacos:${spring.application.name}.yaml?group=matrix-cloud-service"
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding.yml
+  data:
+    redis:
+      host: localhost
+      port: 63790
+
+# MyBatis Plus 配置
+mybatis-plus:
+  mapper-locations:
+    - classpath:mapper/*.xml
+
+---
+matrix:
+  service:
+    bcrypt-cost: 10
+    mqtt:
+      broker-url: tcp://localhost:1883
+#      username: admin
+#      password: admin@123456
+      keep-alive: 60
+      clean-start: true
+      connect-timeout: 10
+      max-reconnect-delay: 128
+    github:
+      token: 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
+
+

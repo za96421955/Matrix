@@ -1,0 +1,6 @@
+name: Kotlin_print
+description: Kotlin 直接打印输入的内容
+path: Kotlin_print.kts
+risk-level: 0
+input:
+  print: 直接打印输入的内容

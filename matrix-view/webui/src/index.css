@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ========== Custom breakpoints for large/ultra-wide screens ========== */
+@custom-media --3xl (width >= 1920px);
+@custom-media --4k (width >= 2560px);
+
+/* base layer */
+@layer base {
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Responsive root font-size: small screens min 14px, normal ~16px, 4K max 20px */
+    html {
+        font-size: clamp(14px, 0.3vw + 13px, 20px);
+    }
+
+    body {
+        font-family: "PingFang SC",
+        "Microsoft YaHei",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    :root {
+        color-scheme: light;
+    }
+
+    .dark {
+        color-scheme: dark;
+    }
+
+    /* Dark mode defaults: deep space gray background */
+    .dark body,
+    .dark #root {
+        background-color: #18181B;
+        color: #e4e4e7;
+    }
+
+    /* ========== CSS Custom Properties for Dark Mode ========== */
+    .dark {
+        --color-bg-primary: #18181B;
+        --color-bg-secondary: #1c1c20;
+        --color-bg-tertiary: #252529;
+        --color-glass-bg: rgba(24, 24, 27, 0.6);
+        --color-glass-border: rgba(255, 255, 255, 0.06);
+        --color-glass-border-hover: rgba(255, 255, 255, 0.12);
+        --color-text-primary: #e4e4e7;
+        --color-text-secondary: #a1a1aa;
+        --color-text-tertiary: #71717a;
+        --color-accent-blue: #3b82f6;
+        --color-accent-purple: #a78bfa;
+        --color-accent-green: #4ade80;
+        --color-matrix-green: #00ff41;
+        --color-overlay: rgba(0, 0, 0, 0.5);
+        --glass-blur: 24px;
+        --glass-blur-sm: 12px;
+        --glass-blur-lg: 32px;
+    }
+
+    /* ========== Scrollbar ========== */
+    ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    @media (width >= 1920px) {
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Focus ring - subtle glass style for dark mode */
+    *:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
+    .dark *:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.6);
+        outline-offset: 2px;
+    }
+}
+
+/* ========== Glass utility classes for Tailwind ========== */
+@layer utilities {
+    .dark .glass {
+        background: var(--color-glass-bg) !important;
+        backdrop-filter: blur(var(--glass-blur)) !important;
+        -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+        border: 1px solid var(--color-glass-border) !important;
+    }
+
+    .dark .glass-sm {
+        background: var(--color-glass-bg) !important;
+        backdrop-filter: blur(var(--glass-blur-sm)) !important;
+        -webkit-backdrop-filter: blur(var(--glass-blur-sm)) !important;
+        border: 1px solid var(--color-glass-border) !important;
+    }
+
+    .dark .glass-lg {
+        background: var(--color-glass-bg) !important;
+        backdrop-filter: blur(var(--glass-blur-lg)) !important;
+        -webkit-backdrop-filter: blur(var(--glass-blur-lg)) !important;
+        border: 1px solid var(--color-glass-border) !important;
+    }
+
+    .dark .glass-hover {
+        transition: all 0.2s ease;
+    }
+
+    .dark .glass-hover:hover {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border-color: var(--color-glass-border-hover) !important;
+    }
+
+    /* Matrix green glow effect */
+    .dark .glow-matrix {
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.2), 0 0 40px rgba(0, 255, 65, 0.1);
+    }
+
+    .dark .glow-subtle {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.08);
+    }
+
+    .dark .glow-purple {
+        box-shadow: 0 0 15px rgba(167, 139, 250, 0.08);
+    }
+}
+
+/* ========== Matrix Rain Animation ========== */
+@keyframes matrix-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes matrix-pulse {
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), 0 0 40px rgba(0, 255, 65, 0.2);
+    }
+}
+
+/* ========== Smooth transitions for all dark mode elements ========== */
+.dark *,
+.dark *::before,
+.dark *::after {
+    transition-property: background-color, border-color, color, box-shadow, opacity;
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
+}
+
+/* Exclude canvas and animations from the global transition */
+.dark canvas,
+.dark *[style*="animation"] {
+    transition: none !important;
+}
+
+/* ========== Highlight.js theme overrides for dark mode ========== */
+.dark .hljs {
+    background: #131316 !important;
+    color: #e2e8f0 !important;
+}
+
+.dark .hljs-keyword {
+    color: #c084fc !important;
+}
+
+.dark .hljs-string {
+    color: #86efac !important;
+}
+
+.dark .hljs-number {
+    color: #fde68a !important;
+}
+
+.dark .hljs-comment {
+    color: #6b7280 !important;
+    font-style: italic;
+}
+
+.dark .hljs-function {
+    color: #60a5fa !important;
+}
+
+.dark .hljs-title {
+    color: #60a5fa !important;
+}
+
+.dark .hljs-built_in {
+    color: #f472b6 !important;
+}
+
+.dark .hljs-attr {
+    color: #fbbf24 !important;
+}
+
+.dark .hljs-params {
+    color: #e2e8f0 !important;
+}
+
+/* QR code text - ensure monospace rendering and no dark mode color inversion */
+pre.qrcode {
+    font-family: monospace;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: pre;
+    color: #000;
+    background: #fff;
+}

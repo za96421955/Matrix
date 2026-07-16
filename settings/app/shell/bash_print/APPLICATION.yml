@@ -1,0 +1,6 @@
+name: bash_print
+description: bash 直接打印输入的内容
+path: bash_print.sh
+risk-level: 0
+input:
+  print: 直接打印输入的内容

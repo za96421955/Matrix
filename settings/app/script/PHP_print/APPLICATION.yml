@@ -1,0 +1,6 @@
+name: PHP_print
+description: PHP 直接打印输入的内容
+path: PHP_print.php
+risk-level: 0
+input:
+  print: 直接打印输入的内容

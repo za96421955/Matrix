@@ -1,0 +1,6 @@
+name: Java_print
+description: Java 直接打印输入的内容
+path: Java_print.jar
+risk-level: 0
+input:
+  print: 直接打印输入的内容

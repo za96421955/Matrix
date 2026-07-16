@@ -1,0 +1,6 @@
+name: Ruby_print
+description: Ruby 直接打印输入的内容
+path: Ruby_print.rb
+risk-level: 0
+input:
+  print: 直接打印输入的内容

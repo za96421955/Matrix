@@ -1,0 +1,60 @@
+mode:
+  type: Memory
+props:
+  sql-show: false
+  sql-simple: true
+
+dataSources:
+  ds0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:33060/matrix?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: Root@123456
+
+rules:
+  - !SHARDING
+    defaultDatabaseStrategy:
+      none:
+    defaultTableStrategy:
+      none:
+    shardingAlgorithms:
+      hash_mod:
+        type: CLASS_BASED
+        props:
+          strategy: COMPLEX
+          algorithmClassName: com.matrix.service.dal.sharding.HashAlgorithm
+    tables:
+      # User
+      tbl_user_info:
+        actualDataNodes: ds0.tbl_user_info
+      tbl_user_api_key:
+        actualDataNodes: ds0.tbl_user_api_key
+      tbl_client_info:
+        actualDataNodes: ds0.tbl_client_info_000$->{0..1}
+        tableStrategy:
+          complex:
+            shardingColumns: user_id
+            shardingAlgorithmName: hash_mod
+      # Chat
+      tbl_session_info:
+        actualDataNodes: ds0.tbl_session_info_000$->{0..1}
+        tableStrategy:
+          complex:
+            shardingColumns: user_id
+            shardingAlgorithmName: hash_mod
+      tbl_message_info:
+        actualDataNodes: ds0.tbl_message_info_000$->{0..3}
+        tableStrategy:
+          complex:
+            shardingColumns: session_id
+            shardingAlgorithmName: hash_mod
+      # Task
+      tbl_task_info:
+        actualDataNodes: ds0.tbl_task_info_000$->{0..1}
+        tableStrategy:
+          complex:
+            shardingColumns: user_id
+            shardingAlgorithmName: hash_mod
+
+

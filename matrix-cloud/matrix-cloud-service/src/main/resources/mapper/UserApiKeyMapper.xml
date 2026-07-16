@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.matrix.service.dal.mapper.UserApiKeyMapper">
+
+    <!-- 根据 userId 查询用户 API Key 列表 -->
+    <select id="selectByUserId" resultType="com.matrix.service.dal.entity.UserApiKey">
+        SELECT * FROM tbl_user_api_key
+        WHERE user_id = #{userId}
+        AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据 apiKey 查询用户 API Key -->
+    <select id="selectByApiKey" resultType="com.matrix.service.dal.entity.UserApiKey">
+        SELECT * FROM tbl_user_api_key
+        WHERE api_key = #{apiKey}
+        AND is_deleted = 0
+        LIMIT 1
+    </select>
+
+    <!-- 根据 userId 和 status 查询用户 API Key 列表 -->
+    <select id="selectByUserIdAndStatus" resultType="com.matrix.service.dal.entity.UserApiKey">
+        SELECT * FROM tbl_user_api_key
+        WHERE user_id = #{userId}
+        AND status = #{status}
+        AND is_deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

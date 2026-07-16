@@ -1,0 +1,6 @@
+name: zsh_print
+description: zsh 直接打印输入的内容
+path: zsh_print.zsh
+risk-level: 0
+input:
+  print: 直接打印输入的内容

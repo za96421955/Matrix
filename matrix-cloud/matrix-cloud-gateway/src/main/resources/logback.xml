@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+
+    <!-- 属性定义 -->
+    <property name="log.path" value="./logs" />
+    <property name="log.charset" value="UTF-8" />
+    <property name="log.pattern" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%level] [%X{traceId}] [%thread] [%logger{36}] %msg%n"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="${log.charset}">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- info 日志 -->
+    <appender name="info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${log.path}/info/info.log</File>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>${log.charset}</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${log.path}/info/info.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>2</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>500MB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <!-- error 日志 -->
+    <appender name="error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${log.path}/error/error.log</File>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!--设置日志级别，过滤掉 info 日志，只输入 error 日志-->
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+            <charset>${log.charset}</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${log.path}/error/error.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>2</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>500MB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <!-- 关闭阿里日志 -->
+    <logger name="com.alibaba" level="DEBUG" additivity="false">
+        <!-- <appender-ref ref="console" /> -->
+    </logger>
+
+    <root level="info">
+        <appender-ref ref="console" />
+        <appender-ref ref="info" />
+        <appender-ref ref="error" />
+    </root>
+
+</configuration>

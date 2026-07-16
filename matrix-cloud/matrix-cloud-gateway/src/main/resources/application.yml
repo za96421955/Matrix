@@ -1,0 +1,49 @@
+server:
+  port: 8280
+management:
+  server:
+    port: 8002
+
+---
+spring:
+  application:
+    name: matrix-cloud-gateway
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      config:
+        namespace: 84cff818-c738-4803-8877-419fbbd350b6
+        refresh-enabled: true
+      discovery:
+        namespace: ${spring.cloud.nacos.config.namespace}
+#        username: ${spring.cloud.nacos.config.username}
+#        password: ${spring.cloud.nacos.config.password}
+        group: matrix
+        heart-beat-timeout: 30000
+        heart-beat-interval: 10000
+  config:
+    import:
+      - "nacos:public.yaml?group=matrix"
+      - "nacos:${spring.application.name}.yaml?group=matrix-cloud-gateway"
+    sentinel:
+      transport:
+        dashboard: localhost:9080
+      datasource:
+        ds1:
+          nacos:
+            server-addr: localhost:8848
+            data-id: matrix-gateway-limit-rules.json
+            group-id: DEFAULT_GROUP
+            rule-type: flow
+
+---
+matrix:
+  gateway:
+    limit:
+      total-qps: 1000
+      user-qps: 10
+      ip-qps: 100
+
+

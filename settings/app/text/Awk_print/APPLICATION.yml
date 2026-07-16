@@ -1,0 +1,6 @@
+name: Awk_print
+description: Awk 直接打印输入的内容
+path: ./Awk_print.awk
+risk-level: 0
+input:
+  print: 直接打印输入的内容

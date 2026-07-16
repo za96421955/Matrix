@@ -1,0 +1,6 @@
+name: Node_print
+description: Node 直接打印输入的内容
+path: Node_print.js
+risk-level: 0
+input:
+  print: 直接打印输入的内容

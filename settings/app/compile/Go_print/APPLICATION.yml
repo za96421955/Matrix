@@ -1,0 +1,7 @@
+name: Go_print
+description: Go 直接打印输入的内容
+path: Go_print
+extension: go
+risk-level: 0
+input:
+  print: 直接打印输入的内容

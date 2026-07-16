@@ -1,0 +1,6 @@
+name: ksh_print
+description: ksh 直接打印输入的内容
+path: ksh_print.ksh
+risk-level: 0
+input:
+  print: 直接打印输入的内容

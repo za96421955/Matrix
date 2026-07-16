@@ -1,0 +1,6 @@
+name: PowerShell_print
+description: PowerShell 直接打印输入的内容
+path: PowerShell_print.ps1
+risk-level: 0
+input:
+  print: 直接打印输入的内容

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="003232">
+    <!-- Background circle -->
+    <!-- <circle cx="16" cy="16" r="16" fill="white"/>-->
+    <circle cx="16" cy="16" r="16" fill="#1f2937"/>
+    <!-- Robot face -->
+    <g fill="white">
+        <!-- Head -->
+        <rect x="6" y="8" width="20" height="16" rx="3"/>
+        <rect x="8" y="10" width="16" height="12" rx="3" fill="#1f2937"/>
+        <!-- Eyes -->
+        <circle cx="6" cy="16" r="2" fill="white"/>
+        <circle cx="26" cy="16" r="2" fill="white"/>
+        <!-- Mouth -->
+        <rect x="12" y="13" width="2" height="6" rx="0.75" fill="white"/>
+        <rect x="18" y="13" width="2" height="6" rx="0.75" fill="white"/>
+    </g>
+</svg>

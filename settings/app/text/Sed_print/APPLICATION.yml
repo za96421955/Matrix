@@ -1,0 +1,6 @@
+name: Sed_print
+description: Sed 直接打印输入的内容
+path: Sed_print.sed
+risk-level: 0
+input:
+  print: 直接打印输入的内容

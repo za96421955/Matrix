@@ -1,0 +1,6 @@
+name: R_print
+description: R 直接打印输入的内容
+path: R_print.R
+risk-level: 0
+input:
+  print: 直接打印输入的内容

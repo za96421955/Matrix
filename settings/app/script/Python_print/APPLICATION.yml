@@ -1,0 +1,6 @@
+name: Python_print
+description: Python 直接打印输入的内容
+path: Python_print.py
+risk-level: 0
+input:
+  print: 直接打印输入的内容

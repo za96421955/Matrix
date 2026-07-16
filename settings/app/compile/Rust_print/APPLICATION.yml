@@ -1,0 +1,6 @@
+name: Rust_print
+description: Rust 直接打印输入的内容
+path: Rust_print.rs
+risk-level: 0
+input:
+  print: 直接打印输入的内容

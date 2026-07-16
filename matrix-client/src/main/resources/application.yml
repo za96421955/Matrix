@@ -1,0 +1,37 @@
+server:
+  port: 8092
+
+---
+spring:
+  application:
+    name: matrix-client
+
+---
+matrix:
+  client:
+    basic:
+      base-path: ${user.dir}
+      settings-path: ${matrix.client.basic.base-path}/settings
+      models-path: ${matrix.client.basic.settings-path}/models.yml
+      risk-level-path: ${matrix.client.basic.settings-path}/risk-level.yml
+      agent-path: ${matrix.client.basic.settings-path}/agent
+      skill-path: ${matrix.client.basic.settings-path}/skill
+      app-path: ${matrix.client.basic.settings-path}/app
+    mqtt:
+      broker-url: tcp://localhost:1883
+#      username: admin
+#      password: admin@123456
+      clean-start: false
+      keep-alive: 60
+      connect-timeout: 10
+      max-reconnect-delay: 32
+  service:
+    api-key: ${DEEPSEEK_API_KEY}
+    retry-max: 5
+    retry-base-delay: 1000
+    base: http://localhost:8091
+    register: /v1/client/register
+    heartbeat: /v1/client/heartbeat
+    ack: /v1/task/ack
+
+

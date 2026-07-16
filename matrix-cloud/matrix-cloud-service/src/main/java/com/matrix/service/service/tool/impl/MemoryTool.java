@@ -1,0 +1,147 @@
+package com.matrix.service.service.tool.impl;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.matrix.common.constant.Constant;
+import com.matrix.common.dto.command.RegisterCommand;
+import com.matrix.service.service.agent.ModelService;
+import com.matrix.service.service.tool.AbstractTool;
+import jakarta.annotation.Resource;
+import jdk.jfr.Description;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Slf4j
+@Component
+public class MemoryTool extends AbstractTool<MemoryTool.Request> {
+
+    @Resource
+    private ModelService modelService;
+
+    @Override
+    public String name() {
+        return "memory";
+    }
+
+    @Override
+    public String description() {
+        return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案";
+    }
+
+    @Override
+    public Class<MemoryTool.Request> requestType() {
+        return MemoryTool.Request.class;
+    }
+
+    @Override
+    public String systemPrompt(Long userId, Long sessionId, String clientId) {
+        try {
+            return this.readMemory(clientId).block();
+        } catch (Exception ignore) {
+            return "";
+        }
+    }
+
+    @Override
+    public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
+        // ClientId 检查
+        String checkResult = this.checkClient(userId, request.getClientId());
+        if (StringUtils.isNotBlank(checkResult)) {
+            return Flux.just("执行失败: " + checkResult);
+        }
+        // 工具执行
+        try {
+            return this.readMemory(request.getClientId()).flatMapMany(currMemory -> {
+                // 读取记忆
+                if (request.getRead()) {
+                    return Flux.just(currMemory);
+                }
+
+                // 获取 Agent 信息
+                RegisterCommand.Model model = serviceContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
+                // 生成记忆
+                String input = """
+                        ## 当前记忆
+                        ```
+                        %s
+                        ```
+                        
+                        ## 修改要求
+                        ```
+                        %s
+                        ```
+                        
+                        按要求修改<当前记忆>，输出修改后的记忆内容（仅输出合并结果，不要其他说明）：
+                        """
+                        .formatted(currMemory, request.getRequire());
+                String newMemory = modelService.call(model, input);
+                // 更新记忆
+                try {
+                    return this.writeMemory(request.getClientId(), newMemory).flux();
+                } catch (MqttException e) {
+                    log.error("userId={}, request={}, 记忆更新异常: {}",
+                            userId, request, e.getMessage(), e);
+                    return Flux.just(e.getMessage());
+                }
+//                return Flux.just("记忆修改完成");
+            });
+        } catch (Exception e) {
+            log.error("userId={}, request={}, 记忆操作异常: {}",
+                    userId, request, e.getMessage(), e);
+            return Flux.just(e.getMessage());
+        }
+    }
+
+    /**
+     * @description 读取记忆
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private Mono<String> readMemory(String clientId)
+            throws MqttException {
+        return executor.executeCommand(clientId, Constant.SYSTEM_COMMAND.READ_MEMORY);
+    }
+
+    /**
+     * @description 写入记忆
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private Mono<String> writeMemory(String clientId, String memory)
+            throws MqttException {
+        String command = Constant.SYSTEM_COMMAND.WRITE_MEMORY + memory;
+        return executor.executeCommand(clientId, command);
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Request {
+        @Description(Constant.CLIENT_ID_DESCRIPTION)
+        private String clientId;
+
+        @Description("是否读取, 默认: false")
+        private Boolean read = false;
+
+        @Description("修改要求")
+        private String require;
+
+        @Override
+        public String toString() {
+            return JSONObject.toJSONString(this);
+        }
+    }
+
+}
+
+

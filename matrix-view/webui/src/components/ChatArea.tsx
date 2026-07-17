@@ -291,7 +291,7 @@ const ProjectPathInput = () => {
                             <option value="">全部终端</option>
                             {clientList.map((client) => (
                                 <option key={client.clientId} value={client.clientId}>
-                                    {client.name}
+                                    {client.name.length > 18 ? client.name.slice(0, 18) + "..." : client.name}
                                 </option>
                             ))}
                         </select>

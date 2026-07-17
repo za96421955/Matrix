@@ -52,7 +52,7 @@ public interface Prompt {
         String WORKING_DIRECTORY = "工作目录：%s\n\n";
 
         /** 规划 */
-        String PLAN = WORKING_DIRECTORY + """
+        String PLAN = """
             1. 帮助用户规划任务，输出<任务列表>
             2. 任何疑问立即向用户提出，一步一步地完善细节信息
 
@@ -218,5 +218,3 @@ public interface Prompt {
     }
 
 }
-
-

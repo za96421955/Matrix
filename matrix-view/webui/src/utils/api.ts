@@ -40,6 +40,7 @@ export function chatCompletion(
         agent: store.currentAgentName,
         pattern: store.pattern,
         itemPath: store.itemPath || undefined,
+        clientId: store.currentClientId || undefined,
     }
 
     if (effectiveSessionId !== undefined) {

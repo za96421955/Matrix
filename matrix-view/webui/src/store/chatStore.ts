@@ -139,6 +139,8 @@ interface ChatState {
     projectPathHistory: string[]
     addProjectPath: (path: string) => void
     removeProjectPath: (path: string) => void
+    currentClientId: string
+    setCurrentClientId: (v: string) => void
     setPattern: (v: Pattern) => void
 }
 
@@ -177,6 +179,7 @@ export const useChatStore = create<ChatState>()(
             pattern: 'plan',
             itemPath: '',
             projectPathHistory: [],
+            currentClientId: '',
             createSession: () => {
                 const id = genId()
                 const now = Date.now()
@@ -697,6 +700,7 @@ export const useChatStore = create<ChatState>()(
             setMessageFilterMode: (mode) => set({messageFilterMode: mode}),
             setMaxTokens: (v) => set({maxTokens: v}),
             setUserAuthLevel: (level: number) => set({userAuthLevel: level}),
+            setCurrentClientId: (v) => set({currentClientId: v}),
             setPattern: (v) => set({pattern: v}),
             setItemPath: (v) => set({itemPath: v}),
             addProjectPath: (path: string) => {
@@ -831,6 +835,7 @@ export const useChatStore = create<ChatState>()(
                 pattern: state.pattern,
                 itemPath: state.itemPath,
                 projectPathHistory: state.projectPathHistory,
+                currentClientId: state.currentClientId,
             }),
         }
     )

@@ -1,5 +1,6 @@
 package com.matrix.service.controller;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.ClientStatus;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.dto.response.UserResponse;
@@ -12,8 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 设备控制器
@@ -35,10 +36,21 @@ public class ClientController {
      */
     @GetMapping("/list")
     public ResponseEntity<CommonResponse<List<String>>> getList(@AuthenticationPrincipal UserResponse userInfo) {
-        return ResponseEntity.ok(CommonResponse.success(clientService.getByUserId(userInfo.getUserId()).stream()
+        List<ClientInfo> clients = clientService.getByUserId(userInfo.getUserId()).stream()
                 .filter(clientInfo -> clientInfo != null && ClientStatus.ONLINE.equalsIgnoreCase(clientInfo.getStatus()))
-                .map(ClientInfo::getOsInfo)
-                .collect(Collectors.toList())));
+                .toList();
+        List<String> results = new ArrayList<>();
+        for (ClientInfo client : clients) {
+            JSONObject json = new JSONObject();
+            json.put("clientId", client.getClientId());
+            String name = client.getClientId();
+            try {
+                name = JSONObject.parseObject(client.getOsInfo()).getString("name");
+            } catch (Exception ignore) {}
+            json.put("name", name);
+            results.add(json.toJSONString());
+        }
+        return ResponseEntity.ok(CommonResponse.success(results));
     }
     
     /**
@@ -74,5 +86,3 @@ public class ClientController {
     }
 
 }
-
-

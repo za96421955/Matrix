@@ -1,5 +1,5 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, Bot, FileText, MessageSquare, Folder} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, Bot, FileText, MessageSquare, Folder, Monitor} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
@@ -212,6 +212,37 @@ const ProjectPathInput = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
 
+    const currentClientId = useChatStore((s) => s.currentClientId)
+    const setCurrentClientId = useChatStore((s) => s.setCurrentClientId)
+    const [clientList, setClientList] = useState<{clientId: string; name: string}[]>([])
+    const [clientLoading, setClientLoading] = useState(false)
+
+    // Fetch client list on mount
+    useEffect(() => {
+        const fetchClients = async () => {
+            setClientLoading(true)
+            try {
+                const {getAuthHeaders, getApiBaseUrl} = await import("../utils/apiClient")
+                const API_BASE = getApiBaseUrl()
+                const res = await fetch(API_BASE + "/client/list", {
+                    headers: {...getAuthHeaders(), "Content-Type": "application/json"},
+                })
+                if (res.ok) {
+                    const body = await res.json()
+                    if (body?.data && Array.isArray(body.data)) {
+                        const list = body.data.map((item: string) => JSON.parse(item))
+                        setClientList(list)
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch client list", e)
+            } finally {
+                setClientLoading(false)
+            }
+        }
+        fetchClients()
+    }, [])
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -239,10 +270,33 @@ const ProjectPathInput = () => {
         setDropdownOpen(false)
     }
 
+    const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setCurrentClientId(e.target.value)
+    }
+
     return (
         <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#18181B]/70">
             <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 py-1 sm:py-1.5">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    {/* 终端选择下拉框 */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        <Monitor className="w-3.5 h-3.5 text-gray-400"/>
+                        <select
+                            value={currentClientId}
+                            onChange={handleClientChange}
+                            disabled={clientLoading}
+                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-1.5 py-1.5 text-xs text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer max-w-[120px]"
+                            aria-label="选择终端"
+                        >
+                            <option value="">全部终端</option>
+                            {clientList.map((client) => (
+                                <option key={client.clientId} value={client.clientId}>
+                                    {client.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <Folder className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"/>
                     <div className="relative flex-1" ref={containerRef}>
                         <input

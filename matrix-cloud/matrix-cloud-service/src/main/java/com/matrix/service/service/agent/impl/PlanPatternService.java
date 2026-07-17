@@ -5,7 +5,6 @@ import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
-import com.matrix.service.service.agent.Prompt;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -32,8 +31,7 @@ public class PlanPatternService extends AbstractPatternService<PatternRequest> {
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request.getUserId(), request.getSessionId(),
-                Prompt.PLAN, request.getMessages(), clients));
+        request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
         return this.call(request, true);
     }

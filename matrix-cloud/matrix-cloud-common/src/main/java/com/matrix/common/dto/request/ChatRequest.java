@@ -22,9 +22,6 @@ public class ChatRequest extends AgentRequest {
     private String pattern;
     private Integer authLevel = RiskLevel.NONE;
 
-    /** 项目地址 */
-    private String itemPath;
-
     @Override
     public String toString() {
         return super.toString();

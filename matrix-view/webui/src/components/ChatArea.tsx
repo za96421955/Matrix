@@ -848,10 +848,10 @@ export default function ChatArea() {
     // ===================== 模式映射 =====================
     const patternOptions: { value: Pattern; label: string }[] = [
         { value: 'agent', label: '技能' },
-        { value: 'plan', label: '规划' },
-        { value: 'task', label: '任务' },
-        { value: 'coding', label: '编程' },
-        { value: 'information', label: '资料' },
+        { value: 'plan', label: '规划·执行' },
+        { value: 'task', label: '任务链' },
+        { value: 'coding', label: '需求开发' },
+        { value: 'information', label: '资料整理' },
     ]
 
     // ===================== UI 渲染 =====================
@@ -1095,10 +1095,10 @@ export default function ChatArea() {
             </div>
 
             {/* 输入栏 */}
-            {/* 项目路径选择（编程模式） */}
-            {(pattern === 'coding' || pattern === 'information') && <ProjectPathInput />}
+            {/* 项目路径选择 */}
+            {<ProjectPathInput />}
 
-            <InputBar onSend={handleSend} onStop={handleStop} hideTopBorder={pattern === 'coding' || pattern === 'information'}/>
+            <InputBar onSend={handleSend} onStop={handleStop} />
 
             {/* API Key 弹窗 */}
             <React.Suspense fallback={null}>

@@ -45,8 +45,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request.getUserId(), request.getSessionId(),
-                null, request.getMessages(), clients));
+        request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
         return this.call(request, true, sink -> this.executor(sink, request));
     }

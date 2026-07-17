@@ -43,6 +43,7 @@ import java.util.function.Consumer;
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
+ * @date 2026/5/12 21:07
  */
 @Slf4j
 public abstract class AbstractPatternService<T extends PatternRequest> implements PatternService<T, Response> {
@@ -70,6 +71,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/7/9 14:57
      */
     protected Flux<Response> call(PatternRequest request,
                                   boolean isInclude,
@@ -93,6 +95,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/5/14 10:31
      */
     protected Flux<Response> call(PatternRequest request, boolean isInclude) {
         return this.call(request, isInclude, null);
@@ -103,6 +106,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/7/9 14:57
      */
     protected Response call(FluxSink<Response> sink,
                             PatternRequest request,
@@ -197,6 +201,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/5/6 11:25
      */
     protected List<Message> toolCall(FluxSink<Response> sink,
                                      PatternRequest request,
@@ -270,20 +275,20 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/4/29 16:11
      */
-    protected List<Message> buildMessages(Long userId,
-                                       Long sessionId,
-                                       String prompt,
-                                       List<Message> messages,
-                                       List<ClientInfo> clientList) {
-        List<Message> buildMessages = new ArrayList<>(messages);
+    protected List<Message> buildMessages(PatternRequest request,
+                                          List<ClientInfo> clientList,
+                                          String prompt) {
+        List<Message> buildMessages = new ArrayList<>(request.getMessages());
 
         // clients 不为空, 则设置 skill、client
         if (!CollectionUtils.isEmpty(clientList)) {
             // tool system prompt (如：读取 agent 记忆)
             for (Tool<?> tool : toolContext.getTools()) {
                 for (ClientInfo client : clientList) {
-                    String systemPrompt = tool.systemPrompt(userId, sessionId, client.getClientId());
+                    String systemPrompt = tool.systemPrompt(request.getUserId(), request.getSessionId(),
+                            client.getClientId());
                     if (StringUtils.isBlank(systemPrompt)) {
                         continue;
                     }
@@ -293,7 +298,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             // Skill
             StringBuilder sb = new StringBuilder();
             sb.append("## 可用 Skill 列表\n```");
-            for (RegisterCommand.Skill skill : serviceContext.getSkills(userId)) {
+            for (RegisterCommand.Skill skill : serviceContext.getSkills(request.getUserId())) {
                 if (null == skill) {
                     continue;
                 }
@@ -314,9 +319,21 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             buildMessages.addFirst(Message.system(clients.toString()));
         }
 
+        StringBuilder firstUserMessage = new StringBuilder();
+        // 操作终端
+        if (StringUtils.isNotBlank(request.getClientId())) {
+            firstUserMessage.append(Prompt.Common.OPERATION_CLIENT_ID.formatted(request.getClientId()));
+        }
+        // 工作目录
+        if (StringUtils.isNotBlank(request.getItemPath())) {
+            firstUserMessage.append(Prompt.Common.WORKING_DIRECTORY.formatted(request.getItemPath()));
+        }
         // prompt
         if (StringUtils.isNotBlank(prompt)) {
-            buildMessages.addFirst(Message.user(prompt));
+            firstUserMessage.append(prompt);
+        }
+        if (StringUtils.isNotBlank(firstUserMessage)) {
+            buildMessages.addFirst(Message.user(firstUserMessage.toString()));
         }
         return buildMessages;
     }
@@ -326,6 +343,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/4/29 11:11
      */
     protected List<Request.Tool> buildTools() {
         return this.buildTools(null);
@@ -336,6 +354,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/4/29 11:11
      */
     protected List<Request.Tool> buildTools(Long userId) {
         Map<String, Request.Tool> tools = new HashMap<>();
@@ -389,6 +408,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/7/9 14:32
      */
     protected void saveMessage(Long userId, Long sessionId, String role, Response response, boolean isInclude) {
         if (!isInclude) {

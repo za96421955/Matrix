@@ -3,7 +3,7 @@ package com.matrix.service.service.agent.impl;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
-import com.matrix.common.dto.request.ChatRequest;
+import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.enums.InformationPattern;
 import com.matrix.service.context.InformationPatternContext;
@@ -25,10 +25,11 @@ import java.util.List;
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
+ * @date 2026/7/15 15:56
  */
 @Slf4j
 @Service
-public class InformationPatternService extends AbstractPatternService<ChatRequest> {
+public class InformationPatternService extends AbstractPatternService<PatternRequest> {
 
     @Resource
     private InformationPatternContext informationPatternContext;
@@ -36,7 +37,7 @@ public class InformationPatternService extends AbstractPatternService<ChatReques
     private TaskPatternService taskPatternService;
 
     @Override
-    public Flux<Response> call(ChatRequest request) {
+    public Flux<Response> call(PatternRequest request) {
         if (request == null || StringUtils.isBlank(request.getItemPath())) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
         }
@@ -48,8 +49,7 @@ public class InformationPatternService extends AbstractPatternService<ChatReques
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request.getUserId(), request.getSessionId(),
-                null, request.getMessages(), clients));
+        request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
         return this.call(request, true, sink -> {
             log.info("[资料模式] userId={}, 执行【开始】", request.getUserId());
@@ -63,15 +63,16 @@ public class InformationPatternService extends AbstractPatternService<ChatReques
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/7/8 09:13
      */
-    public void executor(FluxSink<Response> sink, ChatRequest request) {
+    public void executor(FluxSink<Response> sink, PatternRequest request) {
         if (null == sink || null == request) {
             return;
         }
         // 获取环节
         int no = informationPatternContext.getPatternNo(request.getUserId(), request.getSessionId());
         // agent call
-        String result = this.callNoToolByClone(sink, request, Prompt.Pattern.GET_PATTERN_NO.formatted(
+        String result = this.callNoToolByClone(sink, request, Prompt.Common.GET_PATTERN_NO.formatted(
                 request.getItemPath(), InformationPattern.getPrompt(), no));
         try {
             no = Integer.parseInt(result);
@@ -123,7 +124,7 @@ public class InformationPatternService extends AbstractPatternService<ChatReques
             // 3. 任务执行
             if (InformationPattern.EXECUTOR.eq(no)) {
                 // agent call
-                String prompt = Prompt.Pattern.PROJECT_DIRECTORY.formatted(request.getItemPath()) + "执行<资料整理>任务";
+                String prompt = Prompt.Common.WORKING_DIRECTORY.formatted(request.getItemPath()) + "执行<资料整理>任务";
                 request.getMessages().add(Message.user(prompt));
                 result = taskPatternService.executor(sink, request);
                 log.info("[资料模式] userId={}, result={}, 任务执行", request.getUserId(), result);

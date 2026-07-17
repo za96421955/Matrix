@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.service.service.agent.ModelService;
+import com.matrix.service.service.agent.Prompt;
 import com.matrix.service.service.tool.AbstractTool;
 import jakarta.annotation.Resource;
 import jdk.jfr.Description;
@@ -32,7 +33,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
 
     @Override
     public String description() {
-        return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案";
+        return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案。记忆格式：短期、长期、谏言";
     }
 
     @Override
@@ -64,23 +65,9 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
                     return Flux.just(currMemory);
                 }
 
-                // 获取 Agent 信息
-                RegisterCommand.Model model = serviceContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
                 // 生成记忆
-                String input = """
-                        ## 当前记忆
-                        ```
-                        %s
-                        ```
-                        
-                        ## 修改要求
-                        ```
-                        %s
-                        ```
-                        
-                        按要求修改<当前记忆>，输出修改后的记忆内容（仅输出合并结果，不要其他说明）：
-                        """
-                        .formatted(currMemory, request.getRequire());
+                RegisterCommand.Model model = serviceContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
+                String input = Prompt.MEMORY_MANAGER.formatted(currMemory, request.getRequire());
                 String newMemory = modelService.call(model, input);
                 // 更新记忆
                 try {
@@ -104,6 +91,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/5/13 16:46
      */
     private Mono<String> readMemory(String clientId)
             throws MqttException {
@@ -115,6 +103,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/5/13 16:46
      */
     private Mono<String> writeMemory(String clientId, String memory)
             throws MqttException {

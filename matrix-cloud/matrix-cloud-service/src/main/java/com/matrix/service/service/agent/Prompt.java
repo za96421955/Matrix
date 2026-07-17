@@ -11,10 +11,48 @@ import com.matrix.service.service.agent.schema.TaskChain;
  */
 public interface Prompt {
 
-    /**
-     * 规划模式
-     */
-    String PLAN = """
+    String MEMORY_MANAGER = """
+            ## 当前记忆
+            ```
+            %s
+            ```
+            
+            ## 修改要求
+            ```
+            %s
+            ```
+            
+            ## 整理后的示例（仅供参考）
+            ```
+            ## 短期记忆
+            - [yyyy-MM-dd] 正在准备下周一的产品评审会议
+            - [2026-07-15] 最近在调研向量数据库
+            - [2026-07-17] ...
+            
+            ## 长期记忆
+            - 职业：后端开发，5 年 Java 经验
+            - 饮食：素食，不吃辣
+            - 工作时长：偏好深度工作，上午编码效率最高
+            
+            ## 谏言
+            - 用户喜欢结构化输出，给信息时优先用列表或分点
+            - 用户在讨论技术方案时，更关注性能指标而非代码细节
+            ```
+            
+            按要求修改<当前记忆>，输出修改后的记忆内容（仅输出合并结果，不要其他说明）：
+            """;
+
+    /** 公共 */
+    interface Common {
+
+        /** 操作终端 */
+        String OPERATION_CLIENT_ID = "操作终端: %s\n\n";
+
+        /** 工作目录 */
+        String WORKING_DIRECTORY = "工作目录：%s\n\n";
+
+        /** 规划 */
+        String PLAN = WORKING_DIRECTORY + """
             1. 帮助用户规划任务，输出<任务列表>
             2. 任何疑问立即向用户提出，一步一步地完善细节信息
 
@@ -38,14 +76,8 @@ public interface Prompt {
             ```
             """;
 
-    /**
-     * 模式公共
-     */
-    interface Pattern {
-
-        String PROJECT_DIRECTORY = "项目目录：%s\n\n";
-
-        String GET_PATTERN_NO = PROJECT_DIRECTORY + """
+        /** 环节 */
+        String GET_PATTERN_NO = WORKING_DIRECTORY + """
             根据上下文、需求是否清晰、任务规划是否完善等信息，判断当前任务应该进入以下哪个环节，还是继续当前环节：
             ```
             %s
@@ -57,11 +89,12 @@ public interface Prompt {
             - 仅输出环节编号，禁止执行任何写操作
             """;
 
-        String DEMAND_ANALYZE = PROJECT_DIRECTORY + """
+        /** 需求分析 */
+        String DEMAND_ANALYZE = WORKING_DIRECTORY + """
             1. 理解分析用户需求，帮助用户梳理需求内容，对齐、完善需求细节
             2. 任何疑问立即向用户提出，必要时可向用户要求补充相关信息
             3. 禁止执行任何写操作
-            4. 当需求已经完全明确无遗漏时，对需求进行总结输出完整的SDD，并在结尾输出 "%s"
+            4. 当需求已经完全明确无遗漏、无问题时，对需求进行总结输出完整的SDD，并在结尾输出 "%s"
             
             ## 约束
             - 优先使用 less、grep、cat，少用 find
@@ -70,9 +103,7 @@ public interface Prompt {
 
     }
 
-    /**
-     * 任务模式
-     */
+    /** 任务链 */
     interface Task {
 
         String GENERATE_TASK = """
@@ -129,27 +160,23 @@ public interface Prompt {
             """;
     }
 
-    /**
-     * 编程模式
-     */
+    /** 需求开发 */
     interface Coding {
 
-        String PLAN_DEVELOP = Pattern.PROJECT_DIRECTORY + PLAN + """
+        String PLAN_DEVELOP = Common.WORKING_DIRECTORY + Common.PLAN + """
             
             ## 重点
             - 帮助用户梳理、编排<研发>任务
             - <研发>完后后，项目必须编译通过
-            - 当任务列表已经完全明确并输出结束后，在结尾输出 "%s"
+            - 当任务列表已经完全明确、没有任何疑问及需要用户补充的信息后，在结尾输出 "%s"
             """;
 
     }
 
-    /**
-     * 资料模式
-     */
+    /** 资料整理 */
     interface Information {
 
-        String DEMAND_ANALYZE = Pattern.DEMAND_ANALYZE + """
+        String DEMAND_ANALYZE = Common.DEMAND_ANALYZE + """
             
             ## 重点
             你必须向用户了解清楚以下事项：
@@ -171,7 +198,7 @@ public interface Prompt {
             - HTML
             """;
 
-        String PLAN_OPERATION = Pattern.PROJECT_DIRECTORY + PLAN + """
+        String PLAN_OPERATION = Common.WORKING_DIRECTORY + Common.PLAN + """
             
             ## 重点
             - 帮助用户梳理、编排<资料整理>任务
@@ -179,7 +206,7 @@ public interface Prompt {
             - 当任务列表已经完全明确、没有任何疑问及需要用户补充的信息后，在结尾输出 "%s"
             """;
 
-        String OUTPUT_HTML = Pattern.PROJECT_DIRECTORY + """
+        String OUTPUT_HTML = Common.WORKING_DIRECTORY + """
             
             1. 不论用户要求的输出物是什么, 都额外输出一份 HTML 文件（单文件）
             2. 根据资料特性、类别等要素，选择最适合用户身份的 HTML 主题、配色、动画效果 等元素

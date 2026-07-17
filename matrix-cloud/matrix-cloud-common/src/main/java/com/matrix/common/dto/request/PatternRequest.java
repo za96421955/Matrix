@@ -23,6 +23,11 @@ public class PatternRequest extends Request {
     private Long sessionId;
     private String toolName;
 
+    /** 终端ID */
+    private String clientId;
+    /** 工作目录 */
+    private String itemPath;
+
     @Override
     public String toString() {
         return super.toString();

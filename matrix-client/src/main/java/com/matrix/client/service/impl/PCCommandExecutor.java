@@ -1,7 +1,9 @@
 package com.matrix.client.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.matrix.client.context.ClientProperties;
 import com.matrix.client.service.CommandExecutor;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,9 @@ import java.io.InputStreamReader;
 @Component
 public class PCCommandExecutor implements CommandExecutor {
 
+    @Resource
+    private ClientProperties clientProperties;
+
     /**
      * @description 判断是否 windows 系统
      * <p> <功能详细描述> </p>
@@ -38,7 +43,11 @@ public class PCCommandExecutor implements CommandExecutor {
             return this.execute(this.getPowershell(command), null, command);
         }
         String command = "uname -a";
-        return this.execute(null, command);
+        JSONObject json = new JSONObject();
+        json.put("name", clientProperties.getName());
+        json.put("desc", clientProperties.getDesc());
+        json.put("osInfo", this.execute(null, command));
+        return json.toJSONString();
     }
 
     @Override
@@ -68,6 +77,7 @@ public class PCCommandExecutor implements CommandExecutor {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
+     * @date 2026/6/15 16:35
      */
     private String execute(ProcessBuilder processBuilder, String taskId, String command)
             throws IOException, InterruptedException {

@@ -37,12 +37,12 @@ public enum ErrorCode {
 
     // ========== Agent 错误 (06) ==========
     AGENT_SERVICE_UNAVAILABLE(503, "060001", "Agent 服务不可用"),
-    AGENT_REQUEST_INVALID(400, "060002", "请求参数不能为空"),
+    AGENT_REQUEST_INVALID(400, "060002", "请求参数错误"),
     AGENT_NOT_FOUND(404, "060003", "Agent 不存在"),
     AGENT_DISABLED(403, "060004", "Agent 已禁用"),
-    SKILL_REQUEST_INVALID(400, "060005", "请求参数不能为空"),
+    SKILL_REQUEST_INVALID(400, "060005", "请求参数错误"),
     SKILL_NOT_FOUND(404, "060006", "Skill 不存在"),
-    MODEL_PARAM_INVALID(400, "060007", "模型和消息不能为空"),
+    MODEL_PARAM_INVALID(400, "060007", "请求参数错误"),
     MODEL_MESSAGE_EMPTY(400, "060008", "消息内容为空"),
     CHAT_PROCESS_ERROR(500, "060009", "对话处理失败"),
     APP_NOT_FOUND(404, "060010", "应用不存在"),

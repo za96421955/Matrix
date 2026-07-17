@@ -2,9 +2,7 @@ package com.matrix.client.service;
 
 import com.matrix.client.context.ExecutorProperties;
 import com.matrix.client.context.ServiceProperties;
-import com.matrix.client.dto.Agent;
 import com.matrix.client.dto.RegisterCommand;
-import com.matrix.client.dto.Skill;
 import com.matrix.client.mqtt.MqttConnection;
 import com.matrix.client.util.HttpClient;
 import jakarta.annotation.Resource;
@@ -168,40 +166,48 @@ public class RegisterService {
         return registerCommand;
     }
 
-    /**
-     * @description 获取 Agent 信息
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public Agent getAgent(String agentName) {
-        for (Agent agent : this.getRegisterCommand().getAgents()) {
-            if (null == agent) {
-                continue;
-            }
-            if (agent.getName().equals(agentName)) {
-                return agent;
-            }
-        }
-        return null;
-    }
+//    /**
+//     * @description 获取 Agent 信息
+//     * <p> <功能详细描述> </p>
+//     *
+//     * @author 陈晨
+//     */
+//    public Agent getAgent(String agentName) {
+//        for (Agent agent : this.getRegisterCommand().getAgents()) {
+//            if (null == agent) {
+//                continue;
+//            }
+//            if (agent.getName().equals(agentName)) {
+//                return agent;
+//            }
+//        }
+//        return null;
+//    }
+//
+//    /**
+//     * @description 获取 Skill 信息
+//     * <p> <功能详细描述> </p>
+//     *
+//     * @author 陈晨
+//     * @date 2026/5/13 17:23
+//     */
+//    public Skill getSkill(String skillName) {
+//        for (Skill skill : this.getRegisterCommand().getSkills()) {
+//            if (null == skill) {
+//                continue;
+//            }
+//            if (skill.getName().equals(skillName)) {
+//                return skill;
+//            }
+//        }
+//        return null;
+//    }
 
-    /**
-     * @description 获取 Skill 信息
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public Skill getSkill(String skillName) {
-        for (Skill skill : this.getRegisterCommand().getSkills()) {
-            if (null == skill) {
-                continue;
-            }
-            if (skill.getName().equals(skillName)) {
-                return skill;
-            }
-        }
-        return null;
-    }
+//    public static void main(String[] args) throws Exception {
+//        RegisterService service = new RegisterService();
+//        service.executorProperties = new ExecutorProperties();
+//        RegisterCommand command = service.load();
+//        System.out.println(JSONObject.toJSONString(command));
+//    }
 
 }

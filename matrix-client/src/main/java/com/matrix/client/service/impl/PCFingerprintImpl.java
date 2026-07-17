@@ -28,8 +28,8 @@ public class PCFingerprintImpl implements Fingerprint {
 
     // ---- 主网卡 MAC 获取命令 ----
     private static final String MAC_MAC = "ifconfig en0 | awk '/ether/ {print $2}'";
-    private static final String LINUX_MAC = "ip link show | grep -E '^[0-9]+: (eth|enp|eno)' | head -1 | awk '{print $2}' | cut -d/ -f1";
-    private static final String WINDOWS_MAC = "powershell -Command \"Get-NetAdapter -Physical | Where-Object {$_.Status -eq 'Up'} | Select-Object -First 1 | ForEach-Object { $_.MacAddress }\"";
+    private static final String LINUX_MAC = "ip -o link | grep -v lo | head -1 | awk '{print $17}'";
+    private static final String WINDOWS_MAC = "powershell.exe -Command \"Get-NetAdapter -Physical | Where-Object { $_.Status -eq 'Up' } | Select-Object -First 1 | ForEach-Object { $_.MacAddress }\"";
 
     @Resource
     private CommandExecutor commandExecutor;

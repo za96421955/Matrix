@@ -13,8 +13,6 @@ spring:
       discovery:
         enabled: false
 
-  # 关闭 Redis（不配置即不启用）
-
   # 数据源 - SQLite
   datasource:
     url: jdbc:sqlite:${user.dir}/data/matrix-local.db

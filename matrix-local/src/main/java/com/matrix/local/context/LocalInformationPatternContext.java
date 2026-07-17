@@ -3,6 +3,7 @@ package com.matrix.local.context;
 import com.matrix.common.enums.InformationPattern;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.local.service.LocalCacheService;
+import com.matrix.service.context.InformationPatternContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Primary
 @Component
-public class LocalInformationPatternContext {
+public class LocalInformationPatternContext extends InformationPatternContext {
 
     @Resource
     private LocalCacheService localCacheService;

@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.constant.TaskType;
 import com.matrix.local.service.LocalCacheService;
+import com.matrix.service.context.TaskContext;
 import com.matrix.service.dal.entity.TaskInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 本地任务上下文，基于 LocalCacheService（SQLite tbl_local_cache）替代 Redis
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Primary
 @Component
-public class LocalTaskContext {
+public class LocalTaskContext extends TaskContext {
 
     /** Hash 中存储 TaskInfo JSON 的字段名 */
     private static final String FIELD_TASK_INFO = "taskInfo";

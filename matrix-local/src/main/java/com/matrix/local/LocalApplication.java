@@ -1,22 +1,21 @@
 package com.matrix.local;
 
 import com.matrix.client.ClientApplication;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
-/**
- * Local 应用入口
- * <p> 合并 cloud 和 client 能力，零外部依赖，本地化运行 </p>
- *
- * @author 陈晨
- */
 @SpringBootApplication
+@MapperScan(basePackages = {
+        "com.matrix.service.dal.mapper",
+        "com.matrix.local.dal.mapper"
+})
 @ComponentScan(
         basePackages = {
-                "com.matrix.local",
                 "com.matrix.service",
+                "com.matrix.local",
                 "com.matrix.client",
                 "com.matrix.common"
         },
@@ -24,8 +23,7 @@ import org.springframework.context.annotation.FilterType;
                 @ComponentScan.Filter(
                         type = FilterType.REGEX,
                         pattern = {
-                                "com\\.matrix\\.service\\.mqtt\\..*",
-                                "com\\.matrix\\.client\\.mqtt\\..*"
+                                "com\\.matrix\\.service\\.mqtt\\..*"
                         }
                 ),
                 @ComponentScan.Filter(

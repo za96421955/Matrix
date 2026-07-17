@@ -3,6 +3,7 @@ package com.matrix.local.context;
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.local.service.LocalCacheService;
+import com.matrix.service.context.TaskPatternContext;
 import com.matrix.service.service.agent.schema.TaskChain;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Primary
 @Component
-public class LocalTaskPatternContext {
+public class LocalTaskPatternContext extends TaskPatternContext {
 
     @Resource
     private LocalCacheService localCacheService;

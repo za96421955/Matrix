@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.local.service.LocalCacheService;
+import com.matrix.service.context.ChatContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Primary
 @Component
-public class LocalChatContext {
+public class LocalChatContext extends ChatContext {
 
     private static final Cache<String, Boolean> CONVERSATION_CACHE = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.SECONDS)

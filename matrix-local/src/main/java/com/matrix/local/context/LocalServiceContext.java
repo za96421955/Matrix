@@ -8,6 +8,7 @@ import com.matrix.common.constant.RiskLevel;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.local.service.LocalCacheService;
+import com.matrix.service.context.ServiceContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Primary
 @Component
-public class LocalServiceContext {
+public class LocalServiceContext extends ServiceContext {
 
     @Resource
     private LocalCacheService localCacheService;

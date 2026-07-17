@@ -4,7 +4,7 @@
 # 2: 中风险
 # 3: 高风险
 bash:
-  - default: 0
+  - default: 1
   - shutdown: -1
   - reboot: -1
   - sudo: -1
@@ -21,12 +21,8 @@ bash:
   - head: 0
   - echo: 0
   - sed: 0
-#  - cp: 1
-#  - mkdir: 1
-#  - touch: 1
-#  - mv: 2
-#  - curl: 2
-#  - wget: 2
+  - dir: 0
+  - rm: 3
 tool:
   - default: 0
 agent:

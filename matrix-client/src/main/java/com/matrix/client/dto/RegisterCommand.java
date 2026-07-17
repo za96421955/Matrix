@@ -2,7 +2,7 @@ package com.matrix.client.dto;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.client.context.Constant;
-import com.matrix.client.context.ExecutorProperties;
+import com.matrix.client.context.ClientProperties;
 import com.matrix.client.util.FileUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,7 +48,7 @@ public class RegisterCommand implements Serializable {
      *
      * @author 陈晨
      */
-    public RegisterCommand load(String clientId, ExecutorProperties executorProperties) throws Exception {
+    public RegisterCommand load(String clientId, ClientProperties clientProperties) throws Exception {
 //        // models
 //        File root = new File(executorProperties.getBasic().getModelsPath());
 //        if (root.exists() && root.isFile()) {
@@ -75,7 +75,7 @@ public class RegisterCommand implements Serializable {
 
         // skill
         this.setSkills(new ArrayList<>());
-        List<File> files = this.loadFiles(executorProperties.getBasic().getSkillPath(), Constant.SKILL_FILE);
+        List<File> files = this.loadFiles(clientProperties.getBasic().getSkillPath(), Constant.SKILL_FILE);
         for (File file : files) {
             Skill skill = Skill.parse(FileUtil.read(file.getAbsolutePath()));
             skill.setClientId(clientId);
@@ -85,7 +85,7 @@ public class RegisterCommand implements Serializable {
 
         // app
         this.setApps(new ArrayList<>());
-        files = this.loadFiles(executorProperties.getBasic().getAppPath(), Constant.APP_FILE);
+        files = this.loadFiles(clientProperties.getBasic().getAppPath(), Constant.APP_FILE);
         for (File file : files) {
             this.getApps().add(Application.parse(clientId,
                     file.getParentFile().getAbsolutePath(),
@@ -93,7 +93,7 @@ public class RegisterCommand implements Serializable {
         }
 
         // risk-level
-        File root = new File(executorProperties.getBasic().getRiskLevelPath());
+        File root = new File(clientProperties.getBasic().getRiskLevelPath());
         if (root.exists() && root.isFile()) {
             this.setRiskLevel(RiskLevel.parse(FileUtil.read(root.getAbsolutePath())));
         }

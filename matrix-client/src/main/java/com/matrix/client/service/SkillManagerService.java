@@ -2,7 +2,7 @@ package com.matrix.client.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.client.context.Constant;
-import com.matrix.client.context.ExecutorProperties;
+import com.matrix.client.context.ClientProperties;
 import com.matrix.client.util.FileUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import java.nio.file.StandardCopyOption;
 public class SkillManagerService {
 
     @Resource
-    private ExecutorProperties executorProperties;
+    private ClientProperties clientProperties;
     @Resource
     private CommandExecutor commandExecutor;
 
@@ -169,7 +169,7 @@ public class SkillManagerService {
             }
 
             // === 步骤5: 安装到目标目录 ===
-            String skillBasePath = executorProperties.getBasic().getSkillPath();
+            String skillBasePath = clientProperties.getBasic().getSkillPath();
             Path targetDir = Paths.get(skillBasePath, skillName);
 
             // 如果目标目录已存在，先删除

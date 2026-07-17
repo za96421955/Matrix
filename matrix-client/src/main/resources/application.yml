@@ -9,6 +9,8 @@ spring:
 ---
 matrix:
   client:
+    name: PC
+    desc: 个人办公
     basic:
       base-path: ${user.dir}
       settings-path: ${matrix.client.basic.base-path}/settings

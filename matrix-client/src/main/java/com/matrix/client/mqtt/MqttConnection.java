@@ -1,7 +1,7 @@
 package com.matrix.client.mqtt;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.matrix.client.context.ExecutorProperties;
+import com.matrix.client.context.ClientProperties;
 import com.matrix.client.context.ServiceProperties;
 import com.matrix.client.service.Fingerprint;
 import com.matrix.client.service.RegisterService;
@@ -33,7 +33,7 @@ public class MqttConnection {
     private final RegisterService registerService;
 
     @Resource
-    private ExecutorProperties executorProperties;
+    private ClientProperties clientProperties;
     @Resource
     private ServiceProperties serviceProperties;
     @Resource
@@ -142,10 +142,10 @@ public class MqttConnection {
         if (StringUtils.isNotBlank(password)) {
             options.setPassword(password.getBytes(StandardCharsets.UTF_8));
         }
-        options.setCleanStart(executorProperties.getMqtt().isCleanStart());
-        options.setKeepAliveInterval(executorProperties.getMqtt().getKeepAlive());
+        options.setCleanStart(clientProperties.getMqtt().isCleanStart());
+        options.setKeepAliveInterval(clientProperties.getMqtt().getKeepAlive());
         options.setAutomaticReconnect(true);
-        options.setMaxReconnectDelay((int)(executorProperties.getMqtt().getMaxReconnectDelay() * 1000L));
+        options.setMaxReconnectDelay((int)(clientProperties.getMqtt().getMaxReconnectDelay() * 1000L));
         return options;
     }
 
@@ -173,10 +173,10 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttConnectionUrl() {
-        if (StringUtils.isNotBlank(executorProperties.getMqtt().getBrokerUrl())) {
-            return executorProperties.getMqtt().getBrokerUrl();
+        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
+            return clientProperties.getMqtt().getBrokerUrl();
         }
-        String response = HttpClient.post(executorProperties.getMqtt().getLoginUrl())
+        String response = HttpClient.post(clientProperties.getMqtt().getLoginUrl())
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .authorization(serviceProperties.getApiKey())
@@ -191,8 +191,8 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttUsername() {
-        if (StringUtils.isNotBlank(executorProperties.getMqtt().getBrokerUrl())) {
-            return executorProperties.getMqtt().getUsername();
+        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
+            return clientProperties.getMqtt().getUsername();
         }
         return serviceProperties.getApiKey();
     }
@@ -204,8 +204,8 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttPassword() {
-        if (StringUtils.isNotBlank(executorProperties.getMqtt().getBrokerUrl())) {
-            return executorProperties.getMqtt().getPassword();
+        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
+            return clientProperties.getMqtt().getPassword();
         }
         return serviceProperties.getApiKey();
     }

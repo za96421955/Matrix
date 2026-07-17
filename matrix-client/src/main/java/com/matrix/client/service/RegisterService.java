@@ -1,6 +1,6 @@
 package com.matrix.client.service;
 
-import com.matrix.client.context.ExecutorProperties;
+import com.matrix.client.context.ClientProperties;
 import com.matrix.client.context.ServiceProperties;
 import com.matrix.client.dto.RegisterCommand;
 import com.matrix.client.mqtt.MqttConnection;
@@ -26,7 +26,7 @@ public class RegisterService {
     private static ScheduledExecutorService heartbeatScheduler;
 
     @Resource
-    private ExecutorProperties executorProperties;
+    private ClientProperties clientProperties;
     @Resource
     private ServiceProperties serviceProperties;
     @Resource
@@ -112,7 +112,7 @@ public class RegisterService {
         if (null == heartbeatScheduler) {
             heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
         }
-        int keepAlive = executorProperties.getMqtt().getKeepAlive();
+        int keepAlive = clientProperties.getMqtt().getKeepAlive();
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             try {
                 if (!mqttConnection.getClient().isConnected()) {
@@ -153,7 +153,7 @@ public class RegisterService {
             registerCommand = RegisterCommand.builder().build();
         }
         registerCommand.setOsInfo(commandExecutor.getOsInfo());
-        return registerCommand.load(mqttConnection.getClient().getClientId(), executorProperties);
+        return registerCommand.load(mqttConnection.getClient().getClientId(), clientProperties);
     }
 
     /**

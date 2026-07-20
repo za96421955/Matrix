@@ -72,7 +72,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
                 // 更新记忆
                 try {
                     return this.writeMemory(request.getClientId(), newMemory).flux();
-                } catch (MqttException e) {
+                } catch (Exception e) {
                     log.error("userId={}, request={}, 记忆更新异常: {}",
                             userId, request, e.getMessage(), e);
                     return Flux.just(e.getMessage());
@@ -93,7 +93,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * @author 陈晨
      */
     private Mono<String> readMemory(String clientId)
-            throws MqttException {
+            throws Exception {
         return executor.executeCommand(clientId, Constant.SYSTEM_COMMAND.READ_MEMORY);
     }
 
@@ -104,7 +104,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * @author 陈晨
      */
     private Mono<String> writeMemory(String clientId, String memory)
-            throws MqttException {
+            throws Exception {
         String command = Constant.SYSTEM_COMMAND.WRITE_MEMORY + memory;
         return executor.executeCommand(clientId, command);
     }

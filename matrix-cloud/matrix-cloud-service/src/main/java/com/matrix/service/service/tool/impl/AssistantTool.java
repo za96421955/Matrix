@@ -85,7 +85,7 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
                 // 更新
                 try {
                     return this.write(request.getClientId(), request.getWorkingDirectory(), newContent).flux();
-                } catch (MqttException e) {
+                } catch (Exception e) {
                     log.error("userId={}, request={}, 操作说明更新异常: {}",
                             userId, request, e.getMessage(), e);
                     return Flux.just(e.getMessage());
@@ -105,7 +105,7 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
      * @author 陈晨
      */
     private Mono<String> read(String clientId, String filePath)
-            throws MqttException {
+            throws Exception {
         JSONObject json = new JSONObject();
         json.put("filePath", filePath);
         String command = Constant.SYSTEM_COMMAND.READ_ASSISTANT + json.toJSONString();
@@ -119,7 +119,7 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
      * @author 陈晨
      */
     private Mono<String> write(String clientId, String filePath, String content)
-            throws MqttException {
+            throws Exception {
         JSONObject json = new JSONObject();
         json.put("filePath", filePath);
         json.put("content", content);

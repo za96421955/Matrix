@@ -40,7 +40,7 @@ public class ApplicationService {
      * @author 陈晨
      */
     public String call(Long userId, Long sessionId, String toolCallId, String appName, String input)
-            throws MqttException {
+            throws Exception {
         // 用户授权
         String result = authService.commandAuth(userId, sessionId,
                 Command.Type.APP, appName, "Application: " + appName + "\n\n" + input);

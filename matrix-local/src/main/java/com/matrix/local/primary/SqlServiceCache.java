@@ -1,17 +1,14 @@
-package com.matrix.local.cache;
+package com.matrix.local.primary;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.matrix.local.dal.entity.LocalCache;
 import com.matrix.service.cache.ServiceCache;
-import com.matrix.service.dal.entity.CacheInfo;
 import jakarta.annotation.Resource;
 import lombok.Getter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 缓存管理
@@ -24,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class SqlServiceCache implements ServiceCache {
 
     @Resource
-    private BaseMapper<CacheInfo> baseMapper;
+    private BaseMapper<LocalCache> baseMapper;
 
     @Getter
     public final Hash hash = new Hash();
@@ -63,7 +60,7 @@ public class SqlServiceCache implements ServiceCache {
     }
 
     @Override
-    public boolean lock(String key, String value, long ttl) {
+    public boolean lock(String key, long ttl) {
         return false;
     }
 

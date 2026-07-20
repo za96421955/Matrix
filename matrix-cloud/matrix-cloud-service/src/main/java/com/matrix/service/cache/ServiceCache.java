@@ -24,7 +24,7 @@ public interface ServiceCache {
 
     String get(String key);
 
-    boolean lock(String key, String value, long ttl);
+    boolean lock(String key, long ttl);
 
     interface Hash {
 

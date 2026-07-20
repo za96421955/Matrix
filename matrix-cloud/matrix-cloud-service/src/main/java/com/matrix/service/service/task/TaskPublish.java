@@ -2,10 +2,10 @@ package com.matrix.service.service.task;
 
 import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.TaskStatus;
-import com.matrix.common.util.GuidUtil;
-import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.common.dto.command.ClientCommand;
 import com.matrix.common.dto.command.TaskCommand;
+import com.matrix.common.util.GuidUtil;
+import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.mqtt.MqttPublisher;
 import com.matrix.service.mqtt.MqttSubscriber;
 import com.matrix.service.mqtt.MqttTopics;
@@ -13,6 +13,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.paho.mqttv5.common.MqttException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -25,8 +26,9 @@ import java.util.Date;
  *
  * @author 陈晨
  */
-@Component
 @Slf4j
+@Component
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class TaskPublish {
 
     @Resource
@@ -89,7 +91,7 @@ public class TaskPublish {
      *
      * @author 陈晨
      */
-    public Mono<String> waitForResult(Long userId, String taskId, long timeoutSeconds) throws MqttException {
+    public Mono<String> waitForResult(Long userId, String taskId, long timeoutSeconds) {
         // 尝试获取结果
         TaskInfo taskInfo = taskService.getTaskInfo(userId, taskId);
         if (null != taskInfo && StringUtils.isNotBlank(taskInfo.getResult())) {
@@ -113,29 +115,6 @@ public class TaskPublish {
             }
             return Mono.error(e);
         }
-    }
-
-    /**
-     * @description 更新任务结果
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public void completeTask(Long userId, String taskId, String result) throws MqttException {
-        if (null == result) {
-            result = "";
-        }
-        // 发布结果通知
-        String topic = MqttTopics.TASK_RESULT.replaceAll("\\+", taskId);
-        mqttPublisher.publish(topic, result);
-        log.info("[任务完成] topic={}, result={}, 通知完成", topic, result);
-        // 更新任务结果
-        TaskInfo taskInfo = taskService.getTaskInfo(userId, taskId);
-        if (null == taskInfo || TaskStatus.COMPLETED.equals(taskInfo.getStatus())) {
-            return;
-        }
-        taskService.updateStatusAndResult(taskInfo.getUserId(), taskInfo.getTaskId(), TaskStatus.COMPLETED, result);
-        log.info("[任务完成] taskId={}, result={}", taskId, result);
     }
 
 }

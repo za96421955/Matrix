@@ -53,7 +53,7 @@ public class GithubTool extends AbstractTool<GithubTool.Request> {
                         return Mono.just("执行异常：" + e.getMessage());
                     })
                     .flux();
-        } catch (MqttException e) {
+        } catch (Exception e) {
             log.error("[CLI 命令执行] command={}, 异常：{}", request.getCommand(), e.getMessage(), e);
             return Flux.just("执行异常：" + e.getMessage());
         }

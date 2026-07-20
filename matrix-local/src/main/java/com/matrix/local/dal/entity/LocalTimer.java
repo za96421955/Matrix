@@ -18,4 +18,7 @@ public class LocalTimer {
     private Integer executedCount;
     private String status;
     private Long createTime;
+
 }
+
+

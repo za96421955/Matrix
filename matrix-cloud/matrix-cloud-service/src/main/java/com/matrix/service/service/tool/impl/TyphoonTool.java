@@ -97,7 +97,7 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
                         return Mono.just("执行异常：" + e.getMessage());
                     })
                     .flux();
-        } catch (MqttException e) {
+        } catch (Exception e) {
             log.error("[query-typhoon] 命令下发异常: command={}, error={}", command, e.getMessage(), e);
             return Flux.just("执行异常：" + e.getMessage());
         }

@@ -24,7 +24,7 @@ public class ZshApplicationImpl extends AbstractApplication {
     @Override
     public String call(Long userId, String clientId,
                        RegisterCommand.Application app, String input)
-            throws MqttException {
+            throws Exception {
         String command = "zsh '" + app.getPath() + "' '" + input + "'";
         return executor.executeTask(userId, clientId, command).block();
     }

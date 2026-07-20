@@ -50,7 +50,7 @@ public class LocationTool extends AbstractTool<LocationTool.Request> {
                         return Mono.just("执行异常：" + e.getMessage());
                     })
                     .flux();
-        } catch (MqttException e) {
+        } catch (Exception e) {
             log.error("[CLI 命令执行] command={}, 异常：{}", command, e.getMessage(), e);
             return Flux.just("执行异常：" + e.getMessage());
         }

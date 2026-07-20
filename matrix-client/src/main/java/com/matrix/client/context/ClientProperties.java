@@ -33,7 +33,6 @@ public class ClientProperties {
 
     @Data
     public static class MqttConfig {
-        private String loginUrl;
         private String brokerUrl;
         private String username;
         private String password;

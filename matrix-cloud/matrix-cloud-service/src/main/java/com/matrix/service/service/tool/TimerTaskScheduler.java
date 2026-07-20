@@ -97,7 +97,7 @@ public class TimerTaskScheduler {
 
                     // 4. 尝试获取分布式锁（立即上锁，10分钟过期）
                     String lockKey = RedisKey.LOCK_KEY_PREFIX.generateKey(userId, title);
-                    boolean lockAcquired = serviceCache.lock(lockKey, "1", RedisKey.LOCK_KEY_PREFIX.getTtl());
+                    boolean lockAcquired = serviceCache.lock(lockKey, RedisKey.LOCK_KEY_PREFIX.getTtl());
                     if (!lockAcquired) {
                         // 锁已被其他实例持有，跳过
                         continue;

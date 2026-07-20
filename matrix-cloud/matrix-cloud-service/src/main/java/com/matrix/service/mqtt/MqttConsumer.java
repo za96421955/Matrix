@@ -7,11 +7,13 @@ import com.matrix.service.service.task.TaskConsumer;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class MqttConsumer {
 
     @Resource

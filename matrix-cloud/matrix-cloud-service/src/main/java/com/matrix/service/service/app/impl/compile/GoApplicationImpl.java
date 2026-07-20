@@ -26,7 +26,7 @@ public class GoApplicationImpl extends AbstractApplication {
     @Override
     public String call(Long userId, String clientId,
                        RegisterCommand.Application app, String input)
-            throws MqttException {
+            throws Exception {
         String command;
         if (StringUtils.isBlank(FileUtil.getExtension(app.getPath()))) {
             command = "'" + app.getPath() + "' '" + input + "'";

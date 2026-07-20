@@ -1,11 +1,9 @@
 package com.matrix.client.mqtt;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.matrix.client.context.ClientProperties;
 import com.matrix.client.context.ServiceProperties;
 import com.matrix.client.service.Fingerprint;
 import com.matrix.client.service.RegisterService;
-import com.matrix.client.util.HttpClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -17,6 +15,7 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class MqttConnection {
 
     private final MqttSubscriber mqttSubscriber;
@@ -173,15 +173,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttConnectionUrl() {
-        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
-            return clientProperties.getMqtt().getBrokerUrl();
-        }
-        String response = HttpClient.post(clientProperties.getMqtt().getLoginUrl())
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .authorization(serviceProperties.getApiKey())
-                .asString();
-        return (String) JSONObject.parseObject(response).get("mqttHost");
+        return clientProperties.getMqtt().getBrokerUrl();
     }
 
     /**
@@ -191,10 +183,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttUsername() {
-        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
-            return clientProperties.getMqtt().getUsername();
-        }
-        return serviceProperties.getApiKey();
+        return clientProperties.getMqtt().getUsername();
     }
 
     /**
@@ -204,10 +193,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttPassword() {
-        if (StringUtils.isNotBlank(clientProperties.getMqtt().getBrokerUrl())) {
-            return clientProperties.getMqtt().getPassword();
-        }
-        return serviceProperties.getApiKey();
+        return clientProperties.getMqtt().getPassword();
     }
 
 }

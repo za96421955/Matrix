@@ -120,7 +120,7 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
             String command = Constant.SYSTEM_COMMAND.READ_SKILL + json.toJSONString();
             return executor.executeCommand(request.getClientId(), command)
                     .flux();
-        } catch (MqttException e) {
+        } catch (Exception e) {
             log.error("读取 SKILL.md 异常: request={}", request, e);
             return Flux.just("读取失败: " + e.getMessage());
         }
@@ -198,7 +198,7 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
                                                     .subscribe();
                                             return Flux.just("skill " + request.getSkillName() + " 已" + (enabled ? "启用" : "禁用")
                                                     + "\n写入结果: " + writeResult);
-                                        } catch (MqttException e) {
+                                        } catch (Exception e) {
                                             return Flux.just("skill " + request.getSkillName() + " 已" + (enabled ? "启用" : "禁用")
                                                     + "\n写入结果: " + writeResult
                                                     + "\n触发注册异常: " + e.getMessage());

@@ -3,6 +3,7 @@ package com.matrix.service.service.task.impl;
 import com.matrix.common.constant.Constant;
 import com.matrix.service.context.TaskContext;
 import com.matrix.service.dal.entity.TaskInfo;
+import com.matrix.service.service.task.TaskComplete;
 import com.matrix.service.service.task.TaskPublish;
 import com.matrix.service.service.task.TaskService;
 import jakarta.annotation.Resource;
@@ -26,9 +27,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Resource
     private TaskContext taskContext;
-
     @Resource
-    private TaskPublish taskPublish;
+    private TaskComplete taskComplete;
 
     @Override
     public TaskInfo getTaskInfo(Long userId, String taskId) {
@@ -82,7 +82,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public void callback(Long userId, String taskId, String result) throws MqttException {
         log.info("[终端ACK] userId={}, taskId={}, result={}", userId, taskId, result);
-        taskPublish.completeTask(userId, taskId, result);
+        taskComplete.completeTask(userId, taskId, result);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class TaskServiceImpl implements TaskService {
         if (StringUtils.isBlank(reject)) {
             reject = Constant.PASS;
         }
-        taskPublish.completeTask(userId, taskId, reject);
+        taskComplete.completeTask(userId, taskId, reject);
     }
 
 }

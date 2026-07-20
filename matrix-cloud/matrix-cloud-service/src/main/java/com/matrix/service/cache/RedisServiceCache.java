@@ -64,8 +64,8 @@ public class RedisServiceCache implements ServiceCache {
     }
 
     @Override
-    public boolean lock(String key, String value, long ttl) {
-        return redisTemplate.opsForValue().setIfAbsent(key, value, ttl, TimeUnit.SECONDS);
+    public boolean lock(String key, long ttl) {
+        return redisTemplate.opsForValue().setIfAbsent(key, "1", ttl, TimeUnit.SECONDS);
     }
 
     /**

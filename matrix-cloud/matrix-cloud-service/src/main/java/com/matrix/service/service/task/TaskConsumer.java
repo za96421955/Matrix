@@ -2,16 +2,14 @@ package com.matrix.service.service.task;
 
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.constant.TaskType;
-import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.common.dto.command.ClientCommand;
 import com.matrix.common.dto.command.TaskCommand;
+import com.matrix.service.cache.ServiceCache;
+import com.matrix.service.dal.entity.TaskInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 任务消费
@@ -19,15 +17,15 @@ import java.util.concurrent.TimeUnit;
  *
  * @author 陈晨
  */
-@Component
 @Slf4j
+@Component
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class TaskConsumer {
 
     @Resource
-    private TaskService taskService;
-
+    private ServiceCache serviceCache;
     @Resource
-    private RedissonClient redissonClient;
+    private TaskService taskService;
     @Resource
     private TaskPublish taskPublish;
 
@@ -39,9 +37,12 @@ public class TaskConsumer {
             return;
         }
         // 使用Redisson的分布式锁
-        RLock lock = redissonClient.getLock("lock:task:" + taskCommand.getTaskId());
+        String lockKey = "lock:task:" + taskCommand.getTaskId();
         try {
-            lock.lock(10, TimeUnit.SECONDS);
+            boolean lock = serviceCache.lock(lockKey, 10);
+            if (!lock) {
+                return;
+            }
 
             // 获取任务详情（通过 TaskService，走 Redis）
             TaskInfo taskInfo = taskService.getTaskInfo(taskCommand.getUserId(), taskCommand.getTaskId());
@@ -71,9 +72,7 @@ public class TaskConsumer {
                     taskCommand.getUserId(), taskCommand.getTaskId(), e.getMessage(), e);
             taskService.updateStatusAndResult(taskCommand.getUserId(), taskCommand.getTaskId(), TaskStatus.EXCEPTION, e.getMessage());
         } finally {
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
-            }
+            serviceCache.delete(lockKey);
         }
     }
 

@@ -5,12 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class MqttPublisher {
 
     @Resource

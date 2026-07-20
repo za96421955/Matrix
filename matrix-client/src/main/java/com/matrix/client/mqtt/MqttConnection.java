@@ -1,7 +1,6 @@
 package com.matrix.client.mqtt;
 
-import com.matrix.client.context.ClientProperties;
-import com.matrix.client.context.ServiceProperties;
+import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.service.Fingerprint;
 import com.matrix.client.service.RegisterService;
 import jakarta.annotation.PostConstruct;
@@ -33,9 +32,7 @@ public class MqttConnection {
     private final RegisterService registerService;
 
     @Resource
-    private ClientProperties clientProperties;
-    @Resource
-    private ServiceProperties serviceProperties;
+    private MatrixClientProperties properties;
     @Resource
     private Fingerprint fingerprint;
     @Resource
@@ -142,10 +139,10 @@ public class MqttConnection {
         if (StringUtils.isNotBlank(password)) {
             options.setPassword(password.getBytes(StandardCharsets.UTF_8));
         }
-        options.setCleanStart(clientProperties.getMqtt().isCleanStart());
-        options.setKeepAliveInterval(clientProperties.getMqtt().getKeepAlive());
+        options.setCleanStart(properties.getMqtt().isCleanStart());
+        options.setKeepAliveInterval(properties.getMqtt().getKeepAlive());
         options.setAutomaticReconnect(true);
-        options.setMaxReconnectDelay((int)(clientProperties.getMqtt().getMaxReconnectDelay() * 1000L));
+        options.setMaxReconnectDelay((int)(properties.getMqtt().getMaxReconnectDelay() * 1000L));
         return options;
     }
 
@@ -173,7 +170,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttConnectionUrl() {
-        return clientProperties.getMqtt().getBrokerUrl();
+        return properties.getMqtt().getBrokerUrl();
     }
 
     /**
@@ -183,7 +180,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttUsername() {
-        return clientProperties.getMqtt().getUsername();
+        return properties.getMqtt().getUsername();
     }
 
     /**
@@ -193,7 +190,7 @@ public class MqttConnection {
      * @author 陈晨
      */
     public String getMqttPassword() {
-        return clientProperties.getMqtt().getPassword();
+        return properties.getMqtt().getPassword();
     }
 
 }

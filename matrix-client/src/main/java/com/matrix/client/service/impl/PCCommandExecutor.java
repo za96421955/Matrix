@@ -1,7 +1,7 @@
 package com.matrix.client.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.matrix.client.context.ClientProperties;
+import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.service.CommandExecutor;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.io.InputStreamReader;
 public class PCCommandExecutor implements CommandExecutor {
 
     @Resource
-    private ClientProperties clientProperties;
+    private MatrixClientProperties properties;
 
     /**
      * @description 判断是否 windows 系统
@@ -44,8 +44,8 @@ public class PCCommandExecutor implements CommandExecutor {
         }
         String command = "uname -a";
         JSONObject json = new JSONObject();
-        json.put("name", clientProperties.getName());
-        json.put("desc", clientProperties.getDesc());
+        json.put("name", properties.getClient().getName());
+        json.put("desc", properties.getClient().getDesc());
         json.put("osInfo", this.execute(null, command));
         return json.toJSONString();
     }

@@ -19,14 +19,6 @@ matrix:
       agent-path: ${matrix.client.basic.settings-path}/agent
       skill-path: ${matrix.client.basic.settings-path}/skill
       app-path: ${matrix.client.basic.settings-path}/app
-    mqtt:
-      broker-url: tcp://localhost:1883
-#      username: admin
-#      password: admin@123456
-      clean-start: false
-      keep-alive: 60
-      connect-timeout: 10
-      max-reconnect-delay: 32
   service:
     api-key: ${DEEPSEEK_API_KEY}
     retry-max: 5
@@ -35,5 +27,13 @@ matrix:
     register: /v1/client/register
     heartbeat: /v1/client/heartbeat
     ack: /v1/task/ack
+  mqtt:
+    broker-url: tcp://localhost:1883
+#      username: admin
+#      password: admin@123456
+    clean-start: false
+    keep-alive: 60
+    connect-timeout: 10
+    max-reconnect-delay: 32
 
 

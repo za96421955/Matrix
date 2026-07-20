@@ -1,6 +1,6 @@
 package com.matrix.client.service;
 
-import com.matrix.client.context.ServiceProperties;
+import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.util.HttpClient;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -19,16 +19,16 @@ import java.io.IOException;
 public class AckService {
 
     @Resource
-    private ServiceProperties serviceProperties;
+    private MatrixClientProperties properties;
     @Resource
     private Fingerprint fingerprint;
 
     public boolean send(String taskId, String result) throws IOException, InterruptedException {
-        String url = serviceProperties.getAck() + "/" + taskId;
+        String url = properties.getService().getAck() + "/" + taskId;
         String response = HttpClient.post(url)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
-                .authorization(serviceProperties.getApiKey())
+                .authorization(properties.getService().getApiKey())
                 .header("X-Device-Id", fingerprint.get())
                 .body(result)
                 .asString();

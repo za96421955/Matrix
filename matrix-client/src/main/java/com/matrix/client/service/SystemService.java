@@ -2,7 +2,7 @@ package com.matrix.client.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.client.context.Constant;
-import com.matrix.client.context.ClientProperties;
+import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.util.FileUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.io.IOException;
 public class SystemService {
 
     @Resource
-    private ClientProperties clientProperties;
+    private MatrixClientProperties properties;
     @Resource
     private CommandExecutor commandExecutor;
     @Resource
@@ -46,7 +46,7 @@ public class SystemService {
         // 读取记忆
         if (command.indexOf(Constant.SYSTEM_COMMAND.READ_MEMORY) == 0) {
             String memory = null;
-            File file = new File(clientProperties.getBasic().getSettingsPath(), Constant.MEMORY);
+            File file = new File(properties.getClient().getBasic().getSettingsPath(), Constant.MEMORY);
             if (file.exists() && file.isFile()) {
                 memory = FileUtil.read(file.getAbsolutePath());
             }
@@ -55,7 +55,7 @@ public class SystemService {
         // 写入记忆
         if (command.indexOf(Constant.SYSTEM_COMMAND.WRITE_MEMORY) == 0) {
             String memory = command.substring(Constant.SYSTEM_COMMAND.WRITE_MEMORY.length());
-            File file = new File(clientProperties.getBasic().getSettingsPath(), Constant.MEMORY);
+            File file = new File(properties.getClient().getBasic().getSettingsPath(), Constant.MEMORY);
             FileUtil.write(file.getAbsolutePath(), memory);
             return "记忆更新完成";
         }
@@ -88,7 +88,7 @@ public class SystemService {
             String jsonStr = command.substring(Constant.SYSTEM_COMMAND.READ_SKILL.length());
             JSONObject json = JSONObject.parseObject(jsonStr);
             String skillName = json.getString("skillName");
-            File skillDir = new File(clientProperties.getBasic().getSkillPath(), skillName);
+            File skillDir = new File(properties.getClient().getBasic().getSkillPath(), skillName);
             File skillFile = new File(skillDir, Constant.SKILL_FILE);
             if (!skillFile.exists() || !skillFile.isFile()) {
                 return "SKILL.md not found: " + skillFile.getAbsolutePath();
@@ -102,7 +102,7 @@ public class SystemService {
             JSONObject json = JSONObject.parseObject(jsonStr);
             String skillName = json.getString("skillName");
             String content = json.getString("content");
-            File skillDir = new File(clientProperties.getBasic().getSkillPath(), skillName);
+            File skillDir = new File(properties.getClient().getBasic().getSkillPath(), skillName);
             File skillFile = new File(skillDir, Constant.SKILL_FILE);
             FileUtil.write(skillFile.getAbsolutePath(), content);
             return "SKILL.md written: " + skillFile.getAbsolutePath();

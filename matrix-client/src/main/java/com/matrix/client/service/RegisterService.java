@@ -1,7 +1,6 @@
 package com.matrix.client.service;
 
-import com.matrix.client.context.ClientProperties;
-import com.matrix.client.context.ServiceProperties;
+import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.dto.RegisterCommand;
 import com.matrix.client.mqtt.MqttConnection;
 import com.matrix.client.util.HttpClient;
@@ -26,9 +25,7 @@ public class RegisterService {
     private static ScheduledExecutorService heartbeatScheduler;
 
     @Resource
-    private ClientProperties clientProperties;
-    @Resource
-    private ServiceProperties serviceProperties;
+    private MatrixClientProperties properties;
     @Resource
     private MqttConnection mqttConnection;
     @Resource
@@ -85,9 +82,9 @@ public class RegisterService {
     public int reload() {
         String heartbeatUrl = null;
         try {
-            heartbeatUrl = serviceProperties.getRegister() + "/" + mqttConnection.getClient().getClientId();
+            heartbeatUrl = properties.getService().getRegister() + "/" + mqttConnection.getClient().getClientId();
             int status = HttpClient.post(heartbeatUrl)
-                    .authorization(serviceProperties.getApiKey())
+                    .authorization(properties.getService().getApiKey())
                     .header("X-Device-Id", fingerprint.get())
                     .body(this.load().toString())
                     .asStatus();
@@ -112,7 +109,7 @@ public class RegisterService {
         if (null == heartbeatScheduler) {
             heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
         }
-        int keepAlive = clientProperties.getMqtt().getKeepAlive();
+        int keepAlive = properties.getMqtt().getKeepAlive();
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             try {
                 if (!mqttConnection.getClient().isConnected()) {
@@ -153,7 +150,7 @@ public class RegisterService {
             registerCommand = RegisterCommand.builder().build();
         }
         registerCommand.setOsInfo(commandExecutor.getOsInfo());
-        return registerCommand.load(mqttConnection.getClient().getClientId(), clientProperties);
+        return registerCommand.load(mqttConnection.getClient().getClientId(), properties);
     }
 
     /**

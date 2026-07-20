@@ -1,6 +1,7 @@
 server:
   port: 8091
 
+---
 spring:
   application:
     name: matrix-local
@@ -43,4 +44,27 @@ mybatis-plus:
       id-type: auto
       table-prefix: tbl_
 
+---
 
+matrix:
+  client:
+    name: PC
+    desc: 个人办公
+    basic:
+      base-path: ${user.dir}
+      settings-path: ${matrix.client.basic.base-path}/settings
+      models-path: ${matrix.client.basic.settings-path}/models.yml
+      risk-level-path: ${matrix.client.basic.settings-path}/risk-level.yml
+      agent-path: ${matrix.client.basic.settings-path}/agent
+      skill-path: ${matrix.client.basic.settings-path}/skill
+      app-path: ${matrix.client.basic.settings-path}/app
+  service:
+    api-key: ${DEEPSEEK_API_KEY}
+    retry-max: 5
+    retry-base-delay: 1000
+    base: http://localhost:8091
+    register: /v1/client/register
+    heartbeat: /v1/client/heartbeat
+    ack: /v1/task/ack
+  github:
+    token: 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

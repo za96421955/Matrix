@@ -1,6 +1,6 @@
 package com.matrix.service.mqtt;
 
-import com.matrix.service.config.ServiceProperties;
+import com.matrix.service.config.MatrixServiceProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -25,7 +25,7 @@ import java.util.UUID;
 public class MqttConnection {
 
     @Resource
-    private ServiceProperties serviceProperties;
+    private MatrixServiceProperties properties;
 
     private final MqttSubscriber mqttSubscriber;
     private final MqttConsumer mqttConsumer;
@@ -41,7 +41,7 @@ public class MqttConnection {
 
     @PostConstruct
     public void init() throws MqttException {
-        String brokerUrl = serviceProperties.getMqtt().getBrokerUrl();
+        String brokerUrl = properties.getMqtt().getBrokerUrl();
         String clientId = "service-" + UUID.randomUUID();
         log.info("Initializing MQTT client: {}", clientId);
         mqttClient = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
@@ -97,20 +97,20 @@ public class MqttConnection {
     }
 
     private MqttConnectionOptions getOptions() {
-        String username = serviceProperties.getMqtt().getUsername();
+        String username = properties.getMqtt().getUsername();
         MqttConnectionOptions options = new MqttConnectionOptions();
         if (StringUtils.isNotBlank(username)) {
             options.setUserName(username);
         }
-        if (StringUtils.isNotBlank(serviceProperties.getMqtt().getPassword())) {
-            options.setPassword(serviceProperties.getMqtt().getPassword().getBytes(StandardCharsets.UTF_8));
+        if (StringUtils.isNotBlank(properties.getMqtt().getPassword())) {
+            options.setPassword(properties.getMqtt().getPassword().getBytes(StandardCharsets.UTF_8));
         }
-        options.setCleanStart(serviceProperties.getMqtt().isCleanStart());
-        options.setKeepAliveInterval(serviceProperties.getMqtt().getKeepAlive());
+        options.setCleanStart(properties.getMqtt().isCleanStart());
+        options.setKeepAliveInterval(properties.getMqtt().getKeepAlive());
         options.setAutomaticReconnect(true);
-        options.setMaxReconnectDelay((int)(serviceProperties.getMqtt().getMaxReconnectDelay() * 1000L));
+        options.setMaxReconnectDelay((int)(properties.getMqtt().getMaxReconnectDelay() * 1000L));
         log.info("Connecting to MQTT broker: {} with username: {}",
-                serviceProperties.getMqtt().getBrokerUrl(),
+                properties.getMqtt().getBrokerUrl(),
                 username != null && !username.trim().isEmpty() ? username : "(anonymous)");
         return options;
     }

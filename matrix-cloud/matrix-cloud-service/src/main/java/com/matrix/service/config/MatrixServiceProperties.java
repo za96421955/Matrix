@@ -8,12 +8,20 @@ import java.util.List;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "matrix.service")
-public class ServiceProperties {
-    private MqttConfig mqtt = new MqttConfig();
+@ConfigurationProperties(prefix = "matrix")
+public class MatrixServiceProperties {
+
+    private Service service = new Service();
+    private Mqtt mqtt = new Mqtt();
+    private Github github = new Github();
 
     @Data
-    public static class MqttConfig {
+    public static class Service {
+
+    }
+
+    @Data
+    public static class Mqtt {
         private String brokerUrl;
         private String clientId;
         private String username;
@@ -23,6 +31,11 @@ public class ServiceProperties {
         private int connectTimeout = 10;
         private int maxReconnectDelay = 128;
         private List<String> subscribeTopics;
+    }
+
+    @Data
+    public static class Github {
+        private String token;
     }
 
 }

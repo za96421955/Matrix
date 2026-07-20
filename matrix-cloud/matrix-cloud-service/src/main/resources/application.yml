@@ -40,16 +40,15 @@ mybatis-plus:
 ---
 matrix:
   service:
-    bcrypt-cost: 10
-    mqtt:
-      broker-url: tcp://localhost:1883
-#      username: admin
-#      password: admin@123456
-      keep-alive: 60
-      clean-start: true
-      connect-timeout: 10
-      max-reconnect-delay: 128
-    github:
-      token: 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
+  mqtt:
+    broker-url: tcp://localhost:1883
+#    username: admin
+#    password: admin@123456
+    keep-alive: 60
+    clean-start: true
+    connect-timeout: 10
+    max-reconnect-delay: 128
+  github:
+    token: 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
 
 

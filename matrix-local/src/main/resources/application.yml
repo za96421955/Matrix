@@ -16,7 +16,7 @@ spring:
 
   # 数据源 - SQLite
   datasource:
-    url: jdbc:sqlite:${user.dir}/data/matrix-local.db
+    url: jdbc:sqlite:${user.dir}/matrix-local/data/matrix-local.db
     driver-class-name: org.sqlite.JDBC
     username:
     password:

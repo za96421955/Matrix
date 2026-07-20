@@ -1,4 +1,4 @@
-package com.matrix.local.config;
+package com.matrix.local.primary;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * Local MyBatis Plus 配置
@@ -14,10 +15,8 @@ import org.springframework.context.annotation.Configuration;
  * Mapper 扫描路径复用 service 模块的 dal mapper 包
  */
 @Configuration
-@MapperScan(basePackages = {
-        "com.matrix.service.dal.mapper",
-        "com.matrix.local.dal.mapper"
-})
+@MapperScan("com.matrix.local.dal.mapper")
+@Primary
 public class LocalMybatisPlusConfig {
 
     @Bean

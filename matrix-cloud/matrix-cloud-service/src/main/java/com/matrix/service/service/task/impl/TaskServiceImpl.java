@@ -4,7 +4,6 @@ import com.matrix.common.constant.Constant;
 import com.matrix.service.context.TaskContext;
 import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.service.task.TaskComplete;
-import com.matrix.service.service.task.TaskPublish;
 import com.matrix.service.service.task.TaskService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -80,13 +79,13 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void callback(Long userId, String taskId, String result) throws MqttException {
+    public void callback(Long userId, String taskId, String result) throws Exception {
         log.info("[终端ACK] userId={}, taskId={}, result={}", userId, taskId, result);
         taskComplete.completeTask(userId, taskId, result);
     }
 
     @Override
-    public void auth(Long userId, String taskId, String reject) throws MqttException {
+    public void auth(Long userId, String taskId, String reject) throws Exception {
         log.info("[用户授权] userId={}, taskId={}, reject={}", userId, taskId, reject);
         if (StringUtils.isBlank(reject)) {
             reject = Constant.PASS;

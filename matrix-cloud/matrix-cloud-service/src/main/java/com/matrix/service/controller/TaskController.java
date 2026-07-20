@@ -1,13 +1,12 @@
 package com.matrix.service.controller;
 
+import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.response.CommonResponse;
 import com.matrix.service.dal.entity.TaskInfo;
-import com.matrix.common.dto.response.UserResponse;
 import com.matrix.service.service.task.TaskService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.paho.mqttv5.common.MqttException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,7 +49,7 @@ public class TaskController {
     @PostMapping(value = "/ack/{taskId}")
     public CommonResponse<Object> callback(@AuthenticationPrincipal UserResponse userInfo,
                                            @PathVariable("taskId") String taskId,
-                                           @RequestBody(required = false) String result) throws MqttException {
+                                           @RequestBody(required = false) String result) throws Exception {
         taskService.callback(userInfo.getUserId(), taskId, result);
         return CommonResponse.success(null);
     }
@@ -76,7 +75,7 @@ public class TaskController {
     @PostMapping(value = "/auth/{taskId}")
     public CommonResponse<Object> auth(@AuthenticationPrincipal UserResponse userInfo,
                                        @PathVariable("taskId") String taskId,
-                                       @RequestBody(required = false) String reject) throws MqttException {
+                                       @RequestBody(required = false) String reject) throws Exception {
         taskService.auth(userInfo.getUserId(), taskId, reject);
         return CommonResponse.success(null);
     }

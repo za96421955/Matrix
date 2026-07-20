@@ -1,14 +1,17 @@
-package com.matrix.local.primary;
+package com.matrix.service.service.task.impl;
 
 import com.matrix.common.constant.TaskStatus;
-import com.matrix.service.context.CompletableContext;
 import com.matrix.service.dal.entity.TaskInfo;
+import com.matrix.service.mqtt.MqttPublisher;
+import com.matrix.service.mqtt.MqttTopics;
 import com.matrix.service.service.task.TaskComplete;
 import com.matrix.service.service.task.TaskService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,14 +22,15 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Primary
-public class LocalTaskComplete implements TaskComplete {
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
+@ConditionalOnMissingBean(TaskComplete.class)
+public class MqttTaskComplete implements TaskComplete {
 
     @Resource
-    private CompletableContext completableContext;
+    private MqttPublisher mqttPublisher;
 
     private final TaskService taskService;
-    public LocalTaskComplete(@Lazy TaskService taskService) {
+    public MqttTaskComplete(@Lazy TaskService taskService) {
         this.taskService = taskService;
     }
 
@@ -36,10 +40,14 @@ public class LocalTaskComplete implements TaskComplete {
      *
      * @author 陈晨
      */
-    public void completeTask(Long userId, String taskId, String result) {
+    public void completeTask(Long userId, String taskId, String result) throws MqttException {
         if (null == result) {
             result = "";
         }
+        // 发布结果通知
+        String topic = MqttTopics.TASK_RESULT.replaceAll("\\+", taskId);
+        mqttPublisher.publish(topic, result);
+        log.info("[任务完成] topic={}, result={}, 通知完成", topic, result);
         // 更新任务结果
         TaskInfo taskInfo = taskService.getTaskInfo(userId, taskId);
         if (null == taskInfo || TaskStatus.COMPLETED.equals(taskInfo.getStatus())) {
@@ -47,9 +55,6 @@ public class LocalTaskComplete implements TaskComplete {
         }
         taskService.updateStatusAndResult(taskInfo.getUserId(), taskInfo.getTaskId(), TaskStatus.COMPLETED, result);
         log.info("[任务完成] taskId={}, result={}", taskId, result);
-        // 通过 CompletableContext 完成等待
-        completableContext.complete(taskId, result);
-        log.info("[任务完成] taskId={}, 执行完成", taskId);
     }
 
 }

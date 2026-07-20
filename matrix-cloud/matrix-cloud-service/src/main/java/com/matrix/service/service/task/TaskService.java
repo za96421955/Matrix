@@ -57,7 +57,7 @@ public interface TaskService {
      * @param taskId 任务 ID
      * @param result 执行结果
      */
-    void callback(Long userId, String taskId, String result) throws MqttException;
+    void callback(Long userId, String taskId, String result) throws Exception;
 
     /**
      * @description 用户授权
@@ -65,7 +65,7 @@ public interface TaskService {
      *
      * @author 陈晨
      */
-    void auth(Long userId, String taskId, String reject) throws MqttException;
+    void auth(Long userId, String taskId, String reject) throws Exception;
 
 }
 

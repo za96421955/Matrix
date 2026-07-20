@@ -2,7 +2,7 @@ package com.matrix.service.service.tool;
 
 import com.matrix.common.constant.ClientStatus;
 import com.matrix.common.constant.Command;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.task.AuthService;
 import com.matrix.service.service.task.Executor;
@@ -23,7 +23,7 @@ public abstract class AbstractTool<R> implements Tool<R> {
     @Resource
     protected Executor executor;
     @Resource
-    protected ServiceContext serviceContext;
+    protected RegisterContext registerContext;
     @Resource
     protected AuthService authService;
     @Resource

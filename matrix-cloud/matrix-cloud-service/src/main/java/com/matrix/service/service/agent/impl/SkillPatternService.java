@@ -25,7 +25,7 @@ public class SkillPatternService extends AbstractPatternService<AgentRequest> {
             return Flux.just(Response.error(ErrorCode.SKILL_REQUEST_INVALID.getMessage()));
         }
         // 查询 skill
-        RegisterCommand.Skill skill = serviceContext.getSkill(request.getUserId(), request.getAgent());
+        RegisterCommand.Skill skill = registerContext.getSkill(request.getUserId(), request.getAgent());
         if (skill == null) {
             return Flux.just(Response.error(ErrorCode.SKILL_NOT_FOUND.getMessage()));
         }

@@ -6,15 +6,14 @@ import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.RiskLevel;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -25,10 +24,10 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class ServiceContext {
+public class RegisterContext {
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private ServiceCache serviceCache;
 
     /**
      * @description 注册 Agent、Skill
@@ -58,23 +57,9 @@ public class ServiceContext {
                     .model(Constant.Model.DEEPSEEK_V4_PRO)
                     .build()
                     .toString());
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, hashMap);
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, hashMap, redisKey.getTtl());
         }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
-
-        // 缓存 Agent
-//        redisKey = RedisKey.AGENTS;
-//        key = redisKey.generateKey(userId);
-//        if (null != registerCommand && null != registerCommand.getAgents()) {
-//            Map<String, String> hashMap = new HashMap<>();
-//            for (RegisterCommand.Agent agent : registerCommand.getAgents()) {
-//                hashMap.put(agent.getName(), agent.toString());
-//            }
-//            redisTemplate.delete(key);
-//            redisTemplate.opsForHash().putAll(key, hashMap);
-//        }
-//        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
 
         // 缓存 Skill
         redisKey = RedisKey.SKILLS;
@@ -89,10 +74,9 @@ public class ServiceContext {
                 }
                 hashMap.put(skillName, skill.toString());
             }
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, hashMap);
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, hashMap, redisKey.getTtl());
         }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
 
         // 缓存 Application
         redisKey = RedisKey.APPS;
@@ -104,10 +88,9 @@ public class ServiceContext {
                 // 记录风险等级
                 registerCommand.getRiskLevel().getApp().put(app.getName(), app.getRiskLevel());
             }
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, hashMap);
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, hashMap, redisKey.getTtl());
         }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
 
         // 缓存 Risk Level
         // bash
@@ -115,45 +98,28 @@ public class ServiceContext {
         key = redisKey.generateKey(userId);
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getBash()) {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, registerCommand.getRiskLevel().getBash());
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getBash(),
+                    redisKey.getTtl());
         }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
         // tool
         redisKey = RedisKey.RISK_LEVEL_TOOL;
         key = redisKey.generateKey(userId);
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getTool()) {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, registerCommand.getRiskLevel().getTool());
-        }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
-        // agent
-        redisKey = RedisKey.RISK_LEVEL_AGENT;
-        key = redisKey.generateKey(userId);
-        if (null != registerCommand && null != registerCommand.getRiskLevel()
-                && null != registerCommand.getRiskLevel().getAgent()) {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, registerCommand.getRiskLevel().getAgent());
-        }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
-        // skill
-        redisKey = RedisKey.RISK_LEVEL_SKILL;
-        key = redisKey.generateKey(userId);
-        if (null != registerCommand && null != registerCommand.getRiskLevel()
-                && null != registerCommand.getRiskLevel().getSkill()) {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, registerCommand.getRiskLevel().getSkill());
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getTool(),
+                    redisKey.getTtl());
         }
         // app
         redisKey = RedisKey.RISK_LEVEL_APP;
         key = redisKey.generateKey(userId);
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getApp()) {
-            redisTemplate.delete(key);
-            redisTemplate.opsForHash().putAll(key, registerCommand.getRiskLevel().getApp());
+            serviceCache.delete(key);
+            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getApp(),
+                    redisKey.getTtl());
         }
-        redisTemplate.expire(key, redisKey.getTtl(), TimeUnit.SECONDS);
     }
 
     /**
@@ -163,55 +129,11 @@ public class ServiceContext {
      * @author 陈晨
      */
     public RegisterCommand.Model getModel(Long userId, String model) {
-        String value = (String) redisTemplate.opsForHash().get(RedisKey.MODELS.generateKey(userId), model);
+        String value = serviceCache.getHash().get(RedisKey.MODELS.generateKey(userId), model);
         if (StringUtils.isBlank(value)) {
             return null;
         }
         return JSONObject.parseObject(value, RegisterCommand.Model.class);
-    }
-
-    /**
-     * @description 获取 Agent 调用栈
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public List<String> getAgentStack(String toolCallId) {
-        String key = RedisKey.AGENT_STACK.generateKey(toolCallId);
-        List<Object> stack = redisTemplate.opsForList().range(key, 0, -1);
-        if (CollectionUtils.isEmpty(stack)) {
-            return Collections.emptyList();
-        }
-        return stack.stream().map(Object::toString).collect(Collectors.toList());
-    }
-
-    /**
-     * @description Agent 调用压栈
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public void pushAgentStack(String toolCallId, String agentName) {
-        String key = RedisKey.AGENT_STACK.generateKey(toolCallId);
-        redisTemplate.opsForList().rightPush(key, agentName);
-        redisTemplate.expire(key, RedisKey.AGENT_STACK.getTtl(), TimeUnit.SECONDS);
-    }
-
-    /**
-     * @description Agent 调用出栈
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public void popAgentStack(String toolCallId) {
-        String key = RedisKey.AGENT_STACK.generateKey(toolCallId);
-        redisTemplate.opsForList().rightPop(key);
-        redisTemplate.expire(key, RedisKey.AGENT_STACK.getTtl(), TimeUnit.SECONDS);
-        // 空栈, 则删除 key
-        Long size = redisTemplate.opsForList().size(key);
-        if (null == size || size <= 0) {
-            redisTemplate.delete(key);
-        }
     }
 
     /**
@@ -226,7 +148,7 @@ public class ServiceContext {
         }
         try {
             // 获取 Hash 中的所有 value（JSON 字符串）
-            List<Object> values = redisTemplate.opsForHash().values(RedisKey.SKILLS.generateKey(userId));
+            Set<String> values = serviceCache.getHash().values(RedisKey.SKILLS.generateKey(userId));
             if (CollectionUtils.isEmpty(values)) {
                 return Collections.emptyList();
             }
@@ -234,7 +156,7 @@ public class ServiceContext {
             return values.stream()
                     .map(value -> {
                         try {
-                            return JSONObject.parseObject((String) value, RegisterCommand.Skill.class);
+                            return JSONObject.parseObject(value, RegisterCommand.Skill.class);
                         } catch (Exception e) {
                             return null;
                         }
@@ -256,7 +178,7 @@ public class ServiceContext {
         if (null == userId || StringUtils.isBlank(name)) {
             return null;
         }
-        String value = (String) redisTemplate.opsForHash().get(RedisKey.SKILLS.generateKey(userId), name);
+        String value = serviceCache.getHash().get(RedisKey.SKILLS.generateKey(userId), name);
         if (StringUtils.isBlank(value)) {
             return null;
         }
@@ -272,7 +194,7 @@ public class ServiceContext {
     public List<RegisterCommand.Application> getApps(Long userId) {
         try {
             // 获取 Hash 中的所有 value（JSON 字符串）
-            List<Object> values = redisTemplate.opsForHash().values(RedisKey.APPS.generateKey(userId));
+            Set<String> values = serviceCache.getHash().values(RedisKey.APPS.generateKey(userId));
             if (CollectionUtils.isEmpty(values)) {
                 return Collections.emptyList();
             }
@@ -280,7 +202,7 @@ public class ServiceContext {
             return values.stream()
                     .map(value -> {
                         try {
-                            return JSONObject.parseObject((String) value, RegisterCommand.Application.class);
+                            return JSONObject.parseObject(value, RegisterCommand.Application.class);
                         } catch (Exception e) {
                             return null;
                         }
@@ -299,7 +221,7 @@ public class ServiceContext {
      * @author 陈晨
      */
     public RegisterCommand.Application getApp(Long userId, String appName) {
-        String value = (String) redisTemplate.opsForHash().get(RedisKey.APPS.generateKey(userId), appName);
+        String value = serviceCache.getHash().get(RedisKey.APPS.generateKey(userId), appName);
         if (StringUtils.isBlank(value)) {
             return null;
         }
@@ -340,18 +262,20 @@ public class ServiceContext {
             return RiskLevel.HIGH;
         }
         String key = redisKey.generateKey(userId);
-        Integer riskLevel = null;
+        String riskLevel = null;
         try {
-            riskLevel = (Integer) redisTemplate.opsForHash().get(key, cmdKey);
+            riskLevel = serviceCache.getHash().get(key, cmdKey);
             // 指令未配置, 获取 default 风险等级
             if (null == riskLevel) {
-                riskLevel = (Integer) redisTemplate.opsForHash().get(key, RiskLevel.DEFAULT);
+                riskLevel = serviceCache.getHash().get(key, RiskLevel.DEFAULT);
             }
         } catch (Exception ignore) {
 //            log.error("get risk level error: {}", e.getMessage(), e);
         }
         // default 仍然未配置, 则默认高风险
-        return riskLevel == null ? RiskLevel.HIGH : riskLevel;
+        return riskLevel == null ? RiskLevel.HIGH : Integer.parseInt(riskLevel);
     }
 
 }
+
+

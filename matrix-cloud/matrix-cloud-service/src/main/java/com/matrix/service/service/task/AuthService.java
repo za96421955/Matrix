@@ -2,7 +2,7 @@ package com.matrix.service.service.task;
 
 import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.RiskLevel;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.dal.entity.SessionInfo;
 import com.matrix.service.service.chat.SessionService;
 import jakarta.annotation.Resource;
@@ -22,7 +22,7 @@ public class AuthService {
     @Resource
     private Executor executor;
     @Resource
-    private ServiceContext serviceContext;
+    private RegisterContext registerContext;
     @Resource
     private SessionService sessionService;
 
@@ -33,7 +33,7 @@ public class AuthService {
      * @author 陈晨
      */
     public String commandAuth(Long userId, Long sessionId, String type, String command, String content) {
-        int riskLevel = serviceContext.getCommandLevel(userId, type, command);
+        int riskLevel = registerContext.getCommandLevel(userId, type, command);
         // 获取会话授权等级
         SessionInfo sessionInfo = sessionService.getById(userId, sessionId);
         int authLevel = null != sessionInfo && null != sessionInfo.getAuthLevel() ?

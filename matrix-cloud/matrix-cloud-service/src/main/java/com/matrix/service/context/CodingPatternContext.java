@@ -2,13 +2,11 @@ package com.matrix.service.context;
 
 import com.matrix.common.enums.CodingPattern;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @description 编程上下文
@@ -21,12 +19,12 @@ import java.util.concurrent.TimeUnit;
 public class CodingPatternContext {
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private ServiceCache serviceCache;
 
     public void clear(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.CODING_PATTERN_NO;
         String key = redisKey.generateKey(userId, sessionId);
-        redisTemplate.delete(key);
+        serviceCache.delete(key);
     }
 
     /**
@@ -38,7 +36,7 @@ public class CodingPatternContext {
     public void setPatternNo(long userId, long sessionId, int no) {
         RedisKey redisKey = RedisKey.CODING_PATTERN_NO;
         String key = redisKey.generateKey(userId, sessionId);
-        redisTemplate.opsForValue().set(key, no + "", redisKey.getTtl(), TimeUnit.SECONDS);
+        serviceCache.set(key, no + "", redisKey.getTtl());
     }
 
     /**
@@ -50,7 +48,7 @@ public class CodingPatternContext {
     public int getPatternNo(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.CODING_PATTERN_NO;
         String key = redisKey.generateKey(userId, sessionId);
-        String no = (String) redisTemplate.opsForValue().get(key);
+        String no = serviceCache.get(key);
         return StringUtils.isBlank(no) ? CodingPattern.NONE.getNo() : Integer.parseInt(no);
     }
 

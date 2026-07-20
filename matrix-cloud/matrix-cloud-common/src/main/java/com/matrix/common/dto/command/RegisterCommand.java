@@ -27,9 +27,7 @@ public class RegisterCommand implements Serializable {
     private static final long serialVersionUID = -7084098956082075954L;
 
     private String osInfo;
-//    private List<Model> models;
     private String apiKey;
-//    private List<Agent> agents;
     private List<Skill> skills;
     private List<Application> apps;
     private RiskLevel riskLevel;
@@ -67,7 +65,6 @@ public class RegisterCommand implements Serializable {
 
         private Map<String, Integer> bash;
         private Map<String, Integer> tool;
-        private Map<String, Integer> agent;
         private Map<String, Integer> skill;
         private Map<String, Integer> app;
 
@@ -76,63 +73,6 @@ public class RegisterCommand implements Serializable {
             return JSON.toJSONString(this);
         }
     }
-
-//    @Data
-//    @Builder
-//    @NoArgsConstructor
-//    @AllArgsConstructor
-//    public static class Agent implements Serializable {
-//        @Serial
-//        private static final long serialVersionUID = 3923379276694156127L;
-//
-//        private String clientId;
-//        private String rootPath;
-//
-//        private String name;
-//        private String description;
-//        private String auth;
-//        private String version;
-//        private Boolean enabled;
-//        private Map<String, String> tools;
-//        private Map<String, String> agents;
-//        private Map<String, String> skills;
-//        private Map<String, String> apps;
-//        private String prompt;
-//
-//        private String extend;
-//
-//        public boolean disabled() {
-//            return null != enabled && !enabled;
-//        }
-//
-//        public String getPrompt() {
-//            if (StringUtils.isBlank(prompt)) {
-//                return "";
-//            }
-//            return """
-//            rootPath: %s
-//            ---
-//            %s
-//            """.formatted(rootPath, prompt);
-//        }
-//
-//        public String toPrompt(String description) {
-//            if (StringUtils.isBlank(description)) {
-//                description = this.description;
-//            }
-//            return """
-//            ### agentName: %s
-//            -- pwd: %s
-//            -- %s
-//            ---
-//            """.formatted(name, rootPath, description);
-//        }
-//
-//        @Override
-//        public String toString() {
-//            return JSON.toJSONString(this);
-//        }
-//    }
 
     @Data
     @Builder

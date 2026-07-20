@@ -32,7 +32,6 @@ public class ClientController {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/7/17 14:36
      */
     @GetMapping("/list")
     public ResponseEntity<CommonResponse<List<String>>> getList(@AuthenticationPrincipal UserResponse userInfo) {

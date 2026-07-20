@@ -77,7 +77,6 @@ public class PCCommandExecutor implements CommandExecutor {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/6/15 16:35
      */
     private String execute(ProcessBuilder processBuilder, String taskId, String command)
             throws IOException, InterruptedException {

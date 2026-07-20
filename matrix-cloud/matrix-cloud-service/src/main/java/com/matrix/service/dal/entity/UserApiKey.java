@@ -8,13 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
  * 用户访问密钥表
- *
- * @since 2026-02-12
  */
 @Data
 @Builder

@@ -29,7 +29,6 @@ public class RiskLevel implements Serializable {
 
     private Map<String, Integer> bash;
     private Map<String, Integer> tool;
-    private Map<String, Integer> agent;
     private Map<String, Integer> skill;
     private Map<String, Integer> app;
 
@@ -37,13 +36,11 @@ public class RiskLevel implements Serializable {
         Map<String, Object> yamlMap = new Yaml().load(yamlString);
         List<?> bashList = (List<?>) yamlMap.get("bash");
         List<?> toolList = (List<?>) yamlMap.get("tool");
-        List<?> agentList = (List<?>) yamlMap.get("agent");
         List<?> skillList = (List<?>) yamlMap.get("skill");
         List<?> appList = (List<?>) yamlMap.get("app");
         return RiskLevel.builder()
                 .bash(parseMap(bashList))
                 .tool(parseMap(toolList))
-                .agent(parseMap(agentList))
                 .skill(parseMap(skillList))
                 .app(parseMap(appList))
                 .build();

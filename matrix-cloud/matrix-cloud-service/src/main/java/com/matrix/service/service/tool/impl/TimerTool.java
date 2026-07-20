@@ -3,6 +3,7 @@ package com.matrix.service.service.tool.impl;
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.tool.AbstractTool;
 import jakarta.annotation.Resource;
 import jdk.jfr.Description;
@@ -12,7 +13,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -35,7 +35,7 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private ServiceCache serviceCache;
 
     @Override
     public String name() {
@@ -115,7 +115,7 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
 
         // 检查任务是否已存在
         String taskKey = RedisKey.TIMER_USER_TASKS.generateKey(userId);
-        Object existing = redisTemplate.opsForHash().get(taskKey, request.getTitle());
+        Object existing = serviceCache.getHash().get(taskKey, request.getTitle());
         if (existing != null) {
             return Flux.just("创建失败: 任务标题 '" + request.getTitle() + "' 已存在");
         }
@@ -137,9 +137,11 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
                 .build();
 
         // 写入 Redis Hash
-        redisTemplate.opsForHash().put(taskKey, request.getTitle(), JSONObject.toJSONString(taskInfo));
+        serviceCache.getHash().put(taskKey, request.getTitle(), JSONObject.toJSONString(taskInfo),
+                RedisKey.TIMER_USER_TASKS.getTtl());
         // 将 userId 加入用户列表 Set
-        redisTemplate.opsForSet().add(RedisKey.TIMER_USER_LIST.generateKey(), String.valueOf(userId));
+        serviceCache.getSet().add(RedisKey.TIMER_USER_LIST.generateKey(), String.valueOf(userId),
+                RedisKey.TIMER_USER_LIST.getTtl());
 
         return Flux.just("定时任务创建成功\n- 标题: " + request.getTitle()
                 + "\n- 启动时间: " + (StringUtils.isNotBlank(request.getStartTime()) ? request.getStartTime() : "立即")
@@ -155,16 +157,16 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
      */
     private Flux<String> listTasks(Long userId) {
         String taskKey = RedisKey.TIMER_USER_TASKS.generateKey(userId);
-        Map<Object, Object> entries = redisTemplate.opsForHash().entries(taskKey);
+        Map<String, String> entries = serviceCache.getHash().getAll(taskKey);
         if (entries.isEmpty()) {
             return Flux.just("暂无定时任务");
         }
 
         StringBuilder sb = new StringBuilder("定时任务列表:\n");
         int idx = 1;
-        for (Map.Entry<Object, Object> entry : entries.entrySet()) {
-            String title = (String) entry.getKey();
-            TimerTaskInfo info = JSONObject.parseObject((String) entry.getValue(), TimerTaskInfo.class);
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            String title = entry.getKey();
+            TimerTaskInfo info = JSONObject.parseObject(entry.getValue(), TimerTaskInfo.class);
             if (info == null) {
                 continue;
             }
@@ -189,17 +191,14 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
             return Flux.just("删除失败: title 不能为空");
         }
         String taskKey = RedisKey.TIMER_USER_TASKS.generateKey(userId);
-        Long deleted = redisTemplate.opsForHash().delete(taskKey, request.getTitle());
-        if (deleted == null || deleted == 0) {
-            return Flux.just("删除失败: 任务 '" + request.getTitle() + "' 不存在");
-        }
+        serviceCache.getHash().remove(taskKey, request.getTitle());
         // 清理分布式锁
         String lockKey = RedisKey.LOCK_KEY_PREFIX.generateKey(userId, request.getTitle());
-        redisTemplate.delete(lockKey);
+        serviceCache.delete(lockKey);
         // 如果该用户没有其他任务，从 Set 中移除 userId
-        Long size = redisTemplate.opsForHash().size(taskKey);
+        Long size = serviceCache.getHash().size(taskKey);
         if (size == null || size == 0) {
-            redisTemplate.opsForSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), String.valueOf(userId));
+            serviceCache.getSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), String.valueOf(userId));
         }
         return Flux.just("定时任务 '" + request.getTitle() + "' 已删除");
     }

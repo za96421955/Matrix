@@ -1,8 +1,8 @@
-package com.matrix.service.config;
+package com.matrix.service.security;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.enums.RedisKey;
-import org.springframework.data.redis.core.RedisTemplate;
+import com.matrix.service.cache.ServiceCache;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
@@ -14,12 +14,12 @@ import reactor.core.publisher.Mono;
  * - 缓存键：auth:token:<Authorization 值>
  * - TTL：5 分钟
  */
-public class TokenCachingSecurityContextRepository implements ServerSecurityContextRepository {
+public class AuthorizationContext implements ServerSecurityContextRepository {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final ServiceCache serviceCache;
 
-    public TokenCachingSecurityContextRepository(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public AuthorizationContext(ServiceCache serviceCache) {
+        this.serviceCache = serviceCache;
     }
 
     @Override
@@ -28,7 +28,7 @@ public class TokenCachingSecurityContextRepository implements ServerSecurityCont
         if (token != null && context.getAuthentication() != null) {
             String key = RedisKey.AUTHORIZATION.generateKey(token);
             String value = JSON.toJSONString(context);
-            redisTemplate.opsForValue().set(key, value, RedisKey.AUTHORIZATION.getTtl());
+            serviceCache.set(key, value, RedisKey.AUTHORIZATION.getTtl());
         }
         return Mono.empty();
     }
@@ -42,7 +42,7 @@ public class TokenCachingSecurityContextRepository implements ServerSecurityCont
         String key = RedisKey.AUTHORIZATION.generateKey(token);
         SecurityContext context = null;
         try {
-            String value = (String) redisTemplate.opsForValue().get(key);
+            String value = serviceCache.get(key);
             context = JSON.parseObject(value, SecurityContext.class);
         } catch (Exception ignore) {}
         return context == null ? Mono.empty() : Mono.just(context);

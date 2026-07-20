@@ -6,7 +6,7 @@ import com.matrix.common.constant.ClientStatus;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.util.ClientDetectUtil;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.mapper.ClientInfoMapper;
 import com.matrix.service.service.task.Executor;
@@ -33,7 +33,7 @@ public class ClientServiceImpl implements ClientService {
     private ClientInfoMapper clientInfoMapper;
 
     @Resource
-    private ServiceContext serviceContext;
+    private RegisterContext registerContext;
     @Resource
     private Executor executor;
 
@@ -106,7 +106,7 @@ public class ClientServiceImpl implements ClientService {
                 ClientDetectUtil.getClientType(registerCommand.getOsInfo()),
                 registerCommand.getOsInfo());
         // 注册/刷新 用户缓存
-        serviceContext.register(userId, registerCommand);
+        registerContext.register(userId, registerCommand);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class ClientServiceImpl implements ClientService {
         int rows = clientInfoMapper.update(update, wrapper);
 //        log.info("heartbeat updated, deviceId={}, rows={}", clientId, rows);
         // 注册/刷新 用户缓存
-        serviceContext.register(userId, registerCommand);
+        registerContext.register(userId, registerCommand);
     }
 
     @Override

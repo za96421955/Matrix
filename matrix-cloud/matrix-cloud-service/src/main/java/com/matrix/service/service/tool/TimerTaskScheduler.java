@@ -6,11 +6,11 @@ import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.agent.impl.TaskPatternService;
 import com.matrix.service.service.tool.impl.TimerTool;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -18,7 +18,6 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 定时任务调度器
@@ -31,8 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class TimerTaskScheduler {
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
-
+    private ServiceCache serviceCache;
     @Resource
     private TaskPatternService taskPatternService;
 
@@ -44,17 +42,16 @@ public class TimerTaskScheduler {
      */
     @Scheduled(fixedDelay = 5000)
     public void processTimerTasks() {
-//        log.info("[定时任务调度] 轮询【开始】");
+        log.debug("[定时任务调度] 轮询【开始】");
         try {
             // 1. 获取所有有定时任务的 userId
-            Set<Object> userIdSet = redisTemplate.opsForSet().members(RedisKey.TIMER_USER_LIST.generateKey());
+            Set<String> userIdSet = serviceCache.getSet().getAll(RedisKey.TIMER_USER_LIST.generateKey());
             if (userIdSet == null || userIdSet.isEmpty()) {
                 return;
             }
             log.info("[定时任务调度] userIds={}", userIdSet);
 
-            for (Object userIdObj : userIdSet) {
-                String userIdStr = (String) userIdObj;
+            for (String userIdStr : userIdSet) {
                 Long userId;
                 try {
                     userId = Long.parseLong(userIdStr);
@@ -66,16 +63,16 @@ public class TimerTaskScheduler {
                 String taskKey = RedisKey.TIMER_USER_TASKS.generateKey(userId);
 
                 // 2. 获取该用户的所有定时任务
-                Map<Object, Object> entries = redisTemplate.opsForHash().entries(taskKey);
+                Map<String, String> entries = serviceCache.getHash().getAll(taskKey);
                 if (entries == null || entries.isEmpty()) {
                     // 该用户没有任务了，从 Set 中移除
-                    redisTemplate.opsForSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), userIdStr);
+                    serviceCache.getSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), userIdStr);
                     continue;
                 }
 
-                for (Map.Entry<Object, Object> entry : entries.entrySet()) {
-                    String title = (String) entry.getKey();
-                    String taskJson = (String) entry.getValue();
+                for (Map.Entry<String, String> entry : entries.entrySet()) {
+                    String title = entry.getKey();
+                    String taskJson = entry.getValue();
                     TimerTool.TimerTaskInfo taskInfo;
                     try {
                         taskInfo = JSONObject.parseObject(taskJson, TimerTool.TimerTaskInfo.class);
@@ -100,9 +97,8 @@ public class TimerTaskScheduler {
 
                     // 4. 尝试获取分布式锁（立即上锁，10分钟过期）
                     String lockKey = RedisKey.LOCK_KEY_PREFIX.generateKey(userId, title);
-                    Boolean lockAcquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "1",
-                            RedisKey.LOCK_KEY_PREFIX.getTtl(), TimeUnit.SECONDS);
-                    if (Boolean.FALSE.equals(lockAcquired)) {
+                    boolean lockAcquired = serviceCache.lock(lockKey, "1", RedisKey.LOCK_KEY_PREFIX.getTtl());
+                    if (!lockAcquired) {
                         // 锁已被其他实例持有，跳过
                         continue;
                     }
@@ -133,11 +129,12 @@ public class TimerTaskScheduler {
                         if (taskInfo.getExecuteCount() > 0
                                 && taskInfo.getExecutedCount() >= taskInfo.getExecuteCount()) {
                             taskInfo.setStatus("COMPLETED");
-                            redisTemplate.opsForHash().delete(taskKey, title);
+                            serviceCache.getHash().remove(taskKey, title);
                             log.info("[定时任务] 已完成, userId={}, title={}, totalExecuted={}",
                                     userId, title, taskInfo.getExecutedCount());
                         } else {
-                            redisTemplate.opsForHash().put(taskKey, title, JSONObject.toJSONString(taskInfo));
+                            serviceCache.getHash().put(taskKey, title, JSONObject.toJSONString(taskInfo),
+                                    RedisKey.TIMER_USER_TASKS.getTtl());
                             log.info("[定时任务] 执行完成, userId={}, title={}, executedCount={}",
                                     userId, title, taskInfo.getExecutedCount());
                         }
@@ -150,26 +147,27 @@ public class TimerTaskScheduler {
                         if (taskInfo.getExecuteCount() > 0
                                 && taskInfo.getExecutedCount() >= taskInfo.getExecuteCount()) {
                             taskInfo.setStatus("COMPLETED");
-                            redisTemplate.opsForHash().delete(taskKey, title);
+                            serviceCache.getHash().remove(taskKey, title);
                         } else {
-                            redisTemplate.opsForHash().put(taskKey, title, JSONObject.toJSONString(taskInfo));
+                            serviceCache.getHash().put(taskKey, title, JSONObject.toJSONString(taskInfo),
+                                    RedisKey.TIMER_USER_TASKS.getTtl());
                         }
                     } finally {
                         // 8. 解锁
-                        redisTemplate.delete(lockKey);
+                        serviceCache.delete(lockKey);
                     }
                 }
 
                 // 9. 检查该用户是否还有任务，如果没任务了从 Set 移除
-                Long size = redisTemplate.opsForHash().size(taskKey);
+                Long size = serviceCache.getHash().size(taskKey);
                 if (size == null || size == 0) {
-                    redisTemplate.opsForSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), userIdStr);
+                    serviceCache.getSet().remove(RedisKey.TIMER_USER_LIST.generateKey(), userIdStr);
                 }
             }
         } catch (Exception e) {
             log.error("[定时任务调度] 全局异常: {}", e.getMessage(), e);
         } finally {
-//            log.info("[定时任务调度] 轮询【结束】");
+            log.debug("[定时任务调度] 轮询【结束】");
         }
     }
 

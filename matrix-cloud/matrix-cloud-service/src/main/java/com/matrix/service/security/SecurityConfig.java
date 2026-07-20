@@ -1,15 +1,15 @@
-package com.matrix.service.config;
+package com.matrix.service.security;
 
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.exception.BusinessException;
+import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.user.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -39,7 +39,7 @@ public class SecurityConfig {
     @Resource
     private UserService userService;
     @Resource
-    protected RedisTemplate<String, Object> redisTemplate;
+    private ServiceCache serviceCache;
 
     private static final String[] OPEN_PATHS = new String[] {
             "/install.sh",
@@ -82,7 +82,7 @@ public class SecurityConfig {
 
     @Bean
     public ServerSecurityContextRepository tokenCachingSecurityContextRepository() {
-        return new TokenCachingSecurityContextRepository(redisTemplate);
+        return new AuthorizationContext(serviceCache);
     }
 
     /**

@@ -189,7 +189,6 @@ public class RegisterService {
 //     * <p> <功能详细描述> </p>
 //     *
 //     * @author 陈晨
-//     * @date 2026/5/13 17:23
 //     */
 //    public Skill getSkill(String skillName) {
 //        for (Skill skill : this.getRegisterCommand().getSkills()) {

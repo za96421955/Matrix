@@ -25,7 +25,6 @@ import java.util.List;
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
- * @date 2026/7/15 15:56
  */
 @Slf4j
 @Service
@@ -63,7 +62,6 @@ public class InformationPatternService extends AbstractPatternService<PatternReq
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/7/8 09:13
      */
     public void executor(FluxSink<Response> sink, PatternRequest request) {
         if (null == sink || null == request) {

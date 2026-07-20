@@ -12,7 +12,7 @@ import com.matrix.common.dto.model.Role;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.context.ChatContext;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.context.ToolContext;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.entity.MessageInfo;
@@ -43,13 +43,12 @@ import java.util.function.Consumer;
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
- * @date 2026/5/12 21:07
  */
 @Slf4j
 public abstract class AbstractPatternService<T extends PatternRequest> implements PatternService<T, Response> {
 
     @Resource
-    protected ServiceContext serviceContext;
+    protected RegisterContext registerContext;
     @Resource
     protected ChatContext chatContext;
     @Resource
@@ -71,7 +70,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/7/9 14:57
      */
     protected Flux<Response> call(PatternRequest request,
                                   boolean isInclude,
@@ -95,7 +93,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/5/14 10:31
      */
     protected Flux<Response> call(PatternRequest request, boolean isInclude) {
         return this.call(request, isInclude, null);
@@ -106,7 +103,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/7/9 14:57
      */
     protected Response call(FluxSink<Response> sink,
                             PatternRequest request,
@@ -118,7 +114,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 获取模型
         String modelName = StringUtils.isNotBlank(request.getModel()) ?
                 request.getModel() : Constant.Model.DEEPSEEK_V4_FLASH;
-        RegisterCommand.Model model = serviceContext.getModel(request.getUserId(), modelName);
+        RegisterCommand.Model model = registerContext.getModel(request.getUserId(), modelName);
 
         // ReAct 执行
         AtomicBoolean isContinue = new AtomicBoolean(false);
@@ -201,7 +197,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/5/6 11:25
      */
     protected List<Message> toolCall(FluxSink<Response> sink,
                                      PatternRequest request,
@@ -275,7 +270,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/4/29 16:11
      */
     protected List<Message> buildMessages(PatternRequest request,
                                           List<ClientInfo> clientList,
@@ -298,7 +292,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             // Skill
             StringBuilder sb = new StringBuilder();
             sb.append("## 可用 Skill 列表\n```");
-            for (RegisterCommand.Skill skill : serviceContext.getSkills(request.getUserId())) {
+            for (RegisterCommand.Skill skill : registerContext.getSkills(request.getUserId())) {
                 if (null == skill) {
                     continue;
                 }
@@ -343,7 +337,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/4/29 11:11
      */
     protected List<Request.Tool> buildTools() {
         return this.buildTools(null);
@@ -354,13 +347,12 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/4/29 11:11
      */
     protected List<Request.Tool> buildTools(Long userId) {
         Map<String, Request.Tool> tools = new HashMap<>();
         // 用户应用
         if (null != userId) {
-            for (RegisterCommand.Application app :serviceContext.getApps(userId)) {
+            for (RegisterCommand.Application app : registerContext.getApps(userId)) {
                 if (null == app) {
                     continue;
                 }
@@ -408,7 +400,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/7/9 14:32
      */
     protected void saveMessage(Long userId, Long sessionId, String role, Response response, boolean isInclude) {
         if (!isInclude) {

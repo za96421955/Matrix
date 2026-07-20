@@ -85,7 +85,7 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
      */
     private Flux<String> listSkills(Long userId) {
         try {
-            List<RegisterCommand.Skill> skills = serviceContext.getSkills(userId);
+            List<RegisterCommand.Skill> skills = registerContext.getSkills(userId);
             if (skills.isEmpty()) {
                 return Flux.just("当前没有已注册的 skill");
             }

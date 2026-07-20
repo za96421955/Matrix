@@ -66,7 +66,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
                 }
 
                 // 生成记忆
-                RegisterCommand.Model model = serviceContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
+                RegisterCommand.Model model = registerContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
                 String input = Prompt.MEMORY_MANAGER.formatted(currMemory, request.getRequire());
                 String newMemory = modelService.call(model, input);
                 // 更新记忆
@@ -91,7 +91,6 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/5/13 16:46
      */
     private Mono<String> readMemory(String clientId)
             throws MqttException {
@@ -103,7 +102,6 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
-     * @date 2026/5/13 16:46
      */
     private Mono<String> writeMemory(String clientId, String memory)
             throws MqttException {

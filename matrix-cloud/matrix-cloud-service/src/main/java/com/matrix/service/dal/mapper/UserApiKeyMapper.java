@@ -9,8 +9,6 @@ import java.util.List;
 
 /**
  * 用户访问密钥 Mapper 接口
- *
- * @since 2026-02-12
  */
 @Mapper
 public interface UserApiKeyMapper extends BaseMapper<UserApiKey> {

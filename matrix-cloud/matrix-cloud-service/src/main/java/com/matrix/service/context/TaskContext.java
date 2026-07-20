@@ -4,16 +4,15 @@ import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.constant.TaskType;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.dal.entity.TaskInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @description 任务上下文，统一封装 Redis 层对 TaskInfo 的所有操作
@@ -25,13 +24,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class TaskContext {
 
-    /** Hash 中存储 TaskInfo JSON 的字段名 */
-    private static final String FIELD_TASK_INFO = "taskInfo";
-
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
-
-    // ==================== 终态判断 ====================
+    private ServiceCache serviceCache;
 
     /**
      * 判断是否为任务终态（完成后需删除 Redis key）
@@ -58,14 +52,13 @@ public class TaskContext {
 
         // 1. 写入 Hash
         String hashKey = RedisKey.TASK_INFO.generateKey(taskInfo.getTaskId());
-        redisTemplate.opsForHash().put(hashKey, FIELD_TASK_INFO, JSONObject.toJSONString(taskInfo));
-        redisTemplate.expire(hashKey, RedisKey.TASK_INFO.getTtl(), TimeUnit.SECONDS);
+        serviceCache.set(hashKey, JSONObject.toJSONString(taskInfo), RedisKey.TASK_INFO.getTtl());
         log.debug("[TaskContext] insert Hash, key={}, taskId={}", hashKey, taskInfo.getTaskId());
 
         // 2. 若为 USER_AUTH 类型，将 taskId 加入待授权 Set
         if (TaskType.USER_AUTH.equals(taskInfo.getType())) {
             String setKey = RedisKey.TASK_WAITING_AUTH_LIST.generateKey(taskInfo.getUserId());
-            redisTemplate.opsForSet().add(setKey, taskInfo.getTaskId());
+            serviceCache.getSet().add(setKey, taskInfo.getTaskId(), RedisKey.TASK_WAITING_AUTH_LIST.getTtl());
             log.debug("[TaskContext] insert Set, key={}, taskId={}", setKey, taskInfo.getTaskId());
         }
     }
@@ -83,12 +76,12 @@ public class TaskContext {
             return null;
         }
         String hashKey = RedisKey.TASK_INFO.generateKey(taskId);
-        Object value = redisTemplate.opsForHash().get(hashKey, FIELD_TASK_INFO);
+        String value = serviceCache.get(hashKey);
         if (null == value) {
             return null;
         }
         try {
-            return JSONObject.parseObject((String) value, TaskInfo.class);
+            return JSONObject.parseObject(value, TaskInfo.class);
         } catch (Exception e) {
             log.error("[TaskContext] getTaskInfo 反序列化失败, taskId={}", taskId, e);
             return null;
@@ -106,14 +99,12 @@ public class TaskContext {
             return Collections.emptyList();
         }
         String setKey = RedisKey.TASK_WAITING_AUTH_LIST.generateKey(userId);
-        Set<Object> taskIds = redisTemplate.opsForSet().members(setKey);
+        Set<String> taskIds = serviceCache.getSet().getAll(setKey);
         if (CollectionUtils.isEmpty(taskIds)) {
             return Collections.emptyList();
         }
-
         List<TaskInfo> result = new ArrayList<>();
-        for (Object taskIdObj : taskIds) {
-            String taskId = (String) taskIdObj;
+        for (String taskId : taskIds) {
             TaskInfo taskInfo = this.getTaskInfo(taskId);
             // 只返回状态为 RUNNING 的任务
             if (null != taskInfo && TaskStatus.RUNNING.equals(taskInfo.getStatus())) {
@@ -158,8 +149,7 @@ public class TaskContext {
 
         // 3. 写回 Hash
         String hashKey = RedisKey.TASK_INFO.generateKey(taskId);
-        redisTemplate.opsForHash().put(hashKey, FIELD_TASK_INFO, JSONObject.toJSONString(taskInfo));
-        redisTemplate.expire(hashKey, RedisKey.TASK_INFO.getTtl(), TimeUnit.SECONDS);
+        serviceCache.set(hashKey, JSONObject.toJSONString(taskInfo), RedisKey.TASK_INFO.getTtl());
         log.debug("[TaskContext] updateStatusAndResult, taskId={}, status={}", taskId, status);
 
         // 4. 若进入终态，清理 Redis key
@@ -192,13 +182,13 @@ public class TaskContext {
 
         // 1. 删除 Hash key
         String hashKey = RedisKey.TASK_INFO.generateKey(taskId);
-        redisTemplate.delete(hashKey);
+        serviceCache.delete(hashKey);
         log.debug("[TaskContext] 删除 Hash key={}", hashKey);
 
         // 2. 从待授权 Set 中移除 taskId（若存在）
         if (null != userId) {
             String setKey = RedisKey.TASK_WAITING_AUTH_LIST.generateKey(userId);
-            redisTemplate.opsForSet().remove(setKey, taskId);
+            serviceCache.getSet().remove(setKey, taskId);
             log.debug("[TaskContext] 从 Set 移除, key={}, taskId={}", setKey, taskId);
         }
     }

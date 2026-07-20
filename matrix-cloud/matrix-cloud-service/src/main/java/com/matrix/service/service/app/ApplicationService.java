@@ -8,7 +8,7 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.exception.BusinessException;
 import com.matrix.common.util.FileUtil;
 import com.matrix.service.context.AppContext;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.service.task.AuthService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 public class ApplicationService {
 
     @Resource
-    private ServiceContext serviceContext;
+    private RegisterContext registerContext;
     @Resource
     private AppContext appContext;
     @Resource
@@ -48,7 +48,7 @@ public class ApplicationService {
             return result;
         }
         // 获取用户应用
-        RegisterCommand.Application app = serviceContext.getApp(userId, appName);
+        RegisterCommand.Application app = registerContext.getApp(userId, appName);
         if (null == app) {
             throw new BusinessException(ErrorCode.APP_NOT_FOUND, "application " + appName + " is not exist");
         }

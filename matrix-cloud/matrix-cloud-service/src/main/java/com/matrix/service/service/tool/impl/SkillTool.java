@@ -51,7 +51,7 @@ public class SkillTool extends AbstractTool<SkillTool.Request> {
         log.info("[技能执行开始] userId={}, sessionId={}, request={}",
                 userId, sessionId, request);
         // 调用 Skill
-        RegisterCommand.Skill skill = serviceContext.getSkill(userId, request.getSkillName());
+        RegisterCommand.Skill skill = registerContext.getSkill(userId, request.getSkillName());
         if (null == skill) {
             return Flux.just("skill " + request.getSkillName() + " not exist");
         }

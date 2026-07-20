@@ -5,7 +5,7 @@ import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.AgentRequest;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.response.CommonResponse;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import com.matrix.service.service.agent.impl.SkillPatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class AgentController {
     @Resource
     private SkillPatternService skillPatternService;
     @Resource
-    private ServiceContext serviceContext;
+    private RegisterContext registerContext;
 
     @PostMapping(value = "/call", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Response> call(@AuthenticationPrincipal UserResponse userInfo,
@@ -37,7 +37,7 @@ public class AgentController {
 
     @GetMapping("/list")
     public ResponseEntity<CommonResponse<List<String>>> getList(@AuthenticationPrincipal UserResponse userInfo) {
-        List<String> response = serviceContext.getSkills(userInfo.getUserId()).stream()
+        List<String> response = registerContext.getSkills(userInfo.getUserId()).stream()
                 .filter(skill -> Boolean.TRUE.equals(skill.getEnabled()))
                 .map(RegisterCommand.Skill::getName)
                 .toList();

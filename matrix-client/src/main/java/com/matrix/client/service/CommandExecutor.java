@@ -7,7 +7,6 @@ import java.io.IOException;
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
- * @version 1.0
  */
 public interface CommandExecutor {
 

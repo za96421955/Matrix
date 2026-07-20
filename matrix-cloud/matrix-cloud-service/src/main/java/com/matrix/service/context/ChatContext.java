@@ -1,11 +1,10 @@
 package com.matrix.service.context;
 
-import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
@@ -19,13 +18,14 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class ChatContext {
-    private static final Cache<String, Boolean> CONVERSATION_CACHE = Caffeine.newBuilder()
+    private static final com.github.benmanes.caffeine.cache.Cache<String, Boolean> CONVERSATION_CACHE =
+            Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.SECONDS)
             .maximumSize(30000)  // 缓存 3 秒
             .build();
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private ServiceCache serviceCache;
 
     /**
      * @description 用户对话中
@@ -41,7 +41,7 @@ public class ChatContext {
         RedisKey redisKey = RedisKey.CONVERSATION;
         String key = redisKey.generateKey(userId, sessionId);
         String value = System.currentTimeMillis() + "";
-        redisTemplate.opsForValue().set(key, value, redisKey.getTtl(), TimeUnit.SECONDS);
+        serviceCache.set(key, value, redisKey.getTtl());
         String cacheKey = userId + "@@@" + sessionId;
         CONVERSATION_CACHE.put(cacheKey, true);
     }
@@ -56,7 +56,7 @@ public class ChatContext {
         log.warn("\n\n======================\n\n\tS T O P: stopConversation\n\n======================\n\n");
         RedisKey redisKey = RedisKey.CONVERSATION;
         String key = redisKey.generateKey(userId, sessionId);
-        redisTemplate.delete(key);
+        serviceCache.delete(key);
         String cacheKey = userId + "@@@" + sessionId;
         CONVERSATION_CACHE.put(cacheKey, false);
     }
@@ -73,7 +73,7 @@ public class ChatContext {
         }
         RedisKey redisKey = RedisKey.CONVERSATION;
         String key = redisKey.generateKey(userId, sessionId);
-        Object value = redisTemplate.opsForValue().get(key);
+        Object value = serviceCache.get(key);
         return null != value;
     }
 
@@ -101,7 +101,7 @@ public class ChatContext {
             // 2. 缓存未命中，查询 Redis
             RedisKey redisKey = RedisKey.CONVERSATION;
             String key = redisKey.generateKey(userId, sessionId);
-            Object value = redisTemplate.opsForValue().get(key);
+            Object value = serviceCache.get(key);
             boolean result = null != value;
             CONVERSATION_CACHE.put(cacheKey, result);
             return result;

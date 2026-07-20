@@ -8,7 +8,7 @@ import com.matrix.common.constant.RiskLevel;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.local.service.LocalCacheService;
-import com.matrix.service.context.ServiceContext;
+import com.matrix.service.context.RegisterContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,12 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -33,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Primary
 @Component
-public class LocalServiceContext extends ServiceContext {
+public class LocalRegisterContext extends RegisterContext {
 
     @Resource
     private LocalCacheService localCacheService;
@@ -126,16 +121,6 @@ public class LocalServiceContext extends ServiceContext {
                     localCacheService.putHash(keyRiskTool, field, String.valueOf(value)));
         }
         localCacheService.put("ttl:" + keyRiskTool, String.valueOf(ttlRisk), ttlRisk);
-
-        // agent
-        String keyRiskAgent = RedisKey.RISK_LEVEL_AGENT.generateKey(userId);
-        if (null != registerCommand && null != registerCommand.getRiskLevel()
-                && null != registerCommand.getRiskLevel().getAgent()) {
-            localCacheService.delete(keyRiskAgent);
-            registerCommand.getRiskLevel().getAgent().forEach((field, value) ->
-                    localCacheService.putHash(keyRiskAgent, field, String.valueOf(value)));
-        }
-        localCacheService.put("ttl:" + keyRiskAgent, String.valueOf(ttlRisk), ttlRisk);
 
         // skill
         String keyRiskSkill = RedisKey.RISK_LEVEL_SKILL.generateKey(userId);

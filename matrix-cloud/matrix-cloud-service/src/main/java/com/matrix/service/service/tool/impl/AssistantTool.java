@@ -64,7 +64,7 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
                 }
 
                 // 获取模型
-                RegisterCommand.Model model = serviceContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
+                RegisterCommand.Model model = registerContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
                 // 生成更新内容
                 String input = """
                         ## 使用说明

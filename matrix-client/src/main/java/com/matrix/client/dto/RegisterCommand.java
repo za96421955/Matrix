@@ -32,7 +32,6 @@ public class RegisterCommand implements Serializable {
 
     private String osInfo;
     private String apiKey;
-//    private List<Agent> agents;
     private List<Skill> skills;
     private List<Application> apps;
     private RiskLevel riskLevel;
@@ -49,29 +48,9 @@ public class RegisterCommand implements Serializable {
      * @author 陈晨
      */
     public RegisterCommand load(String clientId, ClientProperties clientProperties) throws Exception {
-//        // models
-//        File root = new File(executorProperties.getBasic().getModelsPath());
-//        if (root.exists() && root.isFile()) {
-//            this.setModels(Model.parse(clientId, FileUtil.read(root.getAbsolutePath())));
-//        }
 
         // API Key
         this.setApiKey(System.getenv("DEEPSEEK_API_KEY"));
-
-        // agent
-//        this.setAgents(new ArrayList<>());
-//        List<File> files = this.loadFiles(executorProperties.getBasic().getAgentPath(), Constant.AGENT_FILE);
-//        for (File file : files) {
-//            Agent agent = Agent.parse(FileUtil.read(file.getAbsolutePath()));
-//            agent.setClientId(clientId);
-//            agent.setRootPath(file.getParentFile().getAbsolutePath());
-//            this.getAgents().add(agent);
-//            // Extend
-//            file = new File(file.getParentFile(), Constant.AGENT_EXTEND);
-//            if (file.exists() && file.isFile()) {
-//                agent.setExtend(FileUtil.read(file.getAbsolutePath()));
-//            }
-//        }
 
         // skill
         this.setSkills(new ArrayList<>());

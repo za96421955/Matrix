@@ -14,11 +14,14 @@ import org.springframework.context.annotation.Configuration;
  * Mapper 扫描路径复用 service 模块的 dal mapper 包
  */
 @Configuration
-@MapperScan("com.matrix.service.dal.mapper")
+@MapperScan(basePackages = {
+        "com.matrix.service.dal.mapper",
+        "com.matrix.local.dal.mapper"
+})
 public class LocalMybatisPlusConfig {
 
     @Bean
-    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+    public MybatisPlusInterceptor localMybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 1. 分页插件 - SQLite 方言
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.SQLITE));

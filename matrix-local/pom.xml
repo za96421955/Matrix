@@ -58,33 +58,27 @@
         </dependency>
 
         <!-- Spring Data Redis + Lettuce (本地 Redis 支持) -->
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-redis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.lettuce</groupId>
-            <artifactId>lettuce-core</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.data</groupId>-->
+<!--            <artifactId>spring-data-redis</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.lettuce</groupId>-->
+<!--            <artifactId>lettuce-core</artifactId>-->
+<!--        </dependency>-->
 
         <!-- MQTT Paho Client v5 -->
-        <dependency>
-            <groupId>org.eclipse.paho</groupId>
-            <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
-            <version>1.2.5</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.eclipse.paho</groupId>-->
+<!--            <artifactId>org.eclipse.paho.mqttv5.client</artifactId>-->
+<!--            <version>1.2.5</version>-->
+<!--        </dependency>-->
 
         <!-- matrix modules -->
         <dependency>
             <groupId>com.matrix</groupId>
             <artifactId>matrix-client</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.paho</groupId>
-                    <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.matrix</groupId>
@@ -95,32 +89,6 @@
             <groupId>com.matrix</groupId>
             <artifactId>matrix-cloud-service</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.alibaba.cloud</groupId>
-                    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba.cloud</groupId>
-                    <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.redisson</groupId>
-                    <artifactId>redisson-spring-boot-starter</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.shardingsphere</groupId>
-                    <artifactId>shardingsphere-jdbc</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.mysql</groupId>
-                    <artifactId>mysql-connector-j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.paho</groupId>
-                    <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- SQLite -->

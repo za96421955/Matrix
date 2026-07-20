@@ -32,11 +32,6 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
 
-  # 关闭 Security
-  security:
-    basic:
-      enabled: false
-
 # MyBatis Plus 配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -48,7 +43,4 @@ mybatis-plus:
       id-type: auto
       table-prefix: tbl_
 
-# 关闭 Actuator 安全（如启用）
-management:
-  security:
-    enabled: false
+

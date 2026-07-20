@@ -1,14 +1,17 @@
 package com.matrix.local.primary;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.matrix.local.dal.entity.LocalCache;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.TypeReference;
+import com.matrix.local.service.LocalCacheService;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Map;
+import java.util.*;
 
 /**
  * 缓存管理
@@ -21,7 +24,7 @@ import java.util.Map;
 public class SqlServiceCache implements ServiceCache {
 
     @Resource
-    private BaseMapper<LocalCache> baseMapper;
+    private LocalCacheService localCacheService;
 
     @Getter
     public final Hash hash = new Hash();
@@ -33,17 +36,31 @@ public class SqlServiceCache implements ServiceCache {
      */
     @Override
     public java.util.Set<String> keys(String pattern) {
-        return null;
+        if (StringUtils.isBlank(pattern)) {
+            return Collections.emptySet();
+        }
+        List<String> list = localCacheService.keys(pattern);
+        if (CollectionUtils.isEmpty(list)) {
+            return Collections.emptySet();
+        }
+        return new HashSet<>(list);
     }
 
     @Override
     public void expire(String key, long ttl) {
-
+        if (StringUtils.isBlank(key)) {
+            return;
+        }
+        // 重新 put 实现 TTL 更新
+        String value = localCacheService.get(key);
+        if (value != null) {
+            localCacheService.put(key, value, ttl);
+        }
     }
 
     @Override
     public void delete(String key) {
-
+        localCacheService.delete(key);
     }
 
     /**
@@ -51,90 +68,218 @@ public class SqlServiceCache implements ServiceCache {
      */
     @Override
     public void set(String key, String value, long ttl) {
-
+        localCacheService.put(key, value, ttl);
     }
 
     @Override
     public String get(String key) {
-        return null;
+        return localCacheService.get(key);
     }
 
     @Override
     public boolean lock(String key, long ttl) {
-        return false;
+        if (StringUtils.isBlank(key)) {
+            return false;
+        }
+        String existing = localCacheService.get(key);
+        if (existing != null) {
+            // key 已存在且未过期，锁获取失败
+            return false;
+        }
+        localCacheService.put(key, "1", ttl);
+        return true;
     }
 
     /**
      * Hash
+     * <p> 整体 JSON 序列化存储，存储 key 前缀 "hash:" </p>
      */
     public class Hash implements ServiceCache.Hash {
 
-        @Override
-        public void put(String key, String hashKey, String value, long ttl) {
-
-            expire(key, ttl);
+        private String storageKey(String key) {
+            return "hash:" + key;
         }
 
         @Override
-        public void putAll(String key, Map map, long ttl) {
+        public void put(String key, String hashKey, String value, long ttl) {
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            Map<String, String> map = new HashMap<>();
+            if (StringUtils.isNotBlank(json)) {
+                try {
+                    map = JSON.parseObject(json, new TypeReference<>() {});
+                } catch (Exception ignore) {}
+            }
+            map.put(hashKey, value);
+            localCacheService.put(sk, JSON.toJSONString(map), ttl);
+        }
 
-            expire(key, ttl);
+        @Override
+        @SuppressWarnings("unchecked")
+        public void putAll(String key, Map map, long ttl) {
+            if (map == null || map.isEmpty()) {
+                return;
+            }
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            Map<String, String> existing = new HashMap<>();
+            if (StringUtils.isNotBlank(json)) {
+                try {
+                    existing = JSON.parseObject(json, new TypeReference<>() {});
+                } catch (Exception ignore) {}
+            }
+            for (Object entryObj : map.entrySet()) {
+                Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObj;
+                existing.put(entry.getKey(), entry.getValue());
+            }
+            localCacheService.put(sk, JSON.toJSONString(existing), ttl);
         }
 
         @Override
         public String get(String key, String hashKey) {
-            return null;
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            if (StringUtils.isBlank(json)) {
+                return null;
+            }
+            try {
+                Map<String, String> map = JSON.parseObject(json, new TypeReference<>() {});
+                if (map == null) {
+                    return null;
+                }
+                return map.get(hashKey);
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         @Override
         public Map<String, String> getAll(String key) {
-            return null;
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            if (StringUtils.isBlank(json)) {
+                return Collections.emptyMap();
+            }
+            try {
+                Map<String, String> map = JSON.parseObject(json, new TypeReference<>() {});
+                if (map == null) {
+                    return Collections.emptyMap();
+                }
+                return map;
+            } catch (Exception e) {
+                return Collections.emptyMap();
+            }
         }
 
         @Override
         public java.util.Set<String> keys(String key) {
-            return null;
+            return this.getAll(key).keySet();
         }
 
         @Override
         public java.util.Set<String> values(String key) {
-            return null;
+            return new HashSet<>(getAll(key).values());
         }
 
         @Override
         public void remove(String key, String hashKey) {
-
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            if (StringUtils.isBlank(json)) {
+                return;
+            }
+            try {
+                Map<String, String> map = JSON.parseObject(json, new TypeReference<>() {});
+                if (map == null || !map.containsKey(hashKey)) {
+                    return;
+                }
+                map.remove(hashKey);
+                if (map.isEmpty()) {
+                    localCacheService.delete(sk);
+                } else {
+                    long remainingTtl = localCacheService.getExpire(sk);
+                    if (remainingTtl < 0) {
+                        remainingTtl = -1L;
+                    }
+                    localCacheService.put(sk, JSON.toJSONString(map), remainingTtl);
+                }
+            } catch (Exception ignore) {}
         }
 
         @Override
         public Long size(String key) {
-            return null;
+            return (long) this.getAll(key).size();
         }
+
     }
 
     /**
      * Set
+     * <p> JSON 数组序列化存储，存储 key 前缀 "set:" </p>
      */
     public class Set implements ServiceCache.Set {
 
+        private String storageKey(String key) {
+            return "set:" + key;
+        }
+
         @Override
         public void add(String key, String value, long ttl) {
-
-            expire(key, ttl);
+            String sk = this.storageKey(key);
+            String json = localCacheService.get(sk);
+            java.util.Set<String> set = new HashSet<>();
+            if (StringUtils.isNotBlank(json)) {
+                try {
+                    set = JSON.parseObject(json, new TypeReference<>() {});
+                } catch (Exception ignore) {}
+            }
+            set.add(value);
+            localCacheService.put(sk, JSON.toJSONString(set), ttl);
         }
 
         @Override
         public java.util.Set<String> getAll(String key) {
-            return null;
+            String sk = storageKey(key);
+            String json = localCacheService.get(sk);
+            if (StringUtils.isBlank(json)) {
+                return Collections.emptySet();
+            }
+            try {
+                java.util.Set<String> set = JSON.parseObject(json, new TypeReference<>() {});
+                if (set == null) {
+                    return Collections.emptySet();
+                }
+                return set;
+            } catch (Exception e) {
+                return Collections.emptySet();
+            }
         }
 
         @Override
         public void remove(String key, String value) {
-
+            String sk = storageKey(key);
+            String json = localCacheService.get(sk);
+            if (StringUtils.isBlank(json)) {
+                return;
+            }
+            try {
+                java.util.Set<String> set = JSON.parseObject(json, new TypeReference<>() {});
+                if (set == null || !set.contains(value)) {
+                    return;
+                }
+                set.remove(value);
+                if (set.isEmpty()) {
+                    localCacheService.delete(sk);
+                } else {
+                    long remainingTtl = localCacheService.getExpire(sk);
+                    if (remainingTtl < 0) {
+                        remainingTtl = -1L;
+                    }
+                    localCacheService.put(sk, JSON.toJSONString(set), remainingTtl);
+                }
+            } catch (Exception ignore) {}
         }
 
     }
 
 }
-
-

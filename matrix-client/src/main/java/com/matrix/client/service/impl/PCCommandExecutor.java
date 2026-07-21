@@ -3,9 +3,11 @@ package com.matrix.client.service.impl;
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.service.CommandExecutor;
+import com.matrix.client.service.SystemService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -25,6 +27,11 @@ public class PCCommandExecutor implements CommandExecutor {
 
     @Resource
     private MatrixClientProperties properties;
+
+    private final SystemService systemService;
+    public PCCommandExecutor(@Lazy SystemService systemService) {
+        this.systemService = systemService;
+    }
 
     /**
      * @description 判断是否 windows 系统
@@ -51,7 +58,13 @@ public class PCCommandExecutor implements CommandExecutor {
     }
 
     @Override
-    public String execute(String taskId, String command) {
+    public String execute(String taskId, String command) throws IOException, InterruptedException {
+        // 处理系统指令
+        String result = systemService.commandHandle(taskId, command);
+        if (StringUtils.isNotBlank(result)) {
+            return result;
+        }
+
         // 获取执行器
         String dir = null;
         String cmd = command;

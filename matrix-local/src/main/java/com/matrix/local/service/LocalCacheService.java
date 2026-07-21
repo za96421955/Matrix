@@ -1,7 +1,5 @@
 package com.matrix.local.service;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.matrix.local.dal.entity.LocalCache;
 import com.matrix.local.dal.mapper.LocalCacheMapper;
@@ -12,9 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -33,10 +29,9 @@ public class LocalCacheService {
     /**
      * @description 存储 KV，支持 TTL（秒）
      * <p> ttlSeconds <= 0 表示永不过期 </p>
+     * <p> 使用原子 UPSERT 避免并发 UNIQUE 约束冲突 </p>
      */
     public void put(String key, String value, long ttlSeconds) {
-        localCacheMapper.delete(Wrappers.<LocalCache>lambdaQuery()
-                .eq(LocalCache::getCacheKey, key));
         LocalCache cache = new LocalCache();
         cache.setCacheKey(key);
         cache.setCacheValue(value);
@@ -45,7 +40,7 @@ public class LocalCacheService {
         } else {
             cache.setExpireAt(-1L);
         }
-        localCacheMapper.insert(cache);
+        localCacheMapper.upsert(cache);
     }
 
     /**

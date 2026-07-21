@@ -7,6 +7,7 @@ import com.matrix.client.util.FileUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -27,9 +28,12 @@ public class SystemService {
     @Resource
     private CommandExecutor commandExecutor;
     @Resource
-    private RegisterHeartbeatService registerHeartbeatService;
-    @Resource
     private SkillManagerService skillManagerService;
+
+    private final RegisterHeartbeatService registerHeartbeatService;
+    public SystemService(@Lazy RegisterHeartbeatService registerHeartbeatService) {
+        this.registerHeartbeatService = registerHeartbeatService;
+    }
 
     /**
      * @description 处理系统指令

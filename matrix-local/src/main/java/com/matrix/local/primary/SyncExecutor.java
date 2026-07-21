@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Date;
 
 /**
@@ -72,7 +73,8 @@ public class SyncExecutor implements Executor {
     }
 
     @Override
-    public Mono<String> executeTask(Long userId, String taskId, String command) {
+    public Mono<String> executeTask(Long userId, String taskId, String command)
+            throws IOException, InterruptedException {
         // 直接调用本地执行器
         String result = pcCommandExecutor.execute(taskId, command);
         // 通过 CompletableContext 完成等待
@@ -82,7 +84,8 @@ public class SyncExecutor implements Executor {
     }
 
     @Override
-    public Mono<String> executeCommand(String taskId, String command) {
+    public Mono<String> executeCommand(String taskId, String command)
+            throws IOException, InterruptedException {
         // 直接调用本地执行器
         String result = pcCommandExecutor.execute(taskId, command);
         log.info("[本地执行指令] taskId={}, command={}, 执行完成", taskId, command);

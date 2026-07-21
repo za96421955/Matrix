@@ -2,7 +2,6 @@ package com.matrix.client.mqtt;
 
 import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.service.Fingerprint;
-import com.matrix.client.service.RegisterHeartbeatService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -29,7 +28,6 @@ public class MqttConnection {
 
     private final MqttSubscriber mqttSubscriber;
     private final MqttConsumer mqttConsumer;
-    private final RegisterHeartbeatService registerHeartbeatService;
 
     @Resource
     private MatrixClientProperties properties;
@@ -42,11 +40,9 @@ public class MqttConnection {
 
     @Autowired
     public MqttConnection(@Lazy MqttSubscriber mqttSubscriber,
-                          @Lazy MqttConsumer mqttConsumer,
-                          @Lazy RegisterHeartbeatService registerHeartbeatService) {
+                          @Lazy MqttConsumer mqttConsumer) {
         this.mqttSubscriber = mqttSubscriber;
         this.mqttConsumer = mqttConsumer;
-        this.registerHeartbeatService = registerHeartbeatService;
     }
 
     @PostConstruct
@@ -94,8 +90,6 @@ public class MqttConnection {
                 log.info("MQTT connect complete, reconnect={}", reconnect);
                 // 指令消息订阅
                 mqttSubscriber.subscribe();
-                // 终端注册
-                registerHeartbeatService.register();
             }
 
             @Override

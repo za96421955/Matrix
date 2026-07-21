@@ -85,7 +85,7 @@ public class RegisterContext {
             Map<String, String> hashMap = new HashMap<>();
             for (RegisterCommand.Application app : registerCommand.getApps()) {
                 hashMap.put(app.getName(), app.toString());
-                // 记录风险等级
+                // 记录风险等级（String 类型存储）
                 registerCommand.getRiskLevel().getApp().put(app.getName(), app.getRiskLevel());
             }
             serviceCache.delete(key);
@@ -99,7 +99,7 @@ public class RegisterContext {
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getBash()) {
             serviceCache.delete(key);
-            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getBash(),
+            serviceCache.getHash().putAll(key, this.toMapString(registerCommand.getRiskLevel().getBash()),
                     redisKey.getTtl());
         }
         // tool
@@ -108,7 +108,7 @@ public class RegisterContext {
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getTool()) {
             serviceCache.delete(key);
-            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getTool(),
+            serviceCache.getHash().putAll(key, this.toMapString(registerCommand.getRiskLevel().getTool()),
                     redisKey.getTtl());
         }
         // app
@@ -117,9 +117,26 @@ public class RegisterContext {
         if (null != registerCommand && null != registerCommand.getRiskLevel()
                 && null != registerCommand.getRiskLevel().getApp()) {
             serviceCache.delete(key);
-            serviceCache.getHash().putAll(key, registerCommand.getRiskLevel().getApp(),
+            serviceCache.getHash().putAll(key, this.toMapString(registerCommand.getRiskLevel().getApp()),
                     redisKey.getTtl());
         }
+    }
+
+    /**
+     * @description 将 Map<String, Integer> 转换为 Map<String, String>
+     * <p> 风险等级缓存以 String 类型存储，兼容 Integer 与 String 源 </p>
+     *
+     * @author 陈晨
+     */
+    private Map<String, String> toMapString(Map<String, Integer> map) {
+        if (map == null || map.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            result.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        return result;
     }
 
     /**

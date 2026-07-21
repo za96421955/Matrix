@@ -23,19 +23,14 @@ public class MqttConsumer {
     private AckService ackService;
 
     public void handle(String topic, String payload) {
-        // 处理指令
         String taskId = null;
         try {
             JSONObject request = JSONObject.parseObject(payload);
             taskId = (String) request.get("taskId");
             String command = (String) request.get("command");
             log.debug("[消息处理] topic={}, taskId={}, command={}", topic, taskId, command);
-            // 处理系统指令
-            String result = systemService.commandHandle(taskId, command);
-            // 默认处理
-            if (StringUtils.isBlank(result)) {
-                result = commandExecutor.execute(taskId, command);
-            }
+            // 执行指令
+            String result = commandExecutor.execute(taskId, command);
             log.info("[消息处理] topic={}, taskId={}, command={}, result={}",
                     topic, taskId, command, result);
             ackService.send(taskId, result);

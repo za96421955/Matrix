@@ -4,6 +4,7 @@ import com.matrix.client.context.MatrixClientProperties;
 import com.matrix.client.dto.RegisterCommand;
 import com.matrix.client.mqtt.MqttConnection;
 import com.matrix.client.util.HttpClient;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,26 @@ public class RegisterHeartbeatService {
         this.mqttConnection = mqttConnection;
     }
 
+    @PostConstruct
+    public void register() {
+        new Thread(() -> {
+            try {
+                // 延迟 3 秒注册
+                Thread.sleep(3000);
+                // 终端注册
+                int status = this.reload();
+                if (status != 200) {
+                    throw new RuntimeException("终端注册失败");
+                }
+                // 启动心跳
+                this.startHeartbeat();
+            } catch (Exception e) {
+                log.error("Client register error: {}", e.getMessage(), e);
+                this.reconnect();
+            }
+        }).start();
+    }
+
     /**
      * @description MQTT 重连
      * <p> <功能详细描述> </p>
@@ -59,25 +80,6 @@ public class RegisterHeartbeatService {
                 this.reconnect();
             } catch (Exception ignore) {}
         }
-    }
-
-    public void register() {
-        new Thread(() -> {
-            try {
-                // 延迟 3 秒注册
-                Thread.sleep(3000);
-                // 终端注册
-                int status = this.reload();
-                if (status != 200) {
-                    throw new RuntimeException("终端注册失败");
-                }
-                // 启动心跳
-                this.startHeartbeat();
-            } catch (Exception e) {
-                log.error("Client register error: {}", e.getMessage(), e);
-                this.reconnect();
-            }
-        }).start();
     }
 
     /**

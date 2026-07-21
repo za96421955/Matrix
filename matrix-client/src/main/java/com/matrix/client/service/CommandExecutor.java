@@ -18,7 +18,7 @@ public interface CommandExecutor {
      *
      * @author 陈晨
      */
-    String execute(String taskId, String command);
+    String execute(String taskId, String command) throws IOException, InterruptedException;
 
 }
 

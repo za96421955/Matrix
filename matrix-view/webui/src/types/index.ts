@@ -12,7 +12,7 @@ export interface ToolCall {
 
 export interface Message {
     id: string
-    role: 'user' | 'assistant' | 'system' | 'tool'
+    role: 'user' | 'assistant' | 'system' | 'tool' | 'error'
     content: string
     reasoningContent?: string
     toolCalls?: ToolCall[]
@@ -24,7 +24,7 @@ export interface BackendMessageRecord {
     id: number
     userId?: number
     sessionId?: number
-    role: 'user' | 'assistant' | 'system' | 'tool'
+    role: 'user' | 'assistant' | 'system' | 'tool' | 'error'
     content: string
     reasoning_content?: string | null
     tool_calls?: string | null

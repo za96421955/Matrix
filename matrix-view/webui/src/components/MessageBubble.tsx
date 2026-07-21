@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Bot, Brain, X, Copy, Check, ChevronRight, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText} from 'lucide-react'
+import { User, Bot, Brain, X, Copy, Check, ChevronRight, ChevronDown, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText, AlertCircle} from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import { useToastStore } from '../store/toastStore'
 import type { Message, ToolCall } from '../types'
@@ -691,6 +691,32 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                             </>
                         );
                     })()}
+                </div>
+            </motion.div>
+        )
+    }
+    // ===== Error message (处理失败，红色样式) =====
+    if (message.role === 'error') {
+        if (!message.content || !message.content.trim()) return null
+        return (
+            <motion.div
+                initial={{opacity: 0, y: 8}}
+                animate={{opacity: 1, y: 0}}
+                className="flex justify-center px-4 py-2 group"
+            >
+                <div className="max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%] xl:max-w-[70%] 2xl:max-w-[65%] w-full rounded-lg px-3 py-2 bg-red-50/80 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 relative">
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <X className="w-3 h-3 text-red-500"/>
+                        <span className="text-xs text-red-500 dark:text-red-400 font-medium">处理失败</span>
+                    </div>
+                    <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed break-words">{message.content}</p>
+                    <BubbleActions
+                        showCopy={true}
+                        showDelete={!!onDelete}
+                        onCopy={() => handleCopyText(message.content || '')}
+                        onDelete={onDelete}
+                        copied={copied}
+                    />
                 </div>
             </motion.div>
         )

@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
+import com.matrix.common.dto.model.Role;
 import com.matrix.common.dto.request.ChatRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
@@ -184,5 +185,3 @@ public class ChatService {
     }
 
 }
-
-

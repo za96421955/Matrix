@@ -137,9 +137,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             Response.Error error = response.getError();
             if (null != error) {
                 log.error("[ReActAgent] model={}, 模型请求失败: {}", model.getModel(), error.getMessage());
+                // 记录 Error 消息
+                this.saveErrorMessage(userId, sessionId, error.getMessage());
                 throw new RuntimeException(error.getMessage());
             }
-            // 记录Assistant消息
+            // 记录 Assistant 消息
             this.saveMessage(userId, sessionId, Role.ASSISTANT, response, isInclude);
 
             // 【STOP】停止对话
@@ -427,6 +429,32 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                     userId, sessionId, JSONObject.toJSONString(save));
         } catch (Exception e) {
             log.error("[记录消息] userId={}, sessionId={}, 记录消息异常: {}",
+                    userId, sessionId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @description 记录错误消息
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected void saveErrorMessage(Long userId, Long sessionId, String error) {
+        if (StringUtils.isBlank(error)) {
+            return;
+        }
+        try {
+            MessageInfo save = MessageInfo.builder()
+                    .role(Role.ERROR)
+                    .userId(userId)
+                    .sessionId(sessionId)
+                    .content(error)
+                    .build();
+            messageService.save(save);
+            log.info("[记录消息] userId={}, sessionId={}, 错误消息入库: {}",
+                    userId, sessionId, JSONObject.toJSONString(save));
+        } catch (Exception e) {
+            log.error("[记录消息] userId={}, sessionId={}, 错误记录消息异常: {}",
                     userId, sessionId, e.getMessage(), e);
         }
     }

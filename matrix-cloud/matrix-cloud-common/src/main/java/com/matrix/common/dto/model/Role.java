@@ -19,8 +19,9 @@ public interface Role {
 
     String TOOL = "tool";
 
+    /** 错误消息角色, AI处理过程中发生异常时写入消息表, 前端以失败样式展示 */
+    String ERROR = "error";
+
 //    String LATEST_REMINDER = "latest_reminder";
 
 }
-
-

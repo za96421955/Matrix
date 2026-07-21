@@ -44,7 +44,8 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
     @Override
     public String systemPrompt(Long userId, Long sessionId, String clientId) {
         try {
-            return this.readMemory(clientId).block();
+            String memory = this.readMemory(clientId).block();
+            return "clientId: " + clientId + "\n```\n" + memory + "\n```";
         } catch (Exception ignore) {
             return "";
         }

@@ -89,7 +89,6 @@ public class ModelService {
                         model.getModel(), request, ErrorCode.MODEL_MESSAGE_EMPTY);
                 return Response.error(ErrorCode.MODEL_MESSAGE_EMPTY.getMessage());
             }
-//            throw new RuntimeException("异常测试");
             return response;
         } catch (Exception e) {
             log.error("[模型同步请求] model={}, request={}, 异常={}",

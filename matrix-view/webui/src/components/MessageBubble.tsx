@@ -697,7 +697,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
         )
     }
 
-    // ===== Error message (现代化一行式可折叠设计) =====
+    // ===== Error message (现代化视觉设计：左重音、毛玻璃、可折叠) =====
     if (message.role === 'error') {
         if (!message.content || !message.content.trim()) return null
         return (
@@ -707,19 +707,26 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                 className="flex items-start gap-3 px-4 py-2 group"
             >
                 <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-100 dark:bg-red-900/40"
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-100 dark:bg-red-900/50 ring-1 ring-red-300/40 dark:ring-red-700/40"
                     aria-hidden="true">
                     <AlertCircle className="w-4 h-4 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0 max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[70%] 2xl:max-w-[65%]">
-                    <div className="relative rounded-xl border border-red-200/60 dark:border-red-800/40 bg-white/80 dark:bg-[#1c1c20]/80 backdrop-blur-sm shadow-sm overflow-hidden">
+                    <div className="relative rounded-xl border-l-4 border-l-red-500 dark:border-l-red-600 border border-red-200/40 dark:border-red-700/30 bg-gradient-to-br from-red-50/95 via-red-50/80 to-white/80 dark:from-red-950/60 dark:via-red-950/30 dark:to-[#1c1c20]/80 backdrop-blur-sm shadow-md shadow-red-200/30 dark:shadow-red-950/40">
+                        <BubbleActions
+                            showCopy={true}
+                            showDelete={!!onDelete}
+                            onCopy={() => handleCopyText(message.content || '')}
+                            onDelete={onDelete}
+                            copied={copied}
+                        />
                         <button
                             onClick={() => setErrorExpanded(!errorExpanded)}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-red-50/50 dark:hover:bg-red-900/10"
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-red-100/50 dark:hover:bg-red-900/20"
                             aria-label={errorExpanded ? '收起错误详情' : '展开错误详情'}
                         >
                             <span className="flex items-center gap-1.5 flex-shrink-0">
-                                <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap">处理失败</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 whitespace-nowrap">处理失败</span>
                             </span>
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs text-red-700 dark:text-red-300 truncate">
@@ -744,20 +751,13 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                     className="border-t border-red-200/40 dark:border-red-800/30"
                                 >
                                     <div className="p-3">
-                                        <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed whitespace-pre-wrap break-words">
+                                        <div className="text-xs text-red-700 dark:text-red-300 leading-relaxed whitespace-pre-wrap break-words font-mono bg-red-50/60 dark:bg-red-950/40 rounded-lg p-3 border border-red-200/20 dark:border-red-800/20 shadow-inner">
                                             {message.content}
-                                        </p>
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <BubbleActions
-                            showCopy={true}
-                            showDelete={!!onDelete}
-                            onCopy={() => handleCopyText(message.content || '')}
-                            onDelete={onDelete}
-                            copied={copied}
-                        />
                     </div>
                 </div>
             </motion.div>

@@ -6,17 +6,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 
-@SpringBootApplication(
-        scanBasePackages = {
-                "com.matrix.local",
-                "com.matrix.service",
-                "com.matrix.client"
-        },
-        exclude = {
-                ManagementWebSecurityAutoConfiguration.class,
-                ServletWebSecurityAutoConfiguration.class
-        }
-)
+@SpringBootApplication(scanBasePackages = {
+        "com.matrix.local",
+        "com.matrix.service",
+        "com.matrix.client"
+})
 @MapperScan(basePackages = {
         "com.matrix.service.dal.mapper",
         "com.matrix.local.dal.mapper"

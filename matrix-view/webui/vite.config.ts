@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
             proxy: {
                 ...({
                     "/v1": {
-                        target: "http://localhost:8091",
+                        target: "http://localhost:8090",
                         changeOrigin: true,
                     }
                 }),

@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Log files ###
+*.log
+
+### Database files ###
+*.db
+*.db-shm
+*.db-wal

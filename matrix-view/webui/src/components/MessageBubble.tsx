@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Bot, Brain, X, Copy, Check, ChevronRight, ChevronDown, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText, AlertCircle} from 'lucide-react'
+import { User, Bot, Brain, X, Copy, Check, ChevronRight, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText, AlertCircle} from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import { useToastStore } from '../store/toastStore'
 import type { Message, ToolCall } from '../types'
@@ -414,6 +414,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
     const isSystem = message.role === 'system'
 
     const [copied, setCopied] = useState(false)
+    const [errorExpanded, setErrorExpanded] = useState(false)
     const markdownEnabled = useChatStore((s) => s.markdownEnabled)
 
     const showToast = useCallback((msg: string) => {
@@ -695,28 +696,69 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
             </motion.div>
         )
     }
-    // ===== Error message (处理失败，红色样式) =====
+
+    // ===== Error message (现代化一行式可折叠设计) =====
     if (message.role === 'error') {
         if (!message.content || !message.content.trim()) return null
         return (
             <motion.div
                 initial={{opacity: 0, y: 8}}
                 animate={{opacity: 1, y: 0}}
-                className="flex justify-center px-4 py-2 group"
+                className="flex items-start gap-3 px-4 py-2 group"
             >
-                <div className="max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%] xl:max-w-[70%] 2xl:max-w-[65%] w-full rounded-lg px-3 py-2 bg-red-50/80 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 relative">
-                    <div className="flex items-center gap-1.5 mb-1">
-                        <X className="w-3 h-3 text-red-500"/>
-                        <span className="text-xs text-red-500 dark:text-red-400 font-medium">处理失败</span>
+                <div
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-100 dark:bg-red-900/40"
+                    aria-hidden="true">
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0 max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[70%] 2xl:max-w-[65%]">
+                    <div className="relative rounded-xl border border-red-200/60 dark:border-red-800/40 bg-white/80 dark:bg-[#1c1c20]/80 backdrop-blur-sm shadow-sm overflow-hidden">
+                        <button
+                            onClick={() => setErrorExpanded(!errorExpanded)}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-red-50/50 dark:hover:bg-red-900/10"
+                            aria-label={errorExpanded ? '收起错误详情' : '展开错误详情'}
+                        >
+                            <span className="flex items-center gap-1.5 flex-shrink-0">
+                                <span className="text-xs font-medium text-red-600 dark:text-red-400 whitespace-nowrap">处理失败</span>
+                            </span>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-red-700 dark:text-red-300 truncate">
+                                    {message.content}
+                                </p>
+                            </div>
+                            <motion.span
+                                animate={{ rotate: errorExpanded ? 90 : 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex-shrink-0"
+                            >
+                                <ChevronRight className="w-4 h-4 text-red-400" />
+                            </motion.span>
+                        </button>
+                        <AnimatePresence>
+                            {errorExpanded && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="border-t border-red-200/40 dark:border-red-800/30"
+                                >
+                                    <div className="p-3">
+                                        <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed whitespace-pre-wrap break-words">
+                                            {message.content}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        <BubbleActions
+                            showCopy={true}
+                            showDelete={!!onDelete}
+                            onCopy={() => handleCopyText(message.content || '')}
+                            onDelete={onDelete}
+                            copied={copied}
+                        />
                     </div>
-                    <p className="text-xs text-red-600 dark:text-red-300 leading-relaxed break-words">{message.content}</p>
-                    <BubbleActions
-                        showCopy={true}
-                        showDelete={!!onDelete}
-                        onCopy={() => handleCopyText(message.content || '')}
-                        onDelete={onDelete}
-                        copied={copied}
-                    />
                 </div>
             </motion.div>
         )

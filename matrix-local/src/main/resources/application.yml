@@ -31,7 +31,7 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema.sql
+      schema-locations: ${user.dir}/matrix-local/data/schema.sql
 
 # MyBatis Plus 配置
 mybatis-plus:

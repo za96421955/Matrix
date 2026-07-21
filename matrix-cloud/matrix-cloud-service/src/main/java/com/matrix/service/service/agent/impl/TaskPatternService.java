@@ -185,13 +185,13 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      */
     private void executorBlock(FluxSink<Response> sink, PatternRequest request, TaskChain.ExecutionBlock block) {
         // 顺序执行
-        if (null == block.getSeq() || block.getSeq()) {
+        if (null == block.getSync() || block.getSync()) {
             for (TaskChain.Task task : block.getTasks()) {
                 String result = this.executorTaskRetry(sink, request.clone(), task, 0);
                 if (StringUtils.isBlank(result)) {
                     continue;
                 }
-                request.getMessages().add(Message.user(task.getInput()));
+                request.getMessages().add(Message.user(task.getGoal()));
                 request.getMessages().add(Message.assistant(result));
             }
         }
@@ -207,7 +207,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     }
                     // 线程安全，保证 user、assistant 成对
                     List<Message> results = new ArrayList<>();
-                    results.add(Message.user(task.getInput()));
+                    results.add(Message.user(task.getGoal()));
                     results.add(Message.assistant(result));
                     request.getMessages().addAll(results);
                 }));
@@ -274,7 +274,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         }
         // 3. 执行任务, 获取任务结果
         return this.callResultByClone(sink, request, Prompt.Task.EXECUTOR_TASK.formatted(
-                task.getName(), task.getInput(), task.getExpectedResult(), task.getWorkingDirectory()));
+                task.getWorkingDirectory(), task.getName(), task.getAction(), task.getGoal(), task.getResult()));
     }
 
 }

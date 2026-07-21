@@ -1,5 +1,6 @@
 import {useState, useCallback} from 'react'
 import {Copy, Check} from 'lucide-react'
+import { extractTextContent } from '../utils/extractTextContent'
 
 interface CodeBlockProps {
     className?: string
@@ -11,8 +12,8 @@ export default function CodeBlock({className, children}: CodeBlockProps) {
 
     // 从 className 中提取语言，格式如 "language-typescript"
     const language = className?.replace('language-', '') ?? ''
-    // 提取代码文本
-    const code = typeof children === 'string' ? children : ''
+    // 提取代码文本：递归提取 ReactNode 中的纯文本
+    const code = extractTextContent(children)
 
     const handleCopy = useCallback(async () => {
         try {
@@ -60,8 +61,8 @@ export default function CodeBlock({className, children}: CodeBlockProps) {
             </div>
             {/* 代码内容 */}
             <pre className="overflow-x-auto max-w-full p-4 text-sm leading-relaxed bg-white dark:bg-[#131316]">
-        <code className={className}>{children}</code>
-      </pre>
+                <code className={className}>{code}</code>
+            </pre>
         </div>
     )
 }

@@ -3,14 +3,14 @@ import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import rehypeHighlight from 'rehype-highlight'
 import CodeBlock from './CodeBlock'
+import ErrorBoundary from './ErrorBoundary'
+import { extractTextContent } from '../utils/extractTextContent'
 import type {Components} from 'react-markdown'
 
 /**
  * 反转义被 JSON 序列化转义的换行符等特殊字符
  * 避免后端序列化时将 \n 转成字面量 \\n 导致 Markdown 解析失败
  */
-
-
 
 function unescapeContent(str: string): string {
     return str
@@ -25,7 +25,8 @@ const components: Partial<Components> = {
     // 自定义代码块渲染
     code({className, children, ...props}) {
         const match = /language-(\w+)/.exec(className || '')
-        const codeStr = String(children).replace(/\n$/, '')
+        // 使用 extractTextContent 递归提取纯文本，避免 String(children) 产生 "[object Object]"
+        const codeStr = extractTextContent(children).replace(/\n$/, '')
 
         if (match) {
             return (
@@ -133,14 +134,22 @@ interface MarkdownRendererProps {
 
 export default function MarkdownRenderer({content}: MarkdownRendererProps) {
     return (
-        <div className="prose-custom">
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkBreaks]}
-                rehypePlugins={[rehypeHighlight]}
-                components={components}
-            >
-                {unescapeContent(content)}
-            </ReactMarkdown>
-        </div>
+        <ErrorBoundary
+            fallback={
+                <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed my-2">
+                    {content}
+                </pre>
+            }
+        >
+            <div className="prose-custom">
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkBreaks]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={components}
+                >
+                    {unescapeContent(content)}
+                </ReactMarkdown>
+            </div>
+        </ErrorBoundary>
     )
 }

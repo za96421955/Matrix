@@ -47,6 +47,13 @@ mybatis-plus:
 
 ---
 
+# Actuator 端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 matrix:
   client:
     name: PC

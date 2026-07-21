@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS tbl_user_info (
     auth_level      INTEGER NOT NULL DEFAULT 0,
     email           TEXT,
     phone           TEXT,
-    create_time     TEXT    DEFAULT (datetime('now','localtime')),
+    create_time     INTEGER,
     creator         TEXT,
-    update_time     TEXT    DEFAULT (datetime('now','localtime')),
+    update_time     INTEGER,
     updator         TEXT,
     version_num     INTEGER DEFAULT 0,
     is_deleted      INTEGER DEFAULT 0
@@ -31,10 +31,10 @@ CREATE TABLE IF NOT EXISTS tbl_client_info (
     os_info         TEXT,
     status          TEXT    DEFAULT 'offline',
     secret          TEXT,
-    last_heartbeat  TEXT,
-    create_time     TEXT    DEFAULT (datetime('now','localtime')),
+    last_heartbeat  INTEGER,
+    create_time     INTEGER,
     creator         TEXT,
-    update_time     TEXT    DEFAULT (datetime('now','localtime')),
+    update_time     INTEGER,
     updator         TEXT,
     version_num     INTEGER DEFAULT 0,
     is_deleted      INTEGER DEFAULT 0
@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS tbl_session_info (
     title           TEXT,
     agent           TEXT,
     auth_level      INTEGER DEFAULT 0,
-    create_time     TEXT    DEFAULT (datetime('now','localtime')),
+    create_time     INTEGER,
     creator         TEXT,
-    update_time     TEXT    DEFAULT (datetime('now','localtime')),
+    update_time     INTEGER,
     updator         TEXT,
     version_num     INTEGER DEFAULT 0,
     is_deleted      INTEGER DEFAULT 0
@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS tbl_message_info (
     reasoning_content TEXT,
     tool_calls        TEXT,
     tool_call_id      TEXT,
-    create_time       TEXT    DEFAULT (datetime('now','localtime')),
+    create_time       INTEGER,
     creator           TEXT,
-    update_time       TEXT    DEFAULT (datetime('now','localtime')),
+    update_time       INTEGER,
     updator           TEXT,
     version_num       INTEGER DEFAULT 0,
     is_deleted        INTEGER DEFAULT 0
@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS tbl_user_api_key (
     user_id         INTEGER NOT NULL,
     api_key         TEXT    NOT NULL UNIQUE,
     status          TEXT    DEFAULT 'enabled',
-    create_time     TEXT    DEFAULT (datetime('now','localtime')),
+    create_time     INTEGER,
     creator         TEXT,
-    update_time     TEXT    DEFAULT (datetime('now','localtime')),
+    update_time     INTEGER,
     updator         TEXT,
     version_num     INTEGER DEFAULT 0,
     is_deleted      INTEGER DEFAULT 0
@@ -108,9 +108,9 @@ CREATE TABLE IF NOT EXISTS tbl_task_info (
     status          TEXT    DEFAULT 'pending',
     content         TEXT,
     result          TEXT,
-    create_time     TEXT    DEFAULT (datetime('now','localtime')),
+    create_time     INTEGER,
     creator         TEXT,
-    update_time     TEXT    DEFAULT (datetime('now','localtime')),
+    update_time     INTEGER,
     updator         TEXT,
     version_num     INTEGER DEFAULT 0,
     is_deleted      INTEGER DEFAULT 0
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS tbl_local_cache (
     cache_key   TEXT    NOT NULL UNIQUE,
     cache_value TEXT,
     expire_at   INTEGER,
-    create_time TEXT    DEFAULT (datetime('now','localtime'))
+    create_time INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_local_cache_key ON tbl_local_cache(cache_key);

@@ -56,7 +56,7 @@ public class SyncExecutor implements Executor {
                 .agentName(taskCommand.getAgentName())
                 .taskId(taskCommand.getTaskId())
                 .type(taskCommand.getType())
-                .status(TaskStatus.PENDING)
+                .status(TaskStatus.RUNNING)
                 .content(taskCommand.getBody())
                 .createTime(new Date())
                 .creator(Constant.SYSTEM_USER)

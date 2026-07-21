@@ -96,6 +96,9 @@ const ToolCallSection = React.memo(({
         return getToolIcon(firstName)
     }, [toolCalls])
     const sectionRef = useRef<HTMLDivElement>(null)
+    // 用 ref 保存 onToggle，避免 effect 因 onToggle 引用变化而频繁重订阅
+    const onToggleRef = useRef(onToggle)
+    onToggleRef.current = onToggle
 
     useEffect(() => {
         if (expanded && sectionRef.current) {
@@ -106,6 +109,20 @@ const ToolCallSection = React.memo(({
         }
     }, [expanded])
 
+
+    // 展开时点击外部自动收起
+    useEffect(() => {
+        if (!expanded) return
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+                onToggleRef.current?.()
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [expanded])
     // 渲染内容（QRCODE / Markdown / 纯文本）
     const renderContent = useCallback((text: string) => {
         const qrRegex = /\[QRCODE\]\n([\s\S]*?)\n\[\/QRCODE\]/

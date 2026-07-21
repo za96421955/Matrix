@@ -3,11 +3,10 @@ package com.matrix.client.dto;
 import com.alibaba.fastjson2.JSON;
 import com.matrix.client.context.Constant;
 import com.matrix.client.context.MatrixClientProperties;
+import com.matrix.client.service.CommandExecutor;
+import com.matrix.client.service.Fingerprint;
 import com.matrix.client.util.FileUtil;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
@@ -41,6 +40,18 @@ public class RegisterCommand implements Serializable {
         return JSON.toJSONString(this);
     }
 
+    @Getter
+    private static RegisterCommand registerCommand;
+    public synchronized static RegisterCommand load(CommandExecutor executor,
+                                                    Fingerprint fingerprint,
+                                                    MatrixClientProperties properties) throws Exception {
+        if (null == registerCommand) {
+            registerCommand = RegisterCommand.builder().build();
+        }
+        registerCommand.setOsInfo(executor.getOsInfo());
+        return registerCommand.load(fingerprint.get(), properties);
+    }
+
     /**
      * @description 加载注册信息
      * <p> <功能详细描述> </p>
@@ -48,7 +59,6 @@ public class RegisterCommand implements Serializable {
      * @author 陈晨
      */
     public RegisterCommand load(String clientId, MatrixClientProperties properties) throws Exception {
-
         // API Key
         this.setApiKey(System.getenv("DEEPSEEK_API_KEY"));
 

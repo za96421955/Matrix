@@ -15,18 +15,6 @@ import java.util.concurrent.TimeUnit;
 @ConfigurationProperties(prefix = "matrix")
 public class MatrixClientProperties {
 
-    @Bean
-    public ExecutorService executor() {
-        return new ThreadPoolExecutor(
-                10,
-                50,
-                60L,
-                TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(1000),   // 队列最多 1000 条等待
-                new ThreadPoolExecutor.CallerRunsPolicy()  // 背压：让 MQTT 线程自己跑，减慢接收速度
-        );
-    }
-
     private Client client = new Client();
     private Service service = new Service();
     private Mqtt mqtt = new Mqtt();

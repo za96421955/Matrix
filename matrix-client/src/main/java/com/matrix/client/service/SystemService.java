@@ -27,7 +27,7 @@ public class SystemService {
     @Resource
     private CommandExecutor commandExecutor;
     @Resource
-    private RegisterService registerService;
+    private RegisterHeartbeatService registerHeartbeatService;
     @Resource
     private SkillManagerService skillManagerService;
 
@@ -117,7 +117,7 @@ public class SystemService {
         // 触发重新注册
         if (command.indexOf(Constant.SYSTEM_COMMAND.TRIGGER_REGISTER) == 0) {
             try {
-                registerService.reload();
+                registerHeartbeatService.reload();
                 return "trigger register success";
             } catch (Exception e) {
                 return "trigger register fail: " + e.getMessage();
@@ -128,3 +128,5 @@ public class SystemService {
     }
 
 }
+
+

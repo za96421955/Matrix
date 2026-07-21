@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class GithubTool extends AbstractTool<GithubTool.Request> {
 
-    @Value("${matrix.service.github.token}")
+    @Value("${matrix.github.token}")
     private String githubToken;
 
     @Override

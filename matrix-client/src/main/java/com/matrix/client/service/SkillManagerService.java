@@ -261,31 +261,6 @@ public class SkillManagerService {
         return null;
     }
 
-//    /**
-//     * 执行 bash 命令
-//     */
-//    public String execBash(String command) throws IOException, InterruptedException {
-//        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-//        pb.redirectErrorStream(true);
-//        Process process = pb.start();
-//        StringBuilder output = new StringBuilder();
-//        try (BufferedReader reader = new BufferedReader(
-//                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                output.append(line).append("\n");
-//            }
-//        }
-//        int exitCode = process.waitFor();
-//        String result = output.toString().trim();
-//        if (exitCode != 0) {
-//            // 忽略 chmod 出错的情况
-//            if (!command.startsWith("chmod")) {
-//                log.warn("命令执行异常, exitCode={}, command={}, output={}", exitCode, command, result);
-//                throw new RuntimeException("命令执行失败, exitCode=" + exitCode + ", output=" + result);
-//            }
-//        }
-//        return result;
-//    }
-
 }
+
+

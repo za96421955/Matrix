@@ -6,6 +6,7 @@ import com.matrix.client.mqtt.MqttConnection;
 import com.matrix.client.util.HttpClient;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.Executors;
@@ -13,25 +14,28 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 终端注册服务
+ * 终端注册、心跳服务
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
  */
 @Slf4j
 @Service
-public class RegisterService {
-    private static RegisterCommand registerCommand;
+public class RegisterHeartbeatService {
+
     private static ScheduledExecutorService heartbeatScheduler;
 
     @Resource
     private MatrixClientProperties properties;
     @Resource
-    private MqttConnection mqttConnection;
-    @Resource
     private CommandExecutor commandExecutor;
     @Resource
     private Fingerprint fingerprint;
+
+    private final MqttConnection mqttConnection;
+    public RegisterHeartbeatService(@Autowired(required = false) MqttConnection mqttConnection) {
+        this.mqttConnection = mqttConnection;
+    }
 
     /**
      * @description MQTT 重连
@@ -40,6 +44,9 @@ public class RegisterService {
      * @author 陈晨
      */
     public void reconnect() {
+        if (null == mqttConnection) {
+            return;
+        }
         try {
 //            this.stopHeartbeat();
             mqttConnection.disconnect();
@@ -82,11 +89,11 @@ public class RegisterService {
     public int reload() {
         String heartbeatUrl = null;
         try {
-            heartbeatUrl = properties.getService().getRegister() + "/" + mqttConnection.getClient().getClientId();
+            heartbeatUrl = properties.getService().getRegister() + "/" + fingerprint.get();
             int status = HttpClient.post(heartbeatUrl)
                     .authorization(properties.getService().getApiKey())
                     .header("X-Device-Id", fingerprint.get())
-                    .body(this.load().toString())
+                    .body(RegisterCommand.load(commandExecutor, fingerprint, properties).toString())
                     .asStatus();
             log.info("[Heartbeat] url={}, result: {}", heartbeatUrl, status);
             return status;
@@ -112,7 +119,7 @@ public class RegisterService {
         int keepAlive = properties.getMqtt().getKeepAlive();
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             try {
-                if (!mqttConnection.getClient().isConnected()) {
+                if (null != mqttConnection && !mqttConnection.getClient().isConnected()) {
                     throw new RuntimeException("MQTT 连接已断开");
                 }
                 int status = this.reload();
@@ -138,72 +145,5 @@ public class RegisterService {
         }
         heartbeatScheduler = null;
     }
-
-    /**
-     * @description 加载注册信息
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public RegisterCommand load() throws Exception {
-        if (null == registerCommand) {
-            registerCommand = RegisterCommand.builder().build();
-        }
-        registerCommand.setOsInfo(commandExecutor.getOsInfo());
-        return registerCommand.load(mqttConnection.getClient().getClientId(), properties);
-    }
-
-    /**
-     * @description 获取注册信息
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public RegisterCommand getRegisterCommand() {
-        return registerCommand;
-    }
-
-//    /**
-//     * @description 获取 Agent 信息
-//     * <p> <功能详细描述> </p>
-//     *
-//     * @author 陈晨
-//     */
-//    public Agent getAgent(String agentName) {
-//        for (Agent agent : this.getRegisterCommand().getAgents()) {
-//            if (null == agent) {
-//                continue;
-//            }
-//            if (agent.getName().equals(agentName)) {
-//                return agent;
-//            }
-//        }
-//        return null;
-//    }
-//
-//    /**
-//     * @description 获取 Skill 信息
-//     * <p> <功能详细描述> </p>
-//     *
-//     * @author 陈晨
-//     */
-//    public Skill getSkill(String skillName) {
-//        for (Skill skill : this.getRegisterCommand().getSkills()) {
-//            if (null == skill) {
-//                continue;
-//            }
-//            if (skill.getName().equals(skillName)) {
-//                return skill;
-//            }
-//        }
-//        return null;
-//    }
-
-//    public static void main(String[] args) throws Exception {
-//        RegisterService service = new RegisterService();
-//        service.executorProperties = new ExecutorProperties();
-//        RegisterCommand command = service.load();
-//        System.out.println(JSONObject.toJSONString(command));
-//    }
 
 }

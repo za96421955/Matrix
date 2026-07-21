@@ -3,8 +3,7 @@ export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
 # ============================================================
-# matrix 一键安装脚本 (通用版)
-# 用法: curl -fsSL http://<server>:8090/install/install.sh | bash -s -- --server=http://<server>:8090
+# matrix 一键安装脚本
 # ============================================================
 
 # ---------- 日志函数 ----------
@@ -54,14 +53,7 @@ write_to_profiles() {
 }
 
 # ---------- 参数解析 ----------
-SERVER="https://localhost:8090"
-for arg in "$@"; do
-    case "$arg" in
-        --server=*) SERVER="${arg#*=}" ;;
-        *) log_error "未知参数: $arg"; echo "用法: curl -fsSL <url> | bash -s -- --server=<server-url>"; exit 1 ;;
-    esac
-done
-SERVER="${SERVER%/}"
+SERVER="https://raw.githubusercontent.com/XXXXXX/matrix/master/install"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)
@@ -100,11 +92,10 @@ fi
 
 # ---------- 创建目录 ----------
 INSTALL_DIR="$HOME/.matrix/client"
-JDK_DIR="$HOME/.matrix/jdk21"
 CLI_DIR="$HOME/.local/bin"
 
 log_info "创建目录..."
-mkdir -p "$INSTALL_DIR"/{bin,config,settings,logs} "$JDK_DIR" "$CLI_DIR"
+mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs} "$CLI_DIR"
 log_info "✓ 目录就绪"
 
 # ---------- 保存服务器地址 (供 matrix update 使用) ----------
@@ -112,7 +103,7 @@ echo "$SERVER" > "$INSTALL_DIR/config/server.url"
 log_info "✓ 服务器地址已保存"
 
 # ---------- 下载 JAR ----------
-JAR_URL="$SERVER/install/matrix-client.jar"
+JAR_URL="$SERVER/matrix-client.jar"
 JAR_FILE="$INSTALL_DIR/matrix-client.jar"
 log_info "下载 JAR ..."
 { curl -# -fL "$JAR_URL" -o "$JAR_FILE" && log_info "✓ JAR 完成"; } || { log_error "下载失败: $JAR_URL"; exit 1; }
@@ -121,7 +112,7 @@ log_info "下载 JAR ..."
 BIN_FILES="start.sh stop.sh restart.sh"
 log_info "下载 bin/ 脚本 ..."
 for f in $BIN_FILES; do
-    curl -# -fL "$SERVER/install/bin/$f" -o "$INSTALL_DIR/bin/$f" || { log_error "下载 $f 失败"; exit 1; }
+    curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" || { log_error "下载 $f 失败"; exit 1; }
 done
 chmod +x "$INSTALL_DIR/bin/"*.sh
 log_info "✓ bin/ 完成"
@@ -134,7 +125,7 @@ for f in $CONFIG_FILES; do
     if [ -f "$fp" ]; then
         log_info "✓ $f 已存在，跳过"
     else
-        curl -# -fL "$SERVER/install/config/$f" -o "$fp" || { log_error "下载 $f 失败"; exit 1; }
+        curl -# -fL "$SERVER/config/$f" -o "$fp" || { log_error "下载 $f 失败"; exit 1; }
         log_info "✓ $f 下载完成"
     fi
 done
@@ -166,33 +157,32 @@ for rp in "${SETTINGS_FILES[@]}"; do
         log_info "✓ $rp 已存在"
     else
         mkdir -p "$(dirname "$fp")"
-        curl -# -fL "$SERVER/install/$rp" -o "$fp" || { log_error "下载 $rp 失败"; exit 1; }
+        curl -# -fL "$SERVER/$rp" -o "$fp" || { log_error "下载 $rp 失败"; exit 1; }
         log_info "✓ $rp 完成"
     fi
 done
 log_info "✓ settings/ 完成"
 
-# ---------- JDK 下载 (固定独立地址) ----------
+# ---------- JDK 下载 ----------
 log_info "检查 JDK ..."
-case "${os_type}_${arch_type}" in
-    darwin_x64)    JDK_URL="OpenJDK21U-jdk_x64_mac_hotspot_21.0.11_10.tar.gz" ;;
-    darwin_aarch64) JDK_URL="OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.11_10.tar.gz" ;;
-    linux_x64)     JDK_URL="OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz" ;;
-    linux_aarch64) JDK_URL="OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.11_10.tar.gz" ;;
-    windows_x64)   JDK_URL="OpenJDK21U-jdk_x64_windows_hotspot_21.0.11_10.zip" ;;
-    windows_aarch64) JDK_URL="OpenJDK21U-jdk_aarch64_windows_hotspot_21.0.11_10.zip" ;;
-    *) JDK_URL=""; log_warn "未识别的系统架构，跳过 JDK 下载，请自行安装 JDK 21" ;;
-esac
-if [ -n "$JDK_URL" ]; then
-    JDK_FILE=$(basename "$JDK_URL")
-    JDK_PATH="$JDK_DIR/$JDK_FILE"
-    if [ -f "$JDK_PATH" ]; then
-        log_info "✓ JDK 已存在"
+JDK_VERSION="21.0.11+10"
+JDK_API="https://api.adoptium.net/v3/binary/latest/21/ga/${os_type}/${arch_type}/jdk/hotspot/normal/eclipse"
+JDK_ARCHIVE="$JDK_DIR/jdk.tar.gz"
+
+if [ -d "$JDK_DIR/bin" ]; then
+    log_info "✓ JDK 已存在"
+else
+    log_info "下载 JDK 21 ..."
+    curl -# -L "$JDK_API" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
+    mkdir -p "$JDK_DIR"
+    if [ "$os_type" = "windows" ]; then
+        unzip -q "$JDK_ARCHIVE" -d "$JDK_DIR" && mv "$JDK_DIR"/jdk-*/* "$JDK_DIR/" && rmdir "$JDK_DIR"/jdk-* 2>/dev/null
     else
-        log_info "下载 JDK ($JDK_FILE)..."
-        curl -# -fL "$JDK_URL" -o "$JDK_PATH" || { log_error "JDK 下载失败"; exit 1; }
-        log_info "✓ JDK 下载完成"
+        tar -xzf "$JDK_ARCHIVE" -C "$JDK_DIR" --strip-components=1
     fi
+    [ $? -ne 0 ] && { log_error "JDK 解压失败"; exit 1; }
+    rm -f "$JDK_ARCHIVE"
+    log_info "✓ JDK 安装完成"
 fi
 
 # ---------- 安装 matrix CLI ----------
@@ -225,13 +215,13 @@ case "$1" in
         if [ -f "$INSTALL_DIR/config/server.url" ]; then
             SERVER=$(cat "$INSTALL_DIR/config/server.url")
             echo "下载最新 JAR ..."
-            curl -# -fL "$SERVER/install/matrix-client.jar" -o "$INSTALL_DIR/matrix-client.jar" || {
+            curl -# -fL "$SERVER/matrix-client.jar" -o "$INSTALL_DIR/matrix-client.jar" || {
                 echo "下载 JAR 失败，更新中止"
                 exit 1
             }
             echo "下载最新 bin 脚本 ..."
             for f in start.sh stop.sh restart.sh; do
-                curl -# -fL "$SERVER/install/bin/$f" -o "$INSTALL_DIR/bin/$f" || echo "下载 $f 失败，跳过"
+                curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" || echo "下载 $f 失败，跳过"
             done
             chmod +x "$INSTALL_DIR/bin/"*.sh
             echo "升级完成，正在重启服务 ..."

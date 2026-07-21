@@ -1,0 +1,33 @@
+# -1: 禁止执行
+# 0: 无风险
+# 1: 底风险
+# 2: 中风险
+# 3: 高风险
+bash:
+  - default: 1
+  - shutdown: -1
+  - reboot: -1
+  - sudo: -1
+  - fdisk: -1
+  - mkfs: -1
+  - dd: -1
+  - pwd: 0
+  - ls: 0
+  - cd: 0
+  - find: 0
+  - cat: 0
+  - grep: 0
+  - tail: 0
+  - head: 0
+  - echo: 0
+  - sed: 0
+  - dir: 0
+  - rm: 3
+tool:
+  - default: 0
+skill:
+  - default: 3
+app:
+  - default: 3
+
+

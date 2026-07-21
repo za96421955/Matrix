@@ -1,5 +1,5 @@
 server:
-  port: 8092
+  port: 10627
 
 ---
 spring:
@@ -9,7 +9,7 @@ spring:
 ---
 matrix:
   client:
-    name: PC
+    name: 个人PC
     desc: 个人办公
     basic:
       base-path: ${user.dir}
@@ -23,7 +23,7 @@ matrix:
     api-key: ${DEEPSEEK_API_KEY}
     retry-max: 5
     retry-base-delay: 1000
-    base: http://localhost:8091
+    base: http://localhost:10626
     register: /v1/client/register
     heartbeat: /v1/client/heartbeat
     ack: /v1/task/ack

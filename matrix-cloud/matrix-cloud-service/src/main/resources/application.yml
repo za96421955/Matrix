@@ -1,8 +1,8 @@
 server:
-  port: 8091
+  port: 10626
 management:
   server:
-    port: 8002
+    port: 8001
 
 ---
 spring:
@@ -49,6 +49,6 @@ matrix:
     connect-timeout: 10
     max-reconnect-delay: 128
   github:
-    token: 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
+    token:
 
 

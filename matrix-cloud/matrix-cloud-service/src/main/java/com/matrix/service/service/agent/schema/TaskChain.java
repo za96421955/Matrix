@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TaskChain {
 
-    @Description("有序的执行块列表，按顺序执行。每个块可以是顺序块（块内任务串行）或并行块（块内任务并行）。")
+    @Description("任务块列表、同步执行。块内的任务列表同步/异步执行。")
     private List<ExecutionBlock> blocks;
 
     @Override
@@ -29,10 +29,10 @@ public class TaskChain {
     @AllArgsConstructor
     public static class ExecutionBlock {
 
-        @Description("任务列表是否串行执行, 默认: true")
-        private Boolean seq;
+        @Description("任务列表是否同步执行, 默认: true")
+        private Boolean sync;
 
-        @Description("该块包含的任务列表")
+        @Description("任务列表")
         private List<Task> tasks;
 
         @Override
@@ -54,11 +54,14 @@ public class TaskChain {
         @Description("任务名称, 驼峰变量名 (示例: taskName)")
         private String name;
 
-        @Description("任务信息/目标")
-        private String input;
+        @Description("执行方案")
+        private String action;
 
-        @Description("执行结果关键产出")
-        private String expectedResult;
+        @Description("任务目标")
+        private String goal;
+
+        @Description("关键结果")
+        private String result;
 
         @Override
         public String toString() {

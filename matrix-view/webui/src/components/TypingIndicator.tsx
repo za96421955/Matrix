@@ -5,7 +5,7 @@ export default function TypingIndicator() {
         <div className="flex items-start gap-3 px-4 py-2" role="status" aria-label="AI 正在输入">
             <div
                 className="flex-shrink-0 w-8 h-8 rounded-full dark:bg-[#252529] bg-gray-800 flex items-center justify-center text-gray-200 text-xs font-bold shadow-sm">
-                AI
+                M
             </div>
             <div className="bg-gray-100 dark:bg-[#1c1c20]/80 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                 <div className="flex gap-1.5">

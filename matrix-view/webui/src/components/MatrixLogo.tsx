@@ -1,102 +1,104 @@
-import { useThemeStore } from '../store/themeStore'
+import {useThemeStore} from '../store/themeStore'
 
 interface MatrixLogoProps {
-  size?: 'sm' | 'xl'
-  className?: string
+    size?: 'sm' | 'xl'
+    className?: string
 }
 
-// ---------- 固定竖线配置：加大落差 ----------
+// ---------- 圆角竖线配置 ----------
 type LineConfig = {
-  viewBox: number
-  count: 4
-  lineWidth: number
-  height: number
-  spreadPct: number
-  offsets: [number, number, number, number]
+    viewBox: number
+    count: 4
+    lineWidth: number
+    height: number
+    spreadPct: number
+    offsets: [number, number, number, number]
 }
 
 const CONFIG: Record<'sm' | 'xl', LineConfig> = {
-  sm: {
-    viewBox: 16,
-    count: 4,
-    lineWidth: 2.0,
-    height: 10,            // 缩短以留出更多偏移空间
-    spreadPct: 0.80,
-    offsets: [0.0, 3.4, 1.5, 2.8],   // 最大落差 3.4
-  },
-  xl: {
-    viewBox: 64,
-    count: 4,
-    lineWidth: 5.5,
-    height: 46,            // 缩短以增大可偏移范围
-    spreadPct: 0.72,
-    offsets: [0.0, 7.5, 3.0, 6.0],   // 最大落差 7.5
-  },
+    sm: {
+        viewBox: 16,
+        count: 4,
+        lineWidth: 3.0,
+        height: 10,
+        spreadPct: 0.90,
+        offsets: [0.0, 4.0, 0.0, 4.0],
+    },
+    xl: {
+        viewBox: 64,
+        count: 4,
+        lineWidth: 10,
+        height: 46,
+        spreadPct: 1.0,
+        offsets: [0.0, 12.0, 0.0, 10.0],
+    },
 }
 
-export default function MatrixLogo({ size = 'sm', className = '' }: MatrixLogoProps) {
-  const theme = useThemeStore((s) => s.theme)
-  const isDark = theme === 'dark'
+export default function MatrixLogo({size = 'sm', className = ''}: MatrixLogoProps) {
+    const theme = useThemeStore((s) => s.theme)
+    const isDark = theme === 'dark'
 
-  const cfg = CONFIG[size]
-  const { viewBox, count, lineWidth, height, spreadPct, offsets } = cfg
+    const cfg = CONFIG[size]
+    const {viewBox, count, lineWidth, height, spreadPct, offsets} = cfg
 
-  const padX = viewBox * 0.08
-  const usableW = (viewBox - padX * 2) * spreadPct
-  const startX = (viewBox - usableW) / 2
-  const stepX = usableW / (count - 1)
+    const padX = viewBox * 0.08
+    const usableW = (viewBox - padX * 2) * spreadPct
+    const startX = (viewBox - usableW) / 2
+    const stepX = usableW / (count - 1)
 
-  // 垂直基准线：所有线条的顶部将以此为起点再叠加偏移
-  const top = viewBox * 0.08 // 上边距
+    const top = viewBox * 0.08
+    const cornerRadius = lineWidth * 0.4  // 圆角大小与线宽成比例
 
-  const bgColor = isDark ? '#ffffff' : '#000000'
-  const rainColor = isDark ? '#004d00' : '#00ff41'
+    const bgColor = isDark ? '#ffffff' : '#000000'
+    const rainColor = isDark ? '#000000' : '#00ff41'
 
-  const gradientId = 'rainGrad'
+    const gradientId = 'rainGrad'
 
-  return (
-      <svg
-          viewBox={`0 0 ${viewBox} ${viewBox}`}
-          className={className}
-          style={{
-            width: size === 'sm' ? 16 : 64,
-            height: size === 'sm' ? 16 : 64,
-            display: 'block',
-            flexShrink: 0,
-          }}
-          aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={rainColor} stopOpacity={0.15} />
-            <stop offset="100%" stopColor={rainColor} stopOpacity={1} />
-          </linearGradient>
-        </defs>
+    return (
+        <svg
+            viewBox={`0 0 ${viewBox} ${viewBox}`}
+            className={className}
+            style={{
+                width: size === 'sm' ? 16 : 64,
+                height: size === 'sm' ? 16 : 64,
+                display: 'block',
+                flexShrink: 0,
+            }}
+            aria-hidden="true"
+        >
+            <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={rainColor} stopOpacity={0.15}/>
+                    <stop offset="100%" stopColor={rainColor} stopOpacity={1}/>
+                </linearGradient>
+            </defs>
 
-        <rect
-            x={0}
-            y={0}
-            width={viewBox}
-            height={viewBox}
-            rx={viewBox * 0.2}
-            ry={viewBox * 0.2}
-            fill={bgColor}
-        />
+            <rect
+                x={0}
+                y={0}
+                width={viewBox}
+                height={viewBox}
+                rx={viewBox * 0.2}
+                ry={viewBox * 0.2}
+                fill={bgColor}
+            />
 
-        {Array.from({ length: count }).map((_, i) => {
-          const x = startX + i * stepX - lineWidth / 2
-          const y = top + offsets[i]
-          return (
-              <rect
-                  key={i}
-                  x={x}
-                  y={y}
-                  width={lineWidth}
-                  height={height}
-                  fill={`url(#${gradientId})`}
-              />
-          )
-        })}
-      </svg>
-  )
+            {Array.from({length: count}).map((_, i) => {
+                const x = startX + i * stepX - lineWidth / 2
+                const y = top + offsets[i]
+                return (
+                    <rect
+                        key={i}
+                        x={x}
+                        y={y}
+                        width={lineWidth}
+                        height={height}
+                        rx={cornerRadius}
+                        ry={cornerRadius}
+                        fill={`url(#${gradientId})`}
+                    />
+                )
+            })}
+        </svg>
+    )
 }

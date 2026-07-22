@@ -962,7 +962,7 @@ export default function ChatArea() {
                         }
                     >
                         <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
-                        <span className="hidden sm:inline">{messageFilterMode === 'all' ? "全部" : "仅对话"}</span>
+                        <span className="hidden sm:inline">{messageFilterMode === 'all' ? "全部" : "对话"}</span>
                     </button>
                     {/* Markdown 切换 */}
                     <button
@@ -976,7 +976,7 @@ export default function ChatArea() {
                         }
                     >
                         <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
-                        <span className="hidden sm:inline">{markdownEnabled ? "MD" : "文本"}</span>
+                        <span className="hidden sm:inline">{markdownEnabled ? "渲染" : "文本"}</span>
                     </button>
                     {/* API Key 设置 */}
                     <button

@@ -54,14 +54,13 @@ export default function MatrixLogo({size = 'sm', className = ''}: MatrixLogoProp
 
     const gradientId = 'rainGrad'
 
-    // 统一尺寸：sm=16x16, xl=64x64，通过 Tailwind class 控制
-    const sizeClass = size === 'sm' ? 'w-4 h-4' : 'w-16 h-16'
-
     return (
         <svg
             viewBox={`0 0 ${viewBox} ${viewBox}`}
-            className={`${sizeClass} ${className}`}
+            className={className}
             style={{
+                width: size === 'sm' ? 16 : 64,
+                height: size === 'sm' ? 16 : 64,
                 display: 'block',
                 flexShrink: 0,
             }}

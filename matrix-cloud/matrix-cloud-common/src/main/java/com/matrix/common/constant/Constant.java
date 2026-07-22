@@ -64,6 +64,9 @@ public interface Constant {
      * 模式
      */
     interface Pattern {
+        /** 对话模式 */
+        String CHAT = "chat";
+
         /** 智能体模式 */
         String AGENT = "agent";
 
@@ -72,6 +75,9 @@ public interface Constant {
 
         /** 任务模式 */
         String TASK = "task";
+
+        /** 观察者模式 */
+        String OBSERVER = "observer";
 
         /** 长程模式 */
         String LONG_RANGE = "long_range";

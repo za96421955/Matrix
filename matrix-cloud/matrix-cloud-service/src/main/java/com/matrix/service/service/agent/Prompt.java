@@ -165,6 +165,27 @@ public interface Prompt {
             """;
     }
 
+    /** 观察者 */
+    interface Observer {
+        String CHECK_RESULT = """
+            1. 观察任务执行结果是否满足目标
+            2. 满足: true; 不满足: 说明原因
+            3. 仅输出 true/问题原因, 不要任何解释
+            
+            ## 任务目标：
+            %s
+            """;
+
+        String CHECK_TASK = """
+            1. 任务执行结果不满足目标，根据原因判断是否需要重新规划任务
+            2. 需要: true; 不需要: false
+            3. 仅输出 true/false, 不要任何解释
+            
+            ## 任务目标：
+            %s
+            """;
+    }
+
     /** 需求开发 */
     interface Coding {
 

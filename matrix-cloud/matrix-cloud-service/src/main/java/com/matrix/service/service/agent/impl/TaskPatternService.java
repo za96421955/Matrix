@@ -85,7 +85,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private TaskChain buildTaskChain(FluxSink<Response> sink, PatternRequest request) {
+    public TaskChain buildTaskChain(FluxSink<Response> sink, PatternRequest request) {
         // 获取 task chain 缓存
         TaskChain taskChain = taskPatternContext.getTaskChain(request.getUserId(), request.getSessionId());
         if (null != taskChain) {
@@ -183,7 +183,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private void executorBlock(FluxSink<Response> sink, PatternRequest request, TaskChain.ExecutionBlock block) {
+    public void executorBlock(FluxSink<Response> sink, PatternRequest request, TaskChain.ExecutionBlock block) {
         // 顺序执行
         if (null == block.getSync() || block.getSync()) {
             for (TaskChain.Task task : block.getTasks()) {

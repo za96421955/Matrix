@@ -2,7 +2,6 @@ import React, {useEffect, Component, ErrorInfo, ReactNode, lazy} from 'react'
 import {useThemeStore} from './store/themeStore'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
-import TabBar from './components/TabBar'
 import ToastContainer from './components/Toast'
 
 const MatrixRain = lazy(() => import('./components/MatrixRain'))
@@ -76,7 +75,6 @@ export default function App() {
 
             <div
                 className="relative z-10 flex flex-col h-full w-full overflow-hidden bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-200 transition-colors">
-                <TabBar/>
                 <div className="flex-1 flex overflow-hidden w-full">
                     <Sidebar/>
                     <ChatArea/>

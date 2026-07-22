@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSON;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
-import com.matrix.common.dto.model.Role;
 import com.matrix.common.dto.request.ChatRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
@@ -39,11 +38,15 @@ public class ChatService {
     private MessageService messageService;
 
     @Resource
+    private ChatPatternService chatPatternService;
+    @Resource
     private SkillPatternService skillPatternService;
     @Resource
     private PlanPatternService planPatternService;
     @Resource
     private TaskPatternService taskPatternService;
+    @Resource
+    private ObserverPatternService observerPatternService;
     @Resource
     private CodingPatternService codingPatternService;
     @Resource
@@ -66,11 +69,14 @@ public class ChatService {
             request.setPattern(Constant.Pattern.LONG_RANGE);
         }
         switch (request.getPattern()) {
+//            case Constant.Pattern.CHAT -> patternService = chatPatternService;
             case Constant.Pattern.AGENT -> patternService = skillPatternService;
+            case Constant.Pattern.PLAN -> patternService = planPatternService;
             case Constant.Pattern.TASK -> patternService = taskPatternService;
+            case Constant.Pattern.OBSERVER -> patternService = observerPatternService;
             case Constant.Pattern.CODING -> patternService = codingPatternService;
             case Constant.Pattern.INFORMATION -> patternService = informationPatternService;
-            default -> patternService = planPatternService;
+            default -> patternService = chatPatternService;
         }
 
         // 流式响应

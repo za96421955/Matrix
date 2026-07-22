@@ -548,6 +548,42 @@ export default function Sidebar() {
                 </div>
             </div>
 
+            {/* === 外链导航按钮行：分段控件风格 === */}
+            <div className="px-3 pb-2">
+                <div className="flex rounded-lg bg-gray-200/70 dark:bg-white/[0.06] p-0.5">
+                    <a
+                        href="https://chat.deepseek.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-[#2a2a2e] hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+                        title="DeepSeek Chat"
+                    >
+                        <img src="./deepseek-chat-favicon.svg" alt="Chat" className="w-3.5 h-3.5" />
+                        <span>Chat</span>
+                    </a>
+                    <a
+                        href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/#%E6%89%A3%E8%B4%B9%E8%A7%84%E5%88%99"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-[#2a2a2e] hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+                        title="DeepSeek API"
+                    >
+                        <img src="./deepseek-api-favicon.svg" alt="API" className="w-3.5 h-3.5" />
+                        <span>API</span>
+                    </a>
+                    <a
+                        href="https://platform.deepseek.com/usage"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-[#2a2a2e] hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+                        title="用量统计"
+                    >
+                        <img src="./deepseek-platform-favicon.svg" alt="用量统计" className="w-3.5 h-3.5 dark:brightness-0 dark:invert" />
+                        <span>统计</span>
+                    </a>
+                </div>
+            </div>
+
             {/* === "新对话"按钮：实线边框、灰色背景、阴影 === */}
             <div className="px-3 pb-2">
                 <button

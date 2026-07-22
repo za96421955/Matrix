@@ -32,6 +32,9 @@ public class TaskChain {
         @Description("任务列表是否同步执行, 默认: true")
         private Boolean sync;
 
+        @Description("任务块目标")
+        private String goal;
+
         @Description("任务列表")
         private List<Task> tasks;
 

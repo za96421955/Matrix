@@ -33,7 +33,7 @@ public class MatrixClientProperties {
         private String modelsPath = settingsPath + "/models.yml";
         private String riskLevelPath = settingsPath + "/risk-level.yml";
 
-        private String agentPath = settingsPath + "/agent";
+//        private String agentPath = settingsPath + "/agent";
         private String skillPath = settingsPath + "/skill";
         private String appPath = settingsPath + "/app";
     }

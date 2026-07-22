@@ -64,17 +64,14 @@ const MessageList = React.memo(
          onLoadMore,
          historyLoading,
          onDelete,
-         onRegenerate,
          isBackendSession,
      }: any) => {
         const lastIdx = messages.length - 1
         const lastMsg = messages[lastIdx]
-        const secondLastMsg = lastIdx > 0 ? messages[lastIdx - 1] : null
+        // const secondLastMsg = lastIdx > 0 ? messages[lastIdx - 1] : null
         const isAssistantStreaming = isStreaming && lastMsg?.role === 'assistant'
         const showTyping =
             (isAssistantStreaming && !lastMsg?.content) || isBackendGenerating
-        const showRegenerateBtn =
-            lastMsg?.role === 'assistant' && !isStreaming && !!lastMsg?.content && secondLastMsg?.role === 'user'
 
         // 构建 toolCallId -> tool结果 的映射
         const toolResultsMap = useMemo(() => {
@@ -177,18 +174,6 @@ const MessageList = React.memo(
                                 isToolCallExpanded={expandedMsgId === lastMsg.id}
                                 onToggleToolCall={() => setExpandedMsgId(expandedMsgId === lastMsg.id ? null : lastMsg.id)}
                             />
-                            {showRegenerateBtn && (
-                                <div className="flex justify-start px-4 pt-1 pb-2">
-                                    <button
-                                        onClick={onRegenerate}
-                                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors"
-                                        aria-label="重新生成回复"
-                                    >
-                                        <RefreshCw className="w-3.5 h-3.5"/>
-                                        <span>重新生成</span>
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     )
                 })()}
@@ -214,7 +199,7 @@ const ProjectPathInput = () => {
 
     const currentClientId = useChatStore((s) => s.currentClientId)
     const setCurrentClientId = useChatStore((s) => s.setCurrentClientId)
-    const [clientList, setClientList] = useState<{clientId: string; name: string}[]>([])
+    const [clientList, setClientList] = useState<{ clientId: string; name: string }[]>([])
     const [clientLoading, setClientLoading] = useState(false)
 
     // Fetch client list on mount
@@ -309,7 +294,8 @@ const ProjectPathInput = () => {
                             className="w-full overflow-x-auto whitespace-nowrap rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder-gray-400 placeholder-gray-500 dark:placeholder-gray-600"
                         />
                         {dropdownOpen && projectPathHistory.length > 0 && (
-                            <div className="absolute left-0 right-0 bottom-full mb-1 z-50 rounded-lg border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#1c1c20]/95 dark:backdrop-blur-2xl shadow-2xl py-1 max-h-[185px] overflow-y-auto">
+                            <div
+                                className="absolute left-0 right-0 bottom-full mb-1 z-50 rounded-lg border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#1c1c20]/95 dark:backdrop-blur-2xl shadow-2xl py-1 max-h-[185px] overflow-y-auto">
                                 {projectPathHistory.map((path: string) => (
                                     <div
                                         key={path}
@@ -327,8 +313,11 @@ const ProjectPathInput = () => {
                                             className="flex-shrink-0 rounded p-1 hover:bg-gray-200 dark:hover:bg-white/[0.08] text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                             aria-label="移除路径"
                                         >
-                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                                 strokeLinejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
                                             </svg>
                                         </button>
                                     </div>
@@ -375,8 +364,8 @@ export default function ChatArea() {
     const loadMoreHistoryMessages = useChatStore((s) => s.loadMoreHistoryMessages)
     const fetchHistoryMessages = useChatStore((s) => s.fetchHistoryMessages)
     const deleteHistoryMessage = useChatStore((s) => s.deleteHistoryMessage)
-    const removeLastAssistantMessage = useChatStore((s) => s.removeLastAssistantMessage)
-    const removeLastHistoryMessage = useChatStore((s) => s.removeLastHistoryMessage)
+    // const removeLastAssistantMessage = useChatStore((s) => s.removeLastAssistantMessage)
+    // const removeLastHistoryMessage = useChatStore((s) => s.removeLastHistoryMessage)
     const apiKey = useApiKeyStore((s) => s.apiKey)
     const backendSessionList = useChatStore((s) => s.backendSessionList)
     const markdownEnabled = useChatStore((s) => s.markdownEnabled)
@@ -700,7 +689,7 @@ export default function ChatArea() {
                         const state = useChatStore.getState()
                         const localSid = state.currentSessionId
                         if (localSid && !isBackendSessionId(localSid)) {
-                            useChatStore.setState({ currentSessionId: String(sessionId) })
+                            useChatStore.setState({currentSessionId: String(sessionId)})
                         }
                         useChatStore.getState().fetchSessions(1).then(() => {
                             const _st = useChatStore.getState()
@@ -764,32 +753,32 @@ export default function ChatArea() {
                 },
                 controller.signal
             ).then(() => {
-                    setStreaming(false)
-                    //切换本地会话到后端会话 (同 onDone逻辑)
-                    const _st = useChatStore.getState();
-                    const _sid = _st.currentSessionId;
-                    if (_sid && !isBackendSessionId(_sid)) {
-                        const _local = _st.sessions.find(s => s.id === _sid);
-                        if (_local?.backendSessionId) {
-                            const _bid = _local.backendSessionId;
-                            const _sessions = _st.sessions.map(s =>
-                                s.id === _sid ? {...s, id: String(_bid), backendSessionId: _bid} : s
-                            );
+                setStreaming(false)
+                //切换本地会话到后端会话 (同 onDone逻辑)
+                const _st = useChatStore.getState();
+                const _sid = _st.currentSessionId;
+                if (_sid && !isBackendSessionId(_sid)) {
+                    const _local = _st.sessions.find(s => s.id === _sid);
+                    if (_local?.backendSessionId) {
+                        const _bid = _local.backendSessionId;
+                        const _sessions = _st.sessions.map(s =>
+                            s.id === _sid ? {...s, id: String(_bid), backendSessionId: _bid} : s
+                        );
+                        useChatStore.setState({
+                            currentSessionId: String(_bid),
+                            sessions: _sessions,
+                            historyMessages: _local.messages,
+                            historyLoaded: true,
+                        });
+                        //等fetchSessions返回后再从sessions中移除本地会话（此时backendSessionList已有该会话）
+                        _st.fetchSessions(1).then(() => {
+                            const st = useChatStore.getState();
                             useChatStore.setState({
-                                currentSessionId: String(_bid),
-                                sessions: _sessions,
-                                historyMessages: _local.messages,
-                                historyLoaded: true,
+                                sessions: st.sessions.filter(s => s.id !== String(_bid)),
                             });
-                            //等fetchSessions返回后再从sessions中移除本地会话（此时backendSessionList已有该会话）
-                            _st.fetchSessions(1).then(() => {
-                                const st = useChatStore.getState();
-                                useChatStore.setState({
-                                    sessions: st.sessions.filter(s => s.id !== String(_bid)),
-                                });
-                            });
-                        }
+                        });
                     }
+                }
             })
         },
         [apiKey, setStreaming, setBackendGenerating, setBackendSessionId, scrollToBottom, fetchHistoryMessages, checkAndStartPolling]
@@ -857,26 +846,6 @@ export default function ChatArea() {
         [deleteHistoryMessage]
     )
 
-    const handleRegenerate = useCallback(() => {
-        const state = useChatStore.getState()
-        const msgs = isBackendSessionId(state.currentSessionId)
-            ? state.historyMessages
-            : state.sessions.find((s) => s.id === state.currentSessionId)?.messages ?? []
-        if (msgs.length < 2) return
-        const last = msgs[msgs.length - 1]
-        const secondLast = msgs[msgs.length - 2]
-        if (last.role !== 'assistant' || secondLast.role !== 'user') return
-        const userText = secondLast.content
-        const isBack = isBackendSessionId(state.currentSessionId)
-        if (isBack) {
-            removeLastHistoryMessage()
-            addHistoryMessage({role: 'assistant', content: ''})
-        } else {
-            removeLastAssistantMessage()
-            addMessage({role: 'assistant', content: ''})
-        }
-        startStreaming(userText)
-    }, [removeLastAssistantMessage, removeLastHistoryMessage, addHistoryMessage, addMessage, startStreaming])
 
     const handleLoadMore = useCallback(() => {
         const container = messagesContainerRef.current
@@ -901,11 +870,11 @@ export default function ChatArea() {
 
     // ===================== 模式映射 =====================
     const patternOptions: { value: Pattern; label: string }[] = [
-        { value: 'agent', label: '技能' },
-        { value: 'plan', label: '规划·执行' },
-        { value: 'task', label: '任务链' },
-        { value: 'coding', label: '需求开发' },
-        { value: 'information', label: '资料整理' },
+        {value: 'agent', label: '技能'},
+        {value: 'plan', label: '规划·执行'},
+        {value: 'task', label: '任务链'},
+        {value: 'coding', label: '需求开发'},
+        {value: 'information', label: '资料整理'},
     ]
 
     // ===================== UI 渲染 =====================
@@ -1140,7 +1109,6 @@ export default function ChatArea() {
                         onLoadMore={handleLoadMore}
                         historyLoading={historyLoading}
                         onDelete={handleDelete}
-                        onRegenerate={handleRegenerate}
                         isBackendSession={isBackendSession}
                     />
                 )}
@@ -1150,9 +1118,9 @@ export default function ChatArea() {
 
             {/* 输入栏 */}
             {/* 项目路径选择 */}
-            {<ProjectPathInput />}
+            {<ProjectPathInput/>}
 
-            <InputBar onSend={handleSend} onStop={handleStop} />
+            <InputBar onSend={handleSend} onStop={handleStop}/>
 
             {/* API Key 弹窗 */}
             <React.Suspense fallback={null}>

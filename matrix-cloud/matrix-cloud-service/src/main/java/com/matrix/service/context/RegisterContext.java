@@ -266,9 +266,9 @@ public class RegisterContext {
         if (Command.Type.TOOL.equals(type)) {
             redisKey = RedisKey.RISK_LEVEL_TOOL;
         }
-        if (Command.Type.AGENT.equals(type)) {
-            redisKey = RedisKey.RISK_LEVEL_AGENT;
-        }
+//        if (Command.Type.AGENT.equals(type)) {
+//            redisKey = RedisKey.RISK_LEVEL_AGENT;
+//        }
         if (Command.Type.SKILL.equals(type)) {
             redisKey = RedisKey.RISK_LEVEL_SKILL;
         }

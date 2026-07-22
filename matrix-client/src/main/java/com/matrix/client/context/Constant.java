@@ -11,8 +11,8 @@ public interface Constant {
     String MEMORY = "MEMORY.md";
     String ASSISTANT = ".ASSISTANT.md";
 
-    String AGENT_FILE = "AGENT.md";
-    String AGENT_EXTEND = "EXTEND.md";
+//    String AGENT_FILE = "AGENT.md";
+//    String AGENT_EXTEND = "EXTEND.md";
 
     String SKILL_FILE = "SKILL.md";
 

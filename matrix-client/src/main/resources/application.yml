@@ -16,7 +16,7 @@ matrix:
       settings-path: ${matrix.client.basic.base-path}/settings
       models-path: ${matrix.client.basic.settings-path}/models.yml
       risk-level-path: ${matrix.client.basic.settings-path}/risk-level.yml
-      agent-path: ${matrix.client.basic.settings-path}/agent
+#      agent-path: ${matrix.client.basic.settings-path}/agent
       skill-path: ${matrix.client.basic.settings-path}/skill
       app-path: ${matrix.client.basic.settings-path}/app
   service:

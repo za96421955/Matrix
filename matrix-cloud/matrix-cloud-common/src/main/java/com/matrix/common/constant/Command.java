@@ -15,7 +15,7 @@ public interface Command {
     interface Type {
         String BASH = "bash";
         String TOOL = "tool";
-        String AGENT = "agent";
+//        String AGENT = "agent";
         String SKILL = "skill";
         String APP = "app";
     }

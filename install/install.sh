@@ -142,13 +142,9 @@ fi
 
 # ---------- 下载 settings/ ----------
 SETTINGS_FILES=(
-    "settings/models.yml"
+    "settings/MEMORY.md"
     "settings/risk-level.yml"
-    "settings/skill/mac_scan_pdf/README.md"
-    "settings/skill/mac_scan_pdf/SKILL.md"
-    "settings/skill/mac_scan_pdf/bin/mac-scan-pdf.sh"
-    "settings/skill/mac_scan_pdf/bin/ocr.swift"
-    "settings/skill/mac_scan_pdf/bin/pdftopng.swift"
+    "settings/skill/query-typhoon/SKILL.md"
 )
 log_info "下载 settings/ ..."
 for rp in "${SETTINGS_FILES[@]}"; do

@@ -11,7 +11,19 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 /**
  * 文件工具类 (基于 JDK 17+ NIO.2)
  *
@@ -21,6 +33,10 @@ import java.util.List;
 public final class FileUtil {
 
 	private FileUtil() {}
+
+	/** 备份文件后缀时间戳格式 */
+	private static final DateTimeFormatter BACKUP_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
 
 	/**
 	 * 从完整路径中提取文件名（包含扩展名）
@@ -299,6 +315,169 @@ public final class FileUtil {
 		}
 	}
 
+	// ==================== 备份方法 ====================
+
+	/**
+	 * 备份单个文件。在写入变更前调用，备份原始内容。
+	 * 备份文件命名格式：{原始文件路径}.back_yyyyMMddHHmmss
+	 * 若原始文件不存在，则跳过备份。
+	 * 若原始文件内容与最近一次备份内容完全一致，则跳过本次备份。
+	 * 备份完成后，清理同目录下的旧备份，仅保留最近3次。
+	 *
+	 * @param filePath 原始文件的绝对路径
+	 */
+	public static void backupFile(String filePath) {
+		if (filePath == null || filePath.trim().isEmpty()) {
+			log.warn("备份文件失败: 文件路径为空");
+			return;
+		}
+		Path sourcePath = Paths.get(filePath);
+		if (!Files.exists(sourcePath) || !Files.isRegularFile(sourcePath)) {
+			log.warn("备份文件失败: 文件不存在或不是普通文件, path={}", filePath);
+			return;
+		}
+
+		try {
+			byte[] currentContent = Files.readAllBytes(sourcePath);
+			Path parentDir = sourcePath.getParent();
+			String sourceName = sourcePath.getFileName().toString();
+			String backupPrefix = sourceName + ".back_";
+
+			List<Path> existingBackups;
+			if (parentDir != null) {
+				try (var stream = Files.list(parentDir)) {
+					existingBackups = stream
+							.filter(p -> p.getFileName().toString().startsWith(backupPrefix))
+							.filter(p -> !Files.isDirectory(p))
+							.sorted(Comparator.reverseOrder())
+							.collect(Collectors.toList());
+				}
+			} else {
+				existingBackups = List.of();
+			}
+
+			if (!existingBackups.isEmpty()) {
+				byte[] latestBackupContent = Files.readAllBytes(existingBackups.get(0));
+				if (java.util.Arrays.equals(currentContent, latestBackupContent)) {
+					log.info("备份文件跳过: 内容与最近备份一致, path={}", filePath);
+					return;
+				}
+			}
+
+			String timestamp = LocalDateTime.now().format(BACKUP_TIMESTAMP_FORMAT);
+			String backupFileName = sourceName + ".back_" + timestamp;
+			Path backupPath = (parentDir != null) ? parentDir.resolve(backupFileName) : Paths.get(backupFileName);
+			Files.copy(sourcePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+			log.info("备份文件完成: {} -> {}", filePath, backupPath.toAbsolutePath());
+
+			cleanOldBackups(sourcePath, backupPrefix, 3);
+
+		} catch (IOException e) {
+			log.error("备份文件异常: path={}", filePath, e);
+		}
+	}
+
+	/**
+	 * 备份整个目录为 zip 压缩包。在安装 skill 等覆盖操作前调用。
+	 * 备份文件命名格式：{目录路径}.back_yyyyMMddHHmmss.zip
+	 * 若原始目录不存在，则跳过备份。
+	 * 备份完成后，清理同目录下的旧备份，仅保留最近3次。
+	 *
+	 * @param dirPath 原始目录的绝对路径
+	 */
+	public static void backupDirectory(String dirPath) {
+		if (dirPath == null || dirPath.trim().isEmpty()) {
+			log.warn("备份目录失败: 路径为空");
+			return;
+		}
+		Path sourceDir = Paths.get(dirPath);
+		if (!Files.exists(sourceDir) || !Files.isDirectory(sourceDir)) {
+			log.warn("备份目录失败: 目录不存在或不是目录, path={}", dirPath);
+			return;
+		}
+
+		try {
+			String timestamp = LocalDateTime.now().format(BACKUP_TIMESTAMP_FORMAT);
+			String backupFileName = sourceDir.getFileName().toString() + ".back_" + timestamp + ".zip";
+			Path parentDir = sourceDir.getParent();
+			Path backupPath = (parentDir != null) ? parentDir.resolve(backupFileName) : Paths.get(backupFileName);
+
+			try (OutputStream fos = Files.newOutputStream(backupPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+				 ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+				Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+						String entryName = sourceDir.relativize(file).toString();
+						entryName = entryName.replace('\\', '/');
+						zos.putNextEntry(new ZipEntry(entryName));
+						try (InputStream in = Files.newInputStream(file)) {
+							in.transferTo(zos);
+						}
+						zos.closeEntry();
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+						if (!dir.equals(sourceDir)) {
+							String entryName = sourceDir.relativize(dir).toString();
+							entryName = entryName.replace('\\', '/') + "/";
+							zos.putNextEntry(new ZipEntry(entryName));
+							zos.closeEntry();
+						}
+						return FileVisitResult.CONTINUE;
+					}
+				});
+			}
+
+			log.info("备份目录完成: {} -> {}", dirPath, backupPath.toAbsolutePath());
+
+			String backupPrefix = sourceDir.getFileName().toString() + ".back_";
+			cleanOldBackups(sourceDir, backupPrefix, 3);
+
+		} catch (IOException e) {
+			log.error("备份目录异常: path={}", dirPath, e);
+		}
+	}
+
+	/**
+	 * 清理旧备份文件，仅保留指定数量的最近备份。
+	 * 根据文件名前缀匹配备份文件，按时间戳后缀降序排列，删除超出保留数量的旧文件。
+	 *
+	 * @param sourcePath   原始文件或目录的 Path，用于确定父目录
+	 * @param backupPrefix 备份文件名前缀（含 .back_）
+	 * @param keepCount    保留的最近备份数量
+	 */
+	private static void cleanOldBackups(Path sourcePath, String backupPrefix, int keepCount) {
+		Path parentDir = sourcePath.getParent();
+		if (parentDir == null) {
+			return;
+		}
+
+		try (var stream = Files.list(parentDir)) {
+			List<Path> backups = stream
+					.filter(p -> p.getFileName().toString().startsWith(backupPrefix))
+					.filter(p -> !Files.isDirectory(p))
+					.sorted(Comparator.reverseOrder())
+					.collect(Collectors.toList());
+
+			if (backups.size() <= keepCount) {
+				return;
+			}
+
+			List<Path> toDelete = backups.subList(keepCount, backups.size());
+			for (Path oldBackup : toDelete) {
+				try {
+					Files.delete(oldBackup);
+					log.info("清理旧备份: {}", oldBackup.toAbsolutePath());
+				} catch (IOException e) {
+					log.warn("清理旧备份失败: {}", oldBackup.toAbsolutePath(), e);
+				}
+			}
+		} catch (IOException e) {
+			log.warn("清理旧备份异常: path={}", sourcePath.toAbsolutePath(), e);
+		}
+	}
+
 }
-
-

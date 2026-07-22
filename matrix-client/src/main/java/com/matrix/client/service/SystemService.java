@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 /**
  * 系统服务
@@ -62,6 +63,7 @@ public class SystemService {
         if (command.indexOf(Constant.SYSTEM_COMMAND.WRITE_MEMORY) == 0) {
             String memory = command.substring(Constant.SYSTEM_COMMAND.WRITE_MEMORY.length());
             File file = new File(properties.getClient().getBasic().getSettingsPath(), Constant.MEMORY);
+            FileUtil.backupFile(file.getAbsolutePath());
             FileUtil.write(file.getAbsolutePath(), memory);
             return "记忆更新完成";
         }
@@ -85,6 +87,7 @@ public class SystemService {
             String filePath = json.getString("filePath");
             String content = json.getString("content");
             File file = new File(filePath, Constant.ASSISTANT);
+            FileUtil.backupFile(file.getAbsolutePath());
             FileUtil.write(file.getAbsolutePath(), content);
             return "操作说明更新完成";
         }
@@ -110,6 +113,7 @@ public class SystemService {
             String content = json.getString("content");
             File skillDir = new File(properties.getClient().getBasic().getSkillPath(), skillName);
             File skillFile = new File(skillDir, Constant.SKILL_FILE);
+            FileUtil.backupFile(skillFile.getAbsolutePath());
             FileUtil.write(skillFile.getAbsolutePath(), content);
             return "SKILL.md written: " + skillFile.getAbsolutePath();
         }
@@ -117,6 +121,13 @@ public class SystemService {
         // 安装 skill
         if (command.indexOf(Constant.SYSTEM_COMMAND.INSTALL_SKILL) == 0) {
             String jsonStr = command.substring(Constant.SYSTEM_COMMAND.INSTALL_SKILL.length());
+            // 在安装前备份已存在的 skill 目录
+            JSONObject json = JSONObject.parseObject(jsonStr);
+            String skillName = json.getString("skillName");
+            if (StringUtils.isNotBlank(skillName)) {
+                String skillDirPath = Paths.get(properties.getClient().getBasic().getSkillPath(), skillName).toString();
+                FileUtil.backupDirectory(skillDirPath);
+            }
             return skillManagerService.installSkill(jsonStr);
         }
 
@@ -129,6 +140,7 @@ public class SystemService {
         // 更新风险等级
         if (command.indexOf(Constant.SYSTEM_COMMAND.UPDATE_RISK_LEVEL) == 0) {
             String jsonStr = command.substring(Constant.SYSTEM_COMMAND.UPDATE_RISK_LEVEL.length());
+            FileUtil.backupFile(properties.getClient().getBasic().getRiskLevelPath());
             return riskLevelManagerService.updateRiskLevel(jsonStr);
         }
 

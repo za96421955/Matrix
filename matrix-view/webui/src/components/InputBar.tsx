@@ -58,10 +58,10 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
     }, [handleSend])
 
     return (
-        <div className={`${hideTopBorder ? '' : 'border-t border-gray-200 dark:border-white/[0.04]'} bg-white dark:bg-[#18181B]/80 backdrop-blur-xl`}>
-            <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl2xl:max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+        <div className={`${hideTopBorder ? '' : 'border-t border-gray-200 dark:border-white/[0.04]'} bg-white dark:bg-[#18181B]`}>
+            <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl2xl:max-w-7xl mx-auto px-3 sm:px-4 py-1.5 sm:py-2">
                 <div
-                    className="relative rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black shadow-sm transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:border-blue-500">
+                    className="relative rounded-2xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#1c1c20] shadow-sm transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:border-blue-500">
                     <textarea
                         ref={textareaRef}
                         id="chat-input"
@@ -71,7 +71,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                         onKeyDown={handleKeyDown}
                         placeholder="输入消息，Enter换行，Ctrl+Enter发送"
                         disabled={isStreaming || isBackendGenerating}
-                        className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full resize-none bg-transparent px-4 pt-3 pb-1 text-sm placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{minHeight: '40px', maxHeight: '200px'}}
                         aria-disabled={isStreaming || isBackendGenerating}
                     />
@@ -89,7 +89,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                             'px-2 py-1.5 text-xs font-medium transition-colors ' +
                                             (modelType === type
                                                 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                                : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04]')
+                                                : 'bg-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04]')
                                         }
                                         aria-label={'模型: ' + type}
                                     >
@@ -105,7 +105,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                     'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ' +
                                     (thinkingType === 'enabled'
                                         ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]')
+                                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]')
                                 }
                                 aria-label={thinkingType === 'enabled' ? '关闭深度思考' : '开启深度思考'}
                             >
@@ -124,7 +124,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                             'px-2 py-1.5 text-xs font-medium transition-colors ' +
                                             (reasoningEffort === level
                                                 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                                : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04]')
+                                                : 'bg-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04]')
                                         }
                                         aria-label={'思考深度: ' + level}
                                     >
@@ -137,7 +137,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                             <select
                                 value={maxTokens}
                                 onChange={(e) => setMaxTokens(Number(e.target.value))}
-                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
+                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B] px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
                                 aria-label="输出长度"
                             >
                                 <option value={4096}>4096</option>

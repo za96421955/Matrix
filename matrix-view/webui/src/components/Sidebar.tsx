@@ -275,7 +275,7 @@ function SwipeableSessionItem({
         <div className="relative rounded-lg group" ref={itemRef}>
             {/* 右侧操作按钮 - z-0 在内容层下方，始终位于 right:0 */}
             <div
-                className="absolute right-0 top-0 h-full flex items-center gap-0.5 pr-0.5 dark:bg-[#18181B] z-0"
+                className="absolute right-0 top-0 h-full flex items-center gap-0.5 pr-0.5 dark:bg-[#1c1c20] z-0"
                 style={{ width: `${BUTTONS_WIDTH}px` }}
             >
                 {showDeleteConfirm ? (
@@ -330,7 +330,7 @@ function SwipeableSessionItem({
                     transform: `translateX(${swipeX}px)`,
                     transition: 'transform 0.2s ease-out'
                 }}
-                className="relative z-10 w-full bg-gray-50 dark:bg-[#18181B] rounded-lg"
+                className="relative z-10 w-full bg-gray-50 dark:bg-[#1c1c20] rounded-lg"
             >
                 <div
                     onClick={handleContentClick}
@@ -349,7 +349,7 @@ function SwipeableSessionItem({
                         'w-full flex flex-col gap-0.5 rounded-lg px-2.5 py-2 text-sm text-left transition-all cursor-pointer select-none ' +
                         (isActive
                             ? 'bg-blue-50 dark:bg-white/[0.08] text-blue-600 dark:text-blue-300 font-medium border-l-[3px] border-blue-400 dark:border-blue-500'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]')
+                            : 'text-gray-800 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-white/[0.10]')
                     }
                 >
                     <div className="flex items-center gap-2 w-full">
@@ -370,7 +370,7 @@ function SwipeableSessionItem({
                             <>
                         <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60"/>
                                 <span className="flex-1 truncate">{session.title}</span>
-                                <span className="text-xs text-gray-400 flex-shrink-0 ml-auto group-hover:opacity-0 transition-opacity duration-300">{formatSessionTime(session.updateTime)}</span>
+                                <span className="text-xs text-gray-500 flex-shrink-0 ml-auto group-hover:opacity-0 transition-opacity duration-300">{formatSessionTime(session.updateTime)}</span>
                             </>
                         )}
                     </div>
@@ -385,7 +385,7 @@ function SwipeableSessionItem({
                     >
                         <button
                             onClick={(e) => { e.stopPropagation(); setSwipeX(-BUTTONS_WIDTH); setIsSwiped(true); }}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700/50 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600/50 transition-all duration-300 ease-out"
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700/50 text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600/50 transition-all duration-300 ease-out"
                             aria-label="更多操作"
                         >
                             <MoreHorizontal size={16}/>
@@ -534,7 +534,7 @@ export default function Sidebar() {
                     <div className="w-6 h-6 rounded-full bg-gray-900 dark:bg-gray-100 flex items-center justify-center flex-shrink-0">
                         <Bot className="w-3 h-3 text-white dark:text-gray-900"/>
                     </div>
-                    <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Matrix</h2>
+                    <h2 className="font-semibold text-sm text-gray-800 dark:text-gray-200">Matrix</h2>
                 </div>
                 <div className="flex items-center gap-1">
                     <ThemeToggle/>
@@ -543,7 +543,7 @@ export default function Sidebar() {
                         aria-label="收起侧边栏"
                         className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-white/[0.06] transition-colors hidden md:flex"
                     >
-                        <PanelLeftClose className="w-4 h-4 text-gray-400"/>
+                        <PanelLeftClose className="w-4 h-4 text-gray-500"/>
                     </button>
                 </div>
             </div>
@@ -553,7 +553,7 @@ export default function Sidebar() {
                 <button
                     onClick={handleNew}
                     aria-label="新建对话"
-                    className="w-full flex items-center justify-center gap-1 rounded-lg border border-solid border-gray-300 dark:border-gray-700 bg-gray-200/60 dark:bg-gray-800/70 shadow-md hover:border-blue-400 dark:hover:border-white/[0.25] hover:bg-blue-50 dark:hover:bg-white/[0.04] px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-gray-200 transition-all"
+                    className="w-full flex items-center justify-center gap-1 rounded-lg border border-solid border-gray-300 dark:border-gray-700 bg-gray-200/60 dark:bg-gray-800/70 shadow-md hover:border-blue-400 dark:hover:border-white/[0.25] hover:bg-blue-50 dark:hover:bg-white/[0.04] px-2 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-gray-200 transition-all"
                 >
                     <MessageSquarePlus className="w-4 h-4"/>新对话
                 </button>
@@ -561,15 +561,15 @@ export default function Sidebar() {
 
             <div className="flex-1 overflow-y-auto px-1.5 pb-1.5 space-y-0.5" ref={scrollContainerRef} role="list" aria-label="对话列表">
                 {!apiKey ? (
-                    <div className="text-center py-8 text-gray-600 text-sm">
+                    <div className="text-center py-8 text-gray-700 text-sm">
                         请先设置 API Key
                     </div>
                 ) : sessionsLoading && !sessionsLoaded ? (
                     <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-5 h-5 animate-spin text-gray-500"/>
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-600"/>
                     </div>
                 ) : !Array.isArray(backendSessionList) || (backendSessionList.length === 0 && sessions.filter(s => !s.backendSessionId).length === 0) ? (
-                    <div className="text-center py-8 text-gray-600 text-sm">
+                    <div className="text-center py-8 text-gray-700 text-sm">
                         暂无对话
                     </div>
                 ) : (
@@ -589,7 +589,7 @@ export default function Sidebar() {
                                             'w-full flex flex-col gap-0.5 rounded-lg px-2.5 py-2 text-sm text-left transition-all cursor-pointer ' +
                                             (isActive
                                                 ? 'bg-blue-50 dark:bg-white/[0.08] text-blue-600 dark:text-blue-300 font-medium border-l-[3px] border-blue-400 dark:border-blue-500'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.04]')
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-white/[0.10]')
                                         }
                                     >
                                         <div className="flex items-center gap-2 w-full">
@@ -605,7 +605,7 @@ export default function Sidebar() {
                         {groupedSessions.map(([group, sessions]) => (
                             <div key={group}>
                                 {/* Group header */}
-                                <div className="px-2.5 py-1.5 mt-1 text-xs font-medium text-gray-500 tracking-wider">
+                                <div className="px-2.5 py-1.5 mt-1 text-xs font-medium text-gray-400 tracking-wider">
                                     {GROUP_LABELS[group]}
                                 </div>
                                 {sessions.map((session) => {
@@ -635,7 +635,7 @@ export default function Sidebar() {
                             <button
                                 onClick={loadMoreSessions}
                                 disabled={sessionsLoading}
-                                className="w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-gray-600 hover:bg-gray-200/80 dark:hover:bg-white/[0.10] transition-colors disabled:opacity-50"
                                 aria-label="加载更多"
                             >
                                 {sessionsLoading ? (
@@ -655,7 +655,7 @@ export default function Sidebar() {
                 {/* Matrix Rain 开关 - iOS 风格滑块，仅暗色模式显示 */}
                 <label className="hidden dark:flex items-center justify-between px-3 py-2 mb-2 rounded-lg cursor-pointer select-none hover:bg-white/[0.04] transition-colors">
                     <input type="checkbox" className="sr-only" checked={matrixRainEnabled} onChange={toggleMatrixRain} />
-                    <span className="flex items-center text-sm font-medium text-gray-300 whitespace-nowrap">
+                    <span className="flex items-center text-sm font-medium text-gray-400 whitespace-nowrap">
                         Matrix
                         {matrixRainEnabled && isBackendGenerating && (
                             <span className="ml-1.5 w-2 h-2 rounded-full bg-[#00ff41] animate-pulse"/>
@@ -668,8 +668,8 @@ export default function Sidebar() {
                     </div>
                 </label>
 
-                <p className="text-xs text-gray-600 text-center">
-                    Matrix v1.0
+                <p className="text-xs text-gray-400 text-center">
+                    Matrix v1.0.2
                 </p>
             </div>
         </div>
@@ -681,7 +681,7 @@ export default function Sidebar() {
             <aside
                 className={`
                     hidden md:block overflow-hidden border-r border-gray-200 dark:border-white/[0.06]
-                    bg-gray-100/80 dark:bg-[#18181B]/90 dark:backdrop-blur-2xl
+                    bg-gray-50 dark:bg-[#1c1c20]
                     transition-[width] duration-250 ease-in-out
                     ${sidebarOpen
                     ? 'w-44 lg:w-48 xl:w-52 2xl:w-56'
@@ -709,7 +709,7 @@ export default function Sidebar() {
                             animate={{x: 0}}
                             exit={{x: '-100%'}}
                             transition={{type: 'spring', damping: 25, stiffness: 300}}
-                            className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[75vw] max-w-[300px] min-w-[240px] bg-gray-100/80 dark:bg-[#18181B]/90 dark:backdrop-blur-2xl border-r border-gray-200 dark:border-white/[0.06] shadow-2xl"
+                            className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[75vw] max-w-[300px] min-w-[240px] bg-gray-50 dark:bg-[#1c1c20] border-r border-gray-200 dark:border-white/[0.06] shadow-2xl"
                             aria-label="对话历史侧边栏"
                         >
                             {sidebarContent}
@@ -724,7 +724,7 @@ export default function Sidebar() {
                     aria-label="展开侧边栏"
                     className="hidden md:flex fixed left-3 top-12 z-30 rounded-lg p-2 bg-white dark:bg-[#1c1c20]/80 dark:backdrop-blur-xl border border-gray-200 dark:border-white/[0.06] shadow-sm hover:bg-gray-100 dark:hover:bg-[#252529] transition-colors"
                 >
-                    <PanelLeft className="w-4 h-4 text-gray-400"/>
+                    <PanelLeft className="w-4 h-4 text-gray-500"/>
                 </button>
             )}
 
@@ -743,11 +743,11 @@ export default function Sidebar() {
                             className="bg-white dark:bg-[#1c1c20] rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 border border-gray-200 dark:border-white/[0.06]"
                         >
                             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">确认删除</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">确定要删除这个对话吗？此操作不可撤销。</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">确定要删除这个对话吗？此操作不可撤销。</p>
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
                                 >
                                     取消
                                 </button>

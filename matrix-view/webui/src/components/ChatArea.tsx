@@ -890,7 +890,7 @@ export default function ChatArea() {
         <div className="flex-1 flex flex-col h-full min-w-0">
             {/* Header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-white dark:bg-[#18181B]/70 backdrop-blur-xl">
+                className="flex items-center justify-between px-3 sm:px-4 pt-2.5 pb-1.5 bg-white dark:bg-[#18181B]">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button
                         onClick={toggleSidebar}
@@ -912,13 +912,6 @@ export default function ChatArea() {
                             return localSession?.title || '新对话'
                         })()}
                     </span>
-                    {/* 执行中指示器 - 从 sub-header 移到此处 */}
-                    {(isStreaming || isBackendGenerating) && (
-                        <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
-                            执行中
-                        </span>
-                    )}
                     {/* 刷新按钮 */}
                     <button
                         onClick={handleRefresh}
@@ -1002,9 +995,15 @@ export default function ChatArea() {
 
             {/* Sub-header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50/50 dark:bg-[#18181B]/50 backdrop-blur-sm text-xs sm:text-sm gap-2">
+                className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-[#18181B] text-xs sm:text-sm gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {/* 标题和状态已移到 header */}
+                    {/* 执行中指示器 */}
+                    {(isStreaming || isBackendGenerating) && (
+                        <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
+                            执行中
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-1 sm:ml-2">
                     {/* 模式选择 */}

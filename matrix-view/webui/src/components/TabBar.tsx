@@ -6,7 +6,7 @@ import {useTabStore} from '../store/tabStore'
 const tabs: {id: 'ai-assistant' | 'deepseek-chat' | 'deepseek-usage' | 'deepseek-api'; label: string; url?: string; icon: React.ReactNode}[] = [
     {
         id: 'ai-assistant',
-        label: 'AI 助手',
+        label: 'Matrix',
         icon: <Bot className="w-5 h-5"/>,
     },
     {
@@ -123,7 +123,7 @@ export default function TabBar() {
                                         transition-colors duration-200
                                         ${isActive
                                             ? 'text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06]'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06]'
                                         }
                                     `}
                                 >

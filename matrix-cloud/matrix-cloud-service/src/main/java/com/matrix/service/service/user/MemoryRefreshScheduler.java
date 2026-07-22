@@ -46,7 +46,7 @@ public class MemoryRefreshScheduler {
     /**
      * 每日0点执行记忆刷新
      */
-    @Scheduled(cron = "0 0 * * * ?")
+    @Scheduled(cron = "0 0 0 * * ?")
     public void refreshMemoryDaily() {
         log.info("[记忆刷新] 开始执行每日记忆刷新任务");
         try {

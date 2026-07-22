@@ -52,7 +52,7 @@ export default function MatrixLogo({size = 'sm', className = ''}: MatrixLogoProp
     const bgColor = isDark ? '#ffffff' : '#000000'
     const rainColor = isDark ? '#000000' : '#00ff41'
 
-    const gradientId = 'rainGrad'
+    const gradientId = `rainGrad-${size}`
 
     return (
         <svg

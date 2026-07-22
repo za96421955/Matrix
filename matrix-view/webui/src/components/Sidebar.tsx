@@ -5,7 +5,6 @@ import {
     MessageSquare,
     PanelLeftClose,
     PanelLeft,
-    Bot,
     Loader2,
     ChevronDown,
     Pencil,
@@ -17,6 +16,7 @@ import {useApiKeyStore} from '../store/apiKeyStore'
 import ThemeToggle from './ThemeToggle'
 import {useTaskAuthStore} from '../store/taskAuthStore'
 import {useEffectStore} from '../store/effectStore'
+import MatrixLogo from "./MatrixLogo";
 
 const TaskAuthModal = React.lazy(() => import('./TaskAuthModal'))
 
@@ -531,8 +531,8 @@ export default function Sidebar() {
             {/* === 侧边栏头部：Bot + "Matrix"，无边框 === */}
             <div className="flex items-center justify-between px-2.5 py-2.5">
                 <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-900 dark:bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-3 h-3 text-white dark:text-gray-900"/>
+                    <div className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center flex-shrink-0">
+                        <MatrixLogo size="sm" className="w-3 h-3 text-white dark:text-gray-900"/>
                     </div>
                     <h2 className="font-semibold text-sm text-gray-800 dark:text-gray-200">Matrix</h2>
                 </div>

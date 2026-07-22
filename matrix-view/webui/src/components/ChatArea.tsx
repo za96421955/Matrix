@@ -1,5 +1,5 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, Bot, FileText, MessageSquare, Folder, Monitor, ShieldCheck} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
@@ -13,6 +13,7 @@ const TaskAuthModal = React.lazy(() => import('./TaskAuthModal'))
 import {chatCompletion} from '../utils/api'
 import {Message, ToolCall, Pattern} from "@/types"
 import {getAuthHeaders, getApiBaseUrl} from '../utils/apiClient';
+import MatrixLogo from "./MatrixLogo";
 
 const API_BASE = getApiBaseUrl()
 
@@ -106,8 +107,8 @@ const MessageList = React.memo(
             return (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4 sm:px-6">
                     <div
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-800 dark:bg-gray-100 flex items-center justify-center mb-4 sm:mb-5 shadow-lg">
-                        <Bot className="w-10 h-10 sm:w-16 sm:h-16 text-white dark:text-gray-900"/>
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black dark:bg-white flex items-center justify-center mb-4 sm:mb-5 shadow-lg">
+                        <MatrixLogo size="xl" className="w-10 h-10 sm:w-16 sm:h-16 text-white dark:text-gray-900"/>
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">
                         {isBackendSession ? '暂无消息' : 'Matrix'}

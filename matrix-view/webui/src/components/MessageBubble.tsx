@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Bot, Brain, X, Copy, Check, ChevronRight, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText, AlertCircle} from 'lucide-react'
+import { User, Brain, X, Copy, Check, ChevronRight, Wrench, Lightbulb, Info, Cloud, MapPin, Clock, Timer, Code2, Puzzle, Settings, Terminal, QrCode, FileText, AlertCircle} from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import { useToastStore } from '../store/toastStore'
 import type { Message, ToolCall } from '../types'
 import { useChatStore } from '../store/chatStore'
+import MatrixLogo from "./MatrixLogo";
 
 interface MessageBubbleProps {
     message: Message
@@ -604,9 +605,9 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                 aria-label={hasReasoning ? "AI思考中" : "AI消息"}
             >
                 <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm bg-gray-200 dark:bg-gray-700"
+                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm bg-black dark:bg-white"
                     aria-hidden="true">
-                    <Bot className="w-4 h-4 text-gray-700 dark:text-gray-200"/>
+                    <MatrixLogo size="sm" className="w-4 h-4 text-gray-700 dark:text-gray-200"/>
                 </div>
                 <div
                     className="flex-1 min-w-0 max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[70%] 2xl:max-w-[65%] break-words">

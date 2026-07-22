@@ -995,21 +995,29 @@ export default function ChatArea() {
                     {/* 模式选择 */}
                     <div
                         className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        {patternOptions.map((opt) => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setPattern(opt.value)}
-                                className={
-                                    'px-2 py-1.5 text-[10px] sm:text-xs font-medium transition-colors ' +
-                                    (pattern === opt.value
-                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                        : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900')
-                                }
-                                aria-label={'模式: ' + opt.label}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
+                        {patternOptions.map((opt) => {
+                            const disabledPatterns = ['agent', 'coding', 'information'];
+                            const isDisabled = disabledPatterns.includes(opt.value);
+                            return (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => {if (!isDisabled) setPattern(opt.value)}}
+                                    disabled={isDisabled}
+                                    className={
+                                        'px-2 py-1.5 text-[10px] sm:text-xs font-medium transition-colors ' +
+                                        (isDisabled
+                                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            : pattern === opt.value
+                                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                                : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900')
+                                    }
+                                    aria-label={'模式: ' + opt.label}
+                                >
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
+
                     </div>
                     {/* 技能选择（仅在 agent 模式下显示） */}
                     {pattern === 'agent' && (

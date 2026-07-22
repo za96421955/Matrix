@@ -79,18 +79,24 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                     <div className="flex items-center justify-between px-3 pb-2">
                         <div className="flex items-center gap-2 flex-wrap">
                             {/* flash/pro 模型选择 */}
-                            <button
-                                onClick={() => setModelType(modelType === 'flash' ? 'pro' : 'flash')}
-                                className={
-                                    'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ' +
-                                    (modelType === 'pro'
-                                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04]')
-                                }
-                                aria-label={modelType === 'pro' ? '切换为 flash' : '切换为 pro'}
-                            >
-                                {modelType === 'pro' ? 'pro' : 'flash'}
-                            </button>
+                            <div
+                                className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                {(['flash', 'pro'] as const).map((type) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setModelType(type)}
+                                        className={
+                                            'px-2 py-1.5 text-xs font-medium transition-colors ' +
+                                            (modelType === type
+                                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                                : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04]')
+                                        }
+                                        aria-label={'模型: ' + type}
+                                    >
+                                        {type === 'flash' ? 'flash' : 'pro'}
+                                    </button>
+                                ))}
+                            </div>
 
                             {/*深度思考按钮 */}
                             <button

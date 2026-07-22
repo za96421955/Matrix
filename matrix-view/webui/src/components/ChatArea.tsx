@@ -107,7 +107,7 @@ const MessageList = React.memo(
             return (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4 sm:px-6">
                     <div
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black dark:bg-white flex items-center justify-center mb-4 sm:mb-5 shadow-lg">
+                        className="w-20 h-20 rounded-full bg-black dark:bg-white flex items-center justify-center mb-4 sm:mb-5 shadow-lg overflow-hidden">
                         <MatrixLogo size="xl" className="w-10 h-10 sm:w-16 sm:h-16 text-white dark:text-gray-900"/>
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">

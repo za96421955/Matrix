@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import {useThemeStore} from '../store/themeStore'
 
 interface MatrixLogoProps {
@@ -35,6 +36,7 @@ const CONFIG: Record<'sm' | 'xl', LineConfig> = {
 }
 
 export default function MatrixLogo({size = 'sm', className = ''}: MatrixLogoProps) {
+    const uidRef = useRef(`ml-${Math.random().toString(36).slice(2, 10)}`)
     const theme = useThemeStore((s) => s.theme)
     const isDark = theme === 'dark'
 
@@ -52,7 +54,7 @@ export default function MatrixLogo({size = 'sm', className = ''}: MatrixLogoProp
     const bgColor = isDark ? '#ffffff' : '#000000'
     const rainColor = isDark ? '#000000' : '#00ff41'
 
-    const gradientId = `rainGrad-${size}`
+    const gradientId = `rainGrad-${size}-${uidRef.current}`
 
     return (
         <svg

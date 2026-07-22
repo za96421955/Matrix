@@ -57,44 +57,65 @@ public class ObserverPatternService extends AbstractPatternService<PatternReques
         if (null == sink || null == request) {
             return null;
         }
-        // 1. 构建任务链
-        TaskChain taskChain = taskPatternService.buildTaskChain(sink, request.clone());
-        log.info("[观察者模式] 任务列表, userId={}, taskChain={}", request.getUserId(), taskChain);
-        if (null == taskChain) {
-            return null;
-        }
-        // 2. 执行任务块
-        for (TaskChain.ExecutionBlock block : taskChain.getBlocks()) {
-            PatternRequest executorRequest;
-            int retry = 0;
-            do {
-                // 最多重试3次
-                if (++retry > 3) {
-                    log.error("[观察者模式] 任务执行【结束】, userId={}, task={}, retry={}",
-                            request.getUserId(), block.getGoal(), retry);
-                    return null;
+        int taskRetry = 0;
+        while (++taskRetry <= 3) {
+            // 1. 构建任务链
+            PatternRequest taskRequest = request.clone();
+            TaskChain taskChain = taskPatternService.buildTaskChain(sink, taskRequest);
+            log.info("[观察者模式] 构建任务链, userId={}, taskChain={}", request.getUserId(), taskChain);
+            if (null == taskChain) {
+                return null;
+            }
+
+            // 2. 执行任务块
+            boolean isTaskRetry = false;
+            for (TaskChain.ExecutionBlock block : taskChain.getBlocks()) {
+                PatternRequest executorRequest = null;
+                int executorRetry = 0;
+                while (++executorRetry <= 3) {
+                    // 2.1. 任务执行
+                    executorRequest = taskRequest.clone();
+                    taskPatternService.executorBlock(sink, executorRequest, block);
+
+                    // 2.2. 观察任务执行结果是否满足目标
+                    String result = this.callResultByClone(sink, executorRequest, Prompt.Observer.CHECK_RESULT.formatted(
+                            block.getGoal()));
+                    if (result.contains("true")) {
+                        log.error("[观察者模式] 任务执行结果不满足目标, userId={}, goal={}, reason={}",
+                                request.getUserId(), block.getGoal(), result);
+                        break;
+                    }
+                    executorRequest.getMessages().add(Message.user(result));
+
+                    // 2.3. 不满足目标，是否需要重新规划任务
+                    result = this.callResultByClone(sink, executorRequest, Prompt.Observer.CHECK_TASK.formatted(
+                            block.getGoal()));
+                    if (result.contains("true")) {
+                        log.error("[观察者模式] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, goal={}, reason={}",
+                                request.getUserId(), block.getGoal(), result);
+                        isTaskRetry = true;
+                        request.getMessages().add(Message.user(result));
+                    }
+                    executorRequest.getMessages().add(Message.user(result));
                 }
-                // 任务执行
-                executorRequest = request.clone();
-                taskPatternService.executorBlock(sink, executorRequest, block);
-                // 观察任务执行结果是否满足目标
-                String result = this.callResultByClone(sink, executorRequest, Prompt.Observer.CHECK_RESULT.formatted(
-                        block.getGoal()));
-                if (result.contains("true")) {
+
+                // 2.4. 需要重新规划任务，清理缓存、重置任务
+                if (isTaskRetry) {
+                    log.info("[观察者模式] 重新规划任务、清理当前任务缓存, userId={}", request.getUserId());
+                    taskPatternContext.clear(request.getUserId(), request.getSessionId());
                     break;
                 }
-                executorRequest.getMessages().add(Message.user(result));
-                // 不满足目标，是否需要重新规划任务
-                result = this.callResultByClone(sink, executorRequest, Prompt.Observer.CHECK_TASK.formatted(
-                        block.getGoal()));
-                if (result.contains("false")) {
-                    continue;
-                }
-                executorRequest.getMessages().add(Message.user(result));
-            } while (true);
-            // 满足目标，替换 request，继续下一个任务
-            request = executorRequest;
+
+                // 2.5. 满足目标，替换 request，继续下一个任务
+                taskRequest = executorRequest;
+            }
+
+            // 3. 不需要重新规划，任务链结束
+            if (!isTaskRetry) {
+                break;
+            }
         }
+
         // 3. 结果总结
         String result = this.callResultByClone(sink, request, Prompt.Task.SUMMARY_RESULT);
         request.getMessages().removeLast();

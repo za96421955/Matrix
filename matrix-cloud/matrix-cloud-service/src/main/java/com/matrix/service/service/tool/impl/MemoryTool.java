@@ -33,7 +33,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
 
     @Override
     public String description() {
-        return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案。记忆格式：短期、长期、谏言";
+        return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案。记忆格式：短期、长期、谏言。";
     }
 
     @Override
@@ -118,10 +118,10 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("是否读取, 默认: false")
+        @Description("是否读取, 默认: false。")
         private Boolean read = false;
 
-        @Description("修改要求")
+        @Description("修改要求。")
         private String require;
 
         @Override

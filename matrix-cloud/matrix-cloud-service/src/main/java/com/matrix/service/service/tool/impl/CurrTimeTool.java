@@ -25,7 +25,7 @@ public class CurrTimeTool extends AbstractTool<CurrTimeTool.Request> {
 
     @Override
     public String description() {
-        return "获取系统当前时间、星期几、今年的第几天、是否闰年";
+        return "获取系统当前时间、星期几、今年的第几天、是否闰年。";
     }
 
     @Override

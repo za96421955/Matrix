@@ -26,7 +26,7 @@ public class LocationTool extends AbstractTool<LocationTool.Request> {
 
     @Override
     public String description() {
-        return "查询终端ip、经纬度、地理位置等信息";
+        return "查询终端ip、经纬度、地理位置等信息。";
     }
 
     @Override

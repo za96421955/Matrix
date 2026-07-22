@@ -138,10 +138,10 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
         @Description("工作目录（绝对路径），读取或更新该目录的使用说明。必填。")
         private String workingDirectory;
 
-        @Description("是否读取, 默认: false")
+        @Description("是否读取, 默认: false。")
         private Boolean read = false;
 
-        @Description("更新内容")
+        @Description("更新内容。")
         private String content;
 
         @Override

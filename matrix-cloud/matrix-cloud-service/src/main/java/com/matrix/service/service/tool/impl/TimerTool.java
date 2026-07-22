@@ -47,7 +47,7 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
 
     @Override
     public String description() {
-        return "可创建定时执行的自动化任务。支持设置启动时间、执行次数、执行间隔";
+        return "可创建定时执行的自动化任务。支持设置启动时间、执行次数、执行间隔。";
     }
 
     @Override
@@ -264,22 +264,22 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("操作类型: create-创建, list-查看列表, delete-删除")
+        @Description("操作类型: create-创建, list-查看列表, delete-删除。")
         private String option;
 
-        @Description("任务标题，唯一标识")
+        @Description("任务标题，唯一标识。")
         private String title;
 
-        @Description("待执行的任务内容")
+        @Description("待执行的任务内容。")
         private String content;
 
-        @Description("首次启动时间, 格式: yyyy-MM-dd HH:mm:ss")
+        @Description("首次启动时间, 格式: yyyy-MM-dd HH:mm:ss。")
         private String startTime;
 
-        @Description("执行次数: -1无限循环, >=1执行N次")
+        @Description("执行次数: -1无限循环, >=1执行N次。")
         private Integer executeCount;
 
-        @Description("执行间隔秒数")
+        @Description("执行间隔秒数。")
         private Integer intervalSeconds;
 
         @Override
@@ -289,3 +289,5 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
     }
 
 }
+
+

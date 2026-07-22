@@ -54,7 +54,7 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
 
     @Override
     public String description() {
-        return "查询全球热带气旋（台风/飓风/气旋）最新预警报文，数据源为 NOAA/JTWC/JMA 等官方机构原始报文";
+        return "查询全球热带气旋（台风/飓风/气旋）最新预警报文，数据源为 NOAA/JTWC/JMA 等官方机构原始报文。";
     }
 
     @Override
@@ -203,16 +203,16 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("洋区代码：wp(西北太平洋,默认)、io(印度洋)、at(北大西洋)、ep(东北太平洋)、cp(中太平洋)、sh(南半球)、jp(日本/JMA)、ko(韩国/KMA)")
+        @Description("洋区代码：wp(西北太平洋,默认)、io(印度洋)、at(北大西洋)、ep(东北太平洋)、cp(中太平洋)、sh(南半球)、jp(日本/JMA)、ko(韩国/KMA)。")
         private String basin;
 
-        @Description("发报机构代码：pgtw(JTWC关岛,默认)、rjtd(JMA日本气象厅)、rksl(KMA韩国气象厅)、knhc(NHC美国飓风中心)、kwnh(CPHC中太平洋)、fmee(毛里求斯气象局)")
+        @Description("发报机构代码：pgtw(JTWC关岛,默认)、rjtd(JMA日本气象厅)、rksl(KMA韩国气象厅)、knhc(NHC美国飓风中心)、kwnh(CPHC中太平洋)、fmee(毛里求斯气象局)。")
         private String agency;
 
-        @Description("指定警告编号（如 31），为空时自动发现最新的警告")
+        @Description("指定警告编号（如 31），为空时自动发现最新的警告。")
         private Integer warningNumber;
 
-        @Description("台风名称关键词过滤（如 BAVI、巴威、09W 等），可为空")
+        @Description("台风名称关键词过滤（如 BAVI、巴威、09W 等），可为空。")
         private String stormName;
 
         @Override
@@ -222,3 +222,5 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
     }
 
 }
+
+

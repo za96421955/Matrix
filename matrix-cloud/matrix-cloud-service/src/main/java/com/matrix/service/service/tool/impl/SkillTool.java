@@ -38,7 +38,7 @@ public class SkillTool extends AbstractTool<SkillTool.Request> {
 
     @Override
     public String description() {
-        return "可用 skill 调度工具，文件需要提供绝对路径";
+        return "可用 skill 调度工具，文件需要提供绝对路径。";
     }
 
     @Override
@@ -88,10 +88,10 @@ public class SkillTool extends AbstractTool<SkillTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("skill名称")
+        @Description("skill名称。")
         private String skillName;
 
-        @Description("输入信息")
+        @Description("输入信息。")
         private String input;
 
         @Override

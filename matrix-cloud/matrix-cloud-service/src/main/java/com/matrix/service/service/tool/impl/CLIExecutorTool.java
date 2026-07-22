@@ -32,7 +32,7 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
 
     @Override
     public String description() {
-        return "CLI 命令执行器";
+        return "CLI 命令执行器。";
     }
 
     @Override
@@ -132,13 +132,13 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
         @Description("工作目录（绝对路径），所有命令都在此目录下执行。必填。")
         private String workingDirectory;
 
-        @Description("要执行的普通CLI命令，一行一个完整命令。系统会先 cd 至 workingDirectory 目录下执行CLI。")
+        @Description("要执行的普通CLI命令，一行一个完整命令。系统会 cd 至 workingDirectory 目录下执行CLI。")
         private List<String> commands;
 
-        @Description("要写入文件的相对路径（与 workingDirectory 的相对路径），仅当需要写文件时提供。")
+        @Description("要写入文件与 workingDirectory 的相对路径，仅当需要写文件时提供。")
         private String filePath;
 
-        @Description("要写入的文件完整内容（支持任意字符，无需手动转义）。仅当 filePath 不为空时使用。")
+        @Description("要写入文件的完整内容。仅当 filePath 不为空时使用。")
         private String fileContent;
 
         @Override

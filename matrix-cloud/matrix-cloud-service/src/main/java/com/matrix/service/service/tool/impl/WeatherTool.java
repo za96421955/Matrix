@@ -26,7 +26,7 @@ public class WeatherTool extends AbstractTool<WeatherTool.Request> {
 
     @Override
     public String description() {
-        return "查询天气、温度、风速信息";
+        return "查询天气、温度、风速信息。";
     }
 
     @Override
@@ -68,10 +68,10 @@ public class WeatherTool extends AbstractTool<WeatherTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("位置。示例：城市名（中文、英文、拼音）：上海、Paris; 机场 IATA 代码：PEK; 邮政编码（部分国家）：10001; 坐标：32.06,118.79; IP 地址")
+        @Description("位置。示例：城市名（中文、英文、拼音）：上海、Paris; 机场 IATA 代码：PEK; 邮政编码（部分国家）：10001; 坐标：32.06,118.79; IP 地址。")
         private String location;
 
-        @Description("实时或未来3天天气，默认：true")
+        @Description("实时或未来3天天气，默认：true。")
         private Boolean realTime;
 
         @Override

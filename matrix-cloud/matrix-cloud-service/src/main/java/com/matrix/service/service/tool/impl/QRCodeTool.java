@@ -75,7 +75,7 @@ public class QRCodeTool extends AbstractTool<QRCodeTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("需要生成二维码的内容")
+        @Description("需要生成二维码的内容。")
         private String content;
 
         @Override
@@ -85,3 +85,5 @@ public class QRCodeTool extends AbstractTool<QRCodeTool.Request> {
     }
 
 }
+
+

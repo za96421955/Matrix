@@ -310,31 +310,31 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("操作类型: list-查看skill列表, view-查看SKILL.md内容, create-创建, update-更新, enable-启用, disable-禁用, install-安装")
+        @Description("操作类型: list-查看skill列表, view-查看SKILL.md内容, create-创建, update-更新, enable-启用, disable-禁用, install-安装。")
         private String operation;
 
-        @Description("skill名称，create/update/view/enable/disable 时必填")
+        @Description("skill名称，create/update/view/enable/disable 时必填。")
         private String skillName;
 
-        @Description("安装来源：下载 URL 或本地文件路径，install 操作时必填")
+        @Description("安装来源：下载 URL 或本地文件路径，install 操作时必填。")
         private String source;
 
-        @Description("skill 描述，YAML 头的 description 字段")
+        @Description("skill 描述，YAML 头的 description 字段。")
         private String description;
 
-        @Description("是否启用，YAML 头的 enabled 字段，默认 true")
+        @Description("是否启用，YAML 头的 enabled 字段，默认 true。")
         private Boolean enabled;
 
-        @Description("作者/维护者，YAML 头的 auth 字段")
+        @Description("作者/维护者，YAML 头的 auth 字段。")
         private String auth;
 
-        @Description("版本号，YAML 头的 version 字段")
+        @Description("版本号，YAML 头的 version 字段。")
         private String version;
 
-        @Description("额外的 YAML 元数据字段，JSON 对象格式，会合并写入 YAML 头")
+        @Description("额外的 YAML 元数据字段，JSON 对象格式，会合并写入 YAML 头。")
         private String metadata;
 
-        @Description("SKILL.md 的 Prompt 主体（markdown 部分），即 --- 分隔符后的完整内容，create/update 时必填")
+        @Description("SKILL.md 的 Prompt 主体（markdown 部分），即 --- 分隔符后的完整内容，create/update 时必填。")
         private String prompt;
 
         @Override
@@ -344,3 +344,5 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
     }
 
 }
+
+

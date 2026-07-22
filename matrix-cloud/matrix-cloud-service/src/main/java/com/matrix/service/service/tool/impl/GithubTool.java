@@ -30,7 +30,7 @@ public class GithubTool extends AbstractTool<GithubTool.Request> {
 
     @Override
     public String description() {
-        return "curl api.github.com, 检索开源项目信息时优先使用。 searchToken: " + githubToken;
+        return "curl api.github.com, 检索开源项目信息时优先使用。searchToken: " + githubToken + "。";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class GithubTool extends AbstractTool<GithubTool.Request> {
         @Description(Constant.CLIENT_ID_DESCRIPTION)
         private String clientId;
 
-        @Description("完整 curl 命令")
+        @Description("完整 curl 命令。")
         private String command;
 
         @Override

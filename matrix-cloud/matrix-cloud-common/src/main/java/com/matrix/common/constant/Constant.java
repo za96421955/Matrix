@@ -14,7 +14,7 @@ public interface Constant {
 
     String CLI_TOOL_NAME = "terminal";
     String CLIENT_ID = "clientId";
-    String CLIENT_ID_DESCRIPTION = "终端ID";
+    String CLIENT_ID_DESCRIPTION = "终端ID。";
 
     /**
      * 系统指令

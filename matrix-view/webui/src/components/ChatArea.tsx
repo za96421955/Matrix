@@ -1,13 +1,15 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, Bot, FileText, MessageSquare, Folder, Monitor} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, Bot, FileText, MessageSquare, Folder, Monitor, ShieldCheck} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
+import {useTaskAuthStore} from '../store/taskAuthStore'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import InputBar from './InputBar'
 
 const ApiKeyModal = React.lazy(() => import('./ApiKeyModal'))
+const TaskAuthModal = React.lazy(() => import('./TaskAuthModal'))
 import {chatCompletion} from '../utils/api'
 import {Message, ToolCall, Pattern} from "@/types"
 import {getAuthHeaders, getApiBaseUrl} from '../utils/apiClient';
@@ -260,7 +262,7 @@ const ProjectPathInput = () => {
     }
 
     return (
-        <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#18181B]/70">
+        <div className="bg-white dark:bg-[#18181B]/70">
             <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 py-1 sm:py-1.5">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     {/* 终端选择下拉框 */}
@@ -270,7 +272,7 @@ const ProjectPathInput = () => {
                             value={currentClientId}
                             onChange={handleClientChange}
                             disabled={clientLoading}
-                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-1.5 py-1.5 text-xs text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer max-w-[120px]"
+                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer max-w-[120px]"
                             aria-label="选择终端"
                         >
                             <option value="">全部终端</option>
@@ -385,6 +387,12 @@ export default function ChatArea() {
     const pattern = useChatStore((s) => s.pattern)
     const setPattern = useChatStore((s) => s.setPattern)
     const [showApiKeyModal, setShowApiKeyModal] = useState(false)
+
+    // Task Auth modal state
+    const taskList = useTaskAuthStore((s) => s.taskList)
+    const modalOpen = useTaskAuthStore((s) => s.modalOpen)
+    const setModalOpen = useTaskAuthStore((s) => s.setModalOpen)
+    const closeModal = useTaskAuthStore((s) => s.closeModal)
 
     const isBackendSession = isBackendSessionId(currentSessionId)
     const currentSession = sessions.find((s) => s.id === currentSessionId)
@@ -882,7 +890,7 @@ export default function ChatArea() {
         <div className="flex-1 flex flex-col h-full min-w-0">
             {/* Header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-gray-200 dark:border-white/[0.06] bg-white dark:bg-[#18181B]/70 backdrop-blur-xl">
+                className="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-white dark:bg-[#18181B]/70 backdrop-blur-xl">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <button
                         onClick={toggleSidebar}
@@ -891,29 +899,55 @@ export default function ChatArea() {
                     >
                         <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400"/>
                     </button>
-                    <div
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900 dark:bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-gray-900"/>
-                    </div>
-                    <h1 className="text-sm sm:text-lg font-semibold text-gray-800 dark:text-gray-200 min-w-0 flex items-center gap-2">
-                        <div className="flex flex-col">
-                            <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
-                                Matrix
-                            </span>
-                        </div>
-                        {/* 刷新按钮 */}
-                        <button
-                            onClick={handleRefresh}
-                            disabled={historyLoading}
-                            className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                            aria-label="刷新当前会话消息"
-                            title="刷新消息"
-                        >
-                            <RefreshCw className="w-4 h-4 text-gray-500 dark:text-gray-400"/>
-                        </button>
-                    </h1>
+                    {/* 对话标题 - 从 sub-header 移到此处 */}
+                    <span className="font-medium text-gray-700 dark:text-gray-300 truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[250px] md:max-w-[300px] lg:max-w-[400px] xl:max-w-[500px]">
+                        {(() => {
+                            const sid = currentSessionId
+                            if (!sid) return '新对话'
+                            if (isBackendSessionId(sid)) {
+                                const session = backendSessionList.find((s) => s.id === Number(sid))
+                                return session?.title || '新对话'
+                            }
+                            const localSession = sessions.find((s) => s.id === sid)
+                            return localSession?.title || '新对话'
+                        })()}
+                    </span>
+                    {/* 执行中指示器 - 从 sub-header 移到此处 */}
+                    {(isStreaming || isBackendGenerating) && (
+                        <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
+                            执行中
+                        </span>
+                    )}
+                    {/* 刷新按钮 */}
+                    <button
+                        onClick={handleRefresh}
+                        disabled={historyLoading}
+                        className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        aria-label="刷新当前会话消息"
+                        title="刷新消息"
+                    >
+                        <RefreshCw className="w-4 h-4 text-gray-500 dark:text-gray-400"/>
+                    </button>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    {/* 待授权按钮 */}
+                    <button
+                        onClick={() => setModalOpen(true)}
+                        aria-label="待授权"
+                        className={
+                            "flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium transition-colors " +
+                            (taskList.length > 0
+                                ? "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+                                : "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50")
+                        }
+                    >
+                        <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
+                        <span className="hidden sm:inline">待授权</span>
+                        {taskList.length > 0 && (
+                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"/>
+                        )}
+                    </button>
                     {/* 消息过滤模式切换 */}
                     <button
                         onClick={() => {
@@ -968,28 +1002,9 @@ export default function ChatArea() {
 
             {/* Sub-header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 border-b border-gray-200 dark:border-white/[0.04] bg-gray-50/50 dark:bg-[#18181B]/50 backdrop-blur-sm text-xs sm:text-sm gap-2">
+                className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50/50 dark:bg-[#18181B]/50 backdrop-blur-sm text-xs sm:text-sm gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span
-                        className="font-medium text-gray-700 dark:text-gray-300 truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[250px] md:max-w-[300px] lg:max-w-[400px] xl:max-w-[500px]">
-                        {(() => {
-                            const sid = currentSessionId
-                            if (!sid) return '新对话'
-                            if (isBackendSessionId(sid)) {
-                                const session = backendSessionList.find((s) => s.id === Number(sid))
-                                return session?.title || '新对话'
-                            }
-                            const localSession = sessions.find((s) => s.id === sid)
-                            return localSession?.title || '新对话'
-                        })()}
-                    </span>
-                    {(isStreaming || isBackendGenerating) && (
-                        <span
-                            className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
-                            执行中
-                        </span>
-                    )}
+                    {/* 标题和状态已移到 header */}
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-1 sm:ml-2">
                     {/* 模式选择 */}
@@ -1082,7 +1097,7 @@ export default function ChatArea() {
                                             setUserAuthLevel(val)
                                         }
                                     }}
-                                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
+                                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
                                 >
                                     <option value={-1}>禁止执行</option>
                                     <option value={0}>仅限安全操作</option>
@@ -1128,11 +1143,14 @@ export default function ChatArea() {
             {/* 项目路径选择 */}
             {<ProjectPathInput/>}
 
-            <InputBar onSend={handleSend} onStop={handleStop}/>
+            <InputBar onSend={handleSend} onStop={handleStop} hideTopBorder={true}/>
 
             {/* API Key 弹窗 */}
             <React.Suspense fallback={null}>
                 <ApiKeyModal open={showApiKeyModal} onClose={() => setShowApiKeyModal(false)}/>
+            </React.Suspense>
+            <React.Suspense fallback={null}>
+                <TaskAuthModal open={modalOpen} onClose={closeModal}/>
             </React.Suspense>
         </div>
     )

@@ -104,7 +104,7 @@ export default function TabBar() {
                 {visible && (
                     <motion.nav
                         key="tab-bar"
-                        className="fixed top-0 left-0 right-0 z-50 flex items-center gap-1 px-4 h-12 bg-white/80 dark:bg-[#18181B]/85 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.06] select-none shadow-sm"
+                        className="fixed top-0 left-0 right-0 z-50 flex items-center gap-1 px-4 h-12 bg-white/80 dark:bg-[#18181B]/85 backdrop-blur-xl select-none shadow-sm"
                         initial={{y: '-100%'}}
                         animate={{y: 0}}
                         exit={{y: '-100%'}}

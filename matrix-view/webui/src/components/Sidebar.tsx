@@ -5,13 +5,12 @@ import {
     MessageSquare,
     PanelLeftClose,
     PanelLeft,
-    History,
+    Bot,
     Loader2,
     ChevronDown,
     Pencil,
     Trash2,
-    MoreHorizontal,
-    ShieldCheck
+    MoreHorizontal
 } from 'lucide-react'
 import {useChatStore} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
@@ -331,7 +330,7 @@ function SwipeableSessionItem({
                     transform: `translateX(${swipeX}px)`,
                     transition: 'transform 0.2s ease-out'
                 }}
-                className="relative z-10 w-full bg-white dark:bg-[#18181B] rounded-lg"
+                className="relative z-10 w-full bg-gray-50 dark:bg-[#18181B] rounded-lg"
             >
                 <div
                     onClick={handleContentClick}
@@ -425,9 +424,7 @@ export default function Sidebar() {
     const isBackendGenerating = useChatStore((s) => s.isBackendGenerating)
 
     // Task Auth
-    const taskList = useTaskAuthStore((s) => s.taskList)
     const modalOpen = useTaskAuthStore((s) => s.modalOpen)
-    const setModalOpen = useTaskAuthStore((s) => s.setModalOpen)
     const closeModal = useTaskAuthStore((s) => s.closeModal)
     const startPolling = useTaskAuthStore((s) => s.startPolling)
     const stopPolling = useTaskAuthStore((s) => s.stopPolling)
@@ -499,18 +496,12 @@ export default function Sidebar() {
             cancelEditing()
         }
     }, [saveEditing, cancelEditing])
-
-    const handleOpenAuthModal = useCallback(() => {
-        setModalOpen(true)
-    }, [setModalOpen])
-
     const handleDeleteConfirm = useCallback(async () => {
         if (deleteConfirmId === null) return
         await deleteBackendSession(deleteConfirmId)
         setDeleteConfirmId(null)
     }, [deleteConfirmId, deleteBackendSession])
 
-    const hasTaskPending = taskList.length > 0
 
     const hasMore = Array.isArray(backendSessionList) && backendSessionList.length < sessionsTotal && sessionsPage < sessionsTotalPages
 
@@ -537,11 +528,13 @@ export default function Sidebar() {
 
     const sidebarContent = (
         <div className="flex flex-col h-full">
-            <div
-                className="flex items-center justify-between px-2.5 py-2 border-b border-gray-200 dark:border-white/[0.06]">
+            {/* === 侧边栏头部：Bot + "Matrix"，无边框 === */}
+            <div className="flex items-center justify-between px-2.5 py-2.5">
                 <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-gray-400"/>
-                    <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">对话历史</h2>
+                    <div className="w-6 h-6 rounded-full bg-gray-900 dark:bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 text-white dark:text-gray-900"/>
+                    </div>
+                    <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Matrix</h2>
                 </div>
                 <div className="flex items-center gap-1">
                     <ThemeToggle/>
@@ -555,11 +548,12 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            <div className="p-3">
+            {/* === "新对话"按钮：实线边框、灰色背景、阴影 === */}
+            <div className="px-3 pb-2">
                 <button
                     onClick={handleNew}
                     aria-label="新建对话"
-                    className="w-full flex items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 dark:border-white/[0.12] hover:border-blue-400 dark:hover:border-white/[0.25] hover:bg-blue-50 dark:hover:bg-white/[0.04] px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-gray-200 transition-all"
+                    className="w-full flex items-center justify-center gap-1 rounded-lg border border-solid border-gray-300 dark:border-gray-700 bg-gray-200/60 dark:bg-gray-800/70 shadow-md hover:border-blue-400 dark:hover:border-white/[0.25] hover:bg-blue-50 dark:hover:bg-white/[0.04] px-2 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-gray-200 transition-all"
                 >
                     <MessageSquarePlus className="w-4 h-4"/>新对话
                 </button>
@@ -656,7 +650,8 @@ export default function Sidebar() {
                 )}
             </div>
 
-            <div className="p-3 border-t border-gray-200 dark:border-white/[0.06]">
+            {/* === 底部：Matrix 雨开关 + 版本号，无边框 === */}
+            <div className="px-3 py-3">
                 {/* Matrix Rain 开关 - iOS 风格滑块，仅暗色模式显示 */}
                 <label className="hidden dark:flex items-center justify-between px-3 py-2 mb-2 rounded-lg cursor-pointer select-none hover:bg-white/[0.04] transition-colors">
                     <input type="checkbox" className="sr-only" checked={matrixRainEnabled} onChange={toggleMatrixRain} />
@@ -673,12 +668,6 @@ export default function Sidebar() {
                     </div>
                 </label>
 
-                <button onClick={handleOpenAuthModal} aria-label="待授权"
-                        className={"w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 mb-2 text-sm font-medium transition-colors " + (hasTaskPending ? "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40" : "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40")}>
-                    <ShieldCheck
-                        className={"w-4 h-4 " + (hasTaskPending ? "text-orange-500" : "text-green-500")}/>待授权{hasTaskPending &&
-                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"/>}</button>
-
                 <p className="text-xs text-gray-600 text-center">
                     Matrix v1.0
                 </p>
@@ -692,7 +681,7 @@ export default function Sidebar() {
             <aside
                 className={`
                     hidden md:block overflow-hidden border-r border-gray-200 dark:border-white/[0.06]
-                    bg-white dark:bg-[#18181B]/60 dark:backdrop-blur-2xl
+                    bg-gray-100/80 dark:bg-[#18181B]/90 dark:backdrop-blur-2xl
                     transition-[width] duration-250 ease-in-out
                     ${sidebarOpen
                     ? 'w-44 lg:w-48 xl:w-52 2xl:w-56'
@@ -720,7 +709,7 @@ export default function Sidebar() {
                             animate={{x: 0}}
                             exit={{x: '-100%'}}
                             transition={{type: 'spring', damping: 25, stiffness: 300}}
-                            className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[75vw] max-w-[300px] min-w-[240px] bg-white dark:bg-[#18181B]/95 dark:backdrop-blur-2xl border-r border-gray-200 dark:border-white/[0.06] shadow-2xl"
+                            className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-[75vw] max-w-[300px] min-w-[240px] bg-gray-100/80 dark:bg-[#18181B]/90 dark:backdrop-blur-2xl border-r border-gray-200 dark:border-white/[0.06] shadow-2xl"
                             aria-label="对话历史侧边栏"
                         >
                             {sidebarContent}
@@ -733,7 +722,7 @@ export default function Sidebar() {
                 <button
                     onClick={toggleSidebar}
                     aria-label="展开侧边栏"
-                    className="hidden md:flex fixed left-3 top-[3.25rem] z-30 rounded-lg p-2 bg-white dark:bg-[#1c1c20]/80 dark:backdrop-blur-xl border border-gray-200 dark:border-white/[0.06] shadow-sm hover:bg-gray-100 dark:hover:bg-[#252529] transition-colors"
+                    className="hidden md:flex fixed left-3 top-12 z-30 rounded-lg p-2 bg-white dark:bg-[#1c1c20]/80 dark:backdrop-blur-xl border border-gray-200 dark:border-white/[0.06] shadow-sm hover:bg-gray-100 dark:hover:bg-[#252529] transition-colors"
                 >
                     <PanelLeft className="w-4 h-4 text-gray-400"/>
                 </button>

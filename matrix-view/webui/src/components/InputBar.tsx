@@ -137,7 +137,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                             <select
                                 value={maxTokens}
                                 onChange={(e) => setMaxTokens(Number(e.target.value))}
-                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-black px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
                                 aria-label="输出长度"
                             >
                                 <option value={4096}>4096</option>

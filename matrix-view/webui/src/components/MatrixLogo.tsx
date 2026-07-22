@@ -19,10 +19,10 @@ const CONFIG: Record<'sm' | 'xl', LineConfig> = {
     sm: {
         viewBox: 16,
         count: 4,
-        lineWidth: 3.0,
-        height: 10,
-        spreadPct: 0.90,
-        offsets: [0.0, 4.0, 0.0, 4.0],
+        lineWidth: 2.5,
+        height: 11,
+        spreadPct: 1.0,
+        offsets: [0.0, 4.0, 0.0, 3.4],
     },
     xl: {
         viewBox: 64,

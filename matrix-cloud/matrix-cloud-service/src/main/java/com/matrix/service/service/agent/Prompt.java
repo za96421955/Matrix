@@ -178,8 +178,8 @@ public interface Prompt {
 
         String CHECK_TASK = """
             1. 任务执行结果不满足目标，根据原因判断是否需要重新规划任务
-            2. 需要: true; 不需要: false
-            3. 仅输出 true/false, 不要任何解释
+            2. 不需要: false; 需要: 说明原因
+            3. 仅输出 false/说明原因, 不要任何解释
             
             ## 任务目标：
             %s

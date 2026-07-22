@@ -90,13 +90,16 @@ public class ObserverPatternService extends AbstractPatternService<PatternReques
                     // 2.3. 不满足目标，是否需要重新规划任务
                     result = this.callResultByClone(sink, executorRequest, Prompt.Observer.CHECK_TASK.formatted(
                             block.getGoal()));
-                    if (result.contains("true")) {
-                        log.error("[观察者模式] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, goal={}, reason={}",
-                                request.getUserId(), block.getGoal(), result);
-                        isTaskRetry = true;
-                        request.getMessages().add(Message.user(result));
+                    if (result.contains("false")) {
+                        continue;
                     }
-                    executorRequest.getMessages().add(Message.user(result));
+
+                    // 2.4. 需要重新规划任务
+                    log.error("[观察者模式] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, goal={}, reason={}",
+                            request.getUserId(), block.getGoal(), result);
+                    isTaskRetry = true;
+                    request.getMessages().add(Message.user(result));
+                    break;
                 }
 
                 // 2.4. 需要重新规划任务，清理缓存、重置任务

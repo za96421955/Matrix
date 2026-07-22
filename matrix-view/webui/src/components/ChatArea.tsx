@@ -113,7 +113,7 @@ const MessageList = React.memo(
                         {isBackendSession ? '暂无消息' : 'Matrix'}
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-sm md:max-w-md leading-relaxed">
-                        {isBackendSession ? '该会话暂无消息记录' : '你好，我是你的智能助手，随时待命。'}
+                        {isBackendSession ? '该会话暂无消息记录' : 'Be water, my friend.'}
                     </p>
                 </div>
             )
@@ -878,9 +878,11 @@ export default function ChatArea() {
 
     // ===================== 模式映射 =====================
     const patternOptions: { value: Pattern; label: string }[] = [
-        {value: 'agent', label: '技能'},
+        {value: 'chat', label: '对话'},
         {value: 'plan', label: '规划·执行'},
-        {value: 'task', label: '任务链'},
+        {value: 'task', label: '任务'},
+        {value: 'observer', label: '观察者'},
+        {value: 'agent', label: '技能'},
         {value: 'coding', label: '需求开发'},
         {value: 'information', label: '资料整理'},
     ]
@@ -1012,6 +1014,7 @@ export default function ChatArea() {
                         {patternOptions.map((opt) => {
                             const disabledPatterns = ['agent', 'coding', 'information'];
                             const isDisabled = disabledPatterns.includes(opt.value);
+                            const isHidden = ['agent', 'coding'].includes(opt.value);
                             return (
                                 <button
                                     key={opt.value}
@@ -1019,6 +1022,7 @@ export default function ChatArea() {
                                     disabled={isDisabled}
                                     className={
                                         'px-2 py-1.5 text-[10px] sm:text-xs font-medium transition-colors ' +
+                                        (isHidden ? 'hidden ' : '') +
                                         (isDisabled
                                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                                             : pattern === opt.value

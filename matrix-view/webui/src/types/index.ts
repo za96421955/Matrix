@@ -58,7 +58,7 @@ export interface AgentInfo {
 }
 
 export type ThemeMode = 'light' | 'dark'
-export type Pattern = 'agent' | 'plan' | 'task' | 'coding' | 'information'
+export type Pattern = 'chat' | 'agent' | 'plan' | 'task' | 'observer' | 'coding' | 'information'
 
 export interface Toast {
     id: string

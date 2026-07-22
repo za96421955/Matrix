@@ -25,9 +25,9 @@ bash:
   - rm: 3
 tool:
   - default: 0
+  - risk-level-manager: 3
+  - skill-manager: 3
 skill:
   - default: 3
 app:
   - default: 3
-
-

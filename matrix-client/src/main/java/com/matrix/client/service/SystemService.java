@@ -29,6 +29,8 @@ public class SystemService {
     private CommandExecutor commandExecutor;
     @Resource
     private SkillManagerService skillManagerService;
+    @Resource
+    private RiskLevelManagerService riskLevelManagerService;
 
     private final RegisterHeartbeatService registerHeartbeatService;
     public SystemService(@Lazy RegisterHeartbeatService registerHeartbeatService) {
@@ -118,6 +120,18 @@ public class SystemService {
             return skillManagerService.installSkill(jsonStr);
         }
 
+        // 读取风险等级
+        if (command.indexOf(Constant.SYSTEM_COMMAND.READ_RISK_LEVEL) == 0) {
+            String jsonStr = command.substring(Constant.SYSTEM_COMMAND.READ_RISK_LEVEL.length());
+            return riskLevelManagerService.readRiskLevel(jsonStr);
+        }
+
+        // 更新风险等级
+        if (command.indexOf(Constant.SYSTEM_COMMAND.UPDATE_RISK_LEVEL) == 0) {
+            String jsonStr = command.substring(Constant.SYSTEM_COMMAND.UPDATE_RISK_LEVEL.length());
+            return riskLevelManagerService.updateRiskLevel(jsonStr);
+        }
+
         // 触发重新注册
         if (command.indexOf(Constant.SYSTEM_COMMAND.TRIGGER_REGISTER) == 0) {
             try {
@@ -132,5 +146,3 @@ public class SystemService {
     }
 
 }
-
-

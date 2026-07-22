@@ -40,6 +40,12 @@ public interface Constant {
 
         /** 触发 executor 立即重新注册 skill */
         String TRIGGER_REGISTER = "sys-trigger-register";
+
+        /** 读取 risk-level.yml */
+        String READ_RISK_LEVEL = "sys-read-risk-level:";
+
+        /** 更新 risk-level.yml */
+        String UPDATE_RISK_LEVEL = "sys-update-risk-level:";
     }
 
 }

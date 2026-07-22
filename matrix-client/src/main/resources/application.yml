@@ -1,5 +1,5 @@
 server:
-  port: 10627
+  port: 8091
 
 ---
 spring:
@@ -23,7 +23,7 @@ matrix:
     api-key: ${DEEPSEEK_API_KEY}
     retry-max: 5
     retry-base-delay: 1000
-    base: http://localhost:10626
+    base: http://localhost:8090
     register: /v1/client/register
     heartbeat: /v1/client/heartbeat
     ack: /v1/task/ack

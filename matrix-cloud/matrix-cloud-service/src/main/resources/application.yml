@@ -1,5 +1,5 @@
 server:
-  port: 10626
+  port: 8090
 management:
   server:
     port: 8001

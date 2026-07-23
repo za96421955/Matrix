@@ -128,79 +128,97 @@ echo "$LATEST_VERSION_URL" > "$INSTALL_DIR/config/server.url"
 echo "$MATRIX_VERSION" > "$INSTALL_DIR/config/version"
 log_info "✓ 服务器地址和版本号已保存"
 
-# ---------- 下载 JAR（从 Release 附件下载分卷并合并） ----------
+# ---------- 下载 JAR（优先下载完整 JAR，失败后回退到分卷合并） ----------
 JAR_FILE="$INSTALL_DIR/$JAR_FILE_NAME"
 TMP_DIR="$INSTALL_DIR/.tmp"
 
-log_info "下载 JAR (分卷文件) ..."
+log_info "下载 JAR ..."
 mkdir -p "$TMP_DIR"
 
-# 下载分卷
-curl -# -fL "$RELEASE_URL/$JAR_PART_Z01" -o "$TMP_DIR/$JAR_PART_Z01" || {
-    log_error "下载 $JAR_PART_Z01 失败"
-    exit 1
-}
-curl -# -fL "$RELEASE_URL/$JAR_PART_ZIP" -o "$TMP_DIR/$JAR_PART_ZIP" || {
-    log_error "下载 $JAR_PART_ZIP 失败"
-    exit 1
-}
-log_info "✓ 分卷下载完成"
+JAR_DOWNLOADED=false
 
-# 合并分卷为 JAR
-log_info "合并分卷为 JAR 文件 ..."
-cd "$TMP_DIR" || exit 1
-
-MERGED=false
-
-# 方法1: 使用 7z (直接解压分卷)
-if command -v 7z &>/dev/null; then
-    log_info "尝试 7z 解压 ..."
-    7z x "$JAR_PART_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
+# 先尝试直接下载完整 JAR
+log_info "尝试下载完整 JAR 包 ..."
+if curl -# -fL "$RELEASE_URL/$JAR_FILE_NAME" -o "$JAR_FILE"; then
     if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
-        log_info "✓ 7z 解压成功"
-        MERGED=true
+        log_info "✓ 完整 JAR 下载成功"
+        JAR_DOWNLOADED=true
     fi
 fi
 
-# 方法2: 使用 zip -F 合并分卷后 unzip 解压
-if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
-    log_info "尝试 zip -F + unzip 合并 ..."
-    cp "$JAR_PART_Z01" "${JAR_FILE_NAME%.jar}.z01"
-    cp "$JAR_PART_ZIP" "${JAR_FILE_NAME%.jar}.zip"
-    zip -F "${JAR_FILE_NAME%.jar}.zip" --out combined.zip >/dev/null 2>&1
-    if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
-        unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
-        if [ -f "$JAR_FILE" ]; then
-            log_info "✓ zip -F + unzip 合并成功"
+# 下载失败，回退到分卷下载
+if [ "$JAR_DOWNLOADED" = false ]; then
+    log_info "完整 JAR 下载失败，回退到分卷下载 ..."
+    
+    # 下载分卷
+    curl -# -fL "$RELEASE_URL/$JAR_PART_Z01" -o "$TMP_DIR/$JAR_PART_Z01" || {
+        log_error "下载 $JAR_PART_Z01 失败"
+        exit 1
+    }
+    curl -# -fL "$RELEASE_URL/$JAR_PART_ZIP" -o "$TMP_DIR/$JAR_PART_ZIP" || {
+        log_error "下载 $JAR_PART_ZIP 失败"
+        exit 1
+    }
+    log_info "✓ 分卷下载完成"
+
+    # 合并分卷为 JAR
+    log_info "合并分卷为 JAR 文件 ..."
+    cd "$TMP_DIR" || exit 1
+
+    MERGED=false
+
+    # 方法1: 使用 7z (直接解压分卷)
+    if command -v 7z &>/dev/null; then
+        log_info "尝试 7z 解压 ..."
+        7z x "$JAR_PART_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
+        if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
+            log_info "✓ 7z 解压成功"
             MERGED=true
         fi
     fi
-fi
 
-# 方法3: 使用 cat 合并分卷后 unzip 解压
-if [ "$MERGED" = false ] && command -v unzip &>/dev/null; then
-    log_info "尝试 cat + unzip 合并 ..."
-    cat "$JAR_PART_Z01" "$JAR_PART_ZIP" > combined.zip 2>/dev/null
-    if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
-        unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
-        if [ -f "$JAR_FILE" ]; then
-            log_info "✓ cat + unzip 合并成功"
-            MERGED=true
+    # 方法2: 使用 zip -F 合并分卷后 unzip 解压
+    if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
+        log_info "尝试 zip -F + unzip 合并 ..."
+        cp "$JAR_PART_Z01" "${JAR_FILE_NAME%.jar}.z01"
+        cp "$JAR_PART_ZIP" "${JAR_FILE_NAME%.jar}.zip"
+        zip -F "${JAR_FILE_NAME%.jar}.zip" --out combined.zip >/dev/null 2>&1
+        if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
+            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+            if [ -f "$JAR_FILE" ]; then
+                log_info "✓ zip -F + unzip 合并成功"
+                MERGED=true
+            fi
         fi
+    fi
+
+    # 方法3: 使用 cat 合并分卷后 unzip 解压
+    if [ "$MERGED" = false ] && command -v unzip &>/dev/null; then
+        log_info "尝试 cat + unzip 合并 ..."
+        cat "$JAR_PART_Z01" "$JAR_PART_ZIP" > combined.zip 2>/dev/null
+        if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
+            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+            if [ -f "$JAR_FILE" ]; then
+                log_info "✓ cat + unzip 合并成功"
+                MERGED=true
+            fi
+        fi
+    fi
+
+    # 清理临时文件
+    rm -rf "$TMP_DIR"
+
+    if [ "$MERGED" = false ]; then
+        log_error "JAR 分卷合并失败，请手动处理："
+        log_error "1. 从 $RELEASE_URL 下载 $JAR_PART_Z01 和 $JAR_PART_ZIP"
+        log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 $JAR_PART_ZIP"
+        log_error "3. 将得到的 $JAR_FILE_NAME 放入 $INSTALL_DIR/"
+        log_error "4. 重新运行本安装脚本"
+        exit 1
     fi
 fi
 
-# 清理临时文件
-rm -rf "$TMP_DIR"
-
-if [ "$MERGED" = false ]; then
-    log_error "JAR 分卷合并失败，请手动处理："
-    log_error "1. 从 $RELEASE_URL 下载 $JAR_PART_Z01 和 $JAR_PART_ZIP"
-    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 $JAR_PART_ZIP"
-    log_error "3. 将得到的 $JAR_FILE_NAME 放入 $INSTALL_DIR/"
-    log_error "4. 重新运行本安装脚本"
-    exit 1
-fi
+log_info "✓ JAR 就绪: $(ls -lh "$JAR_FILE" | awk '{print $5}')"
 
 log_info "✓ JAR 就绪: $(ls -lh "$JAR_FILE" | awk '{print $5}')"
 
@@ -454,24 +472,37 @@ case "$1" in
         TMP_DIR="$INSTALL_DIR/.tmp"
         mkdir -p "$TMP_DIR"
 
+        # 先尝试直接下载完整 JAR
         echo "下载最新 JAR ..."
-        curl -# -fL "$RELEASE_URL/$JAR_Z01" -o "$TMP_DIR/$JAR_Z01" || { echo "下载分卷1失败"; exit 1; }
-        curl -# -fL "$RELEASE_URL/$JAR_ZIP" -o "$TMP_DIR/$JAR_ZIP" || { echo "下载分卷2失败"; exit 1; }
-
-        # 尝试合并
-        cd "$TMP_DIR"
-        if command -v 7z &>/dev/null; then
-            7z x "$JAR_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
-        elif command -v zip &>/dev/null; then
-            cp "$JAR_Z01" "${JAR_FINAL%.jar}.z01"
-            cp "$JAR_ZIP" "${JAR_FINAL%.jar}.zip"
-            zip -F "${JAR_FINAL%.jar}.zip" --out combined.zip >/dev/null 2>&1
-            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
-        else
-            cat "$JAR_Z01" "$JAR_ZIP" > combined.zip 2>/dev/null
-            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+        JAR_DOWNLOADED=false
+        if curl -# -fL "$RELEASE_URL/$JAR_FINAL" -o "$INSTALL_DIR/$JAR_FINAL"; then
+            if [ -f "$INSTALL_DIR/$JAR_FINAL" ] && file "$INSTALL_DIR/$JAR_FINAL" | grep -qiE "zip|java|archive"; then
+                echo "✓ 完整 JAR 下载成功"
+                JAR_DOWNLOADED=true
+            fi
         fi
-        rm -rf "$TMP_DIR"
+
+        # 下载失败，回退到分卷
+        if [ "$JAR_DOWNLOADED" = false ]; then
+            echo "完整 JAR 下载失败，回退到分卷下载 ..."
+            curl -# -fL "$RELEASE_URL/$JAR_Z01" -o "$TMP_DIR/$JAR_Z01" || { echo "下载分卷1失败"; exit 1; }
+            curl -# -fL "$RELEASE_URL/$JAR_ZIP" -o "$TMP_DIR/$JAR_ZIP" || { echo "下载分卷2失败"; exit 1; }
+
+            # 尝试合并
+            cd "$TMP_DIR"
+            if command -v 7z &>/dev/null; then
+                7z x "$JAR_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
+            elif command -v zip &>/dev/null; then
+                cp "$JAR_Z01" "${JAR_FINAL%.jar}.z01"
+                cp "$JAR_ZIP" "${JAR_FINAL%.jar}.zip"
+                zip -F "${JAR_FINAL%.jar}.zip" --out combined.zip >/dev/null 2>&1
+                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+            else
+                cat "$JAR_Z01" "$JAR_ZIP" > combined.zip 2>/dev/null
+                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+            fi
+            rm -rf "$TMP_DIR"
+        fi
 
         # 更新 webui
         echo "下载最新 webui ..."

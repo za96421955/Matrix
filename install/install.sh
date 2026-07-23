@@ -53,8 +53,8 @@ write_to_profiles() {
 }
 
 # ---------- 下载 URL 常量 ----------
-SERVER="https://gitee.com/za96421955/matrix/raw/release/1.0.1/install"
-RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.2"
+SERVER="https://gitee.com/za96421955/matrix/raw/release/1.0.2/install"
+RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.1"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)

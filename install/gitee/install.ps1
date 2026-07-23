@@ -170,7 +170,7 @@ if ($ARCH -eq "AMD64") {
 # 工具函数
 # ==========================================
 
-# ---- 下载文件（带重试） ----
+# ---- 下载文件（带进度、重试） ----
 function Download-File {
     param(
         [string]$Url,
@@ -179,7 +179,7 @@ function Download-File {
         [string]$Label = ""
     )
 
-    if ($Label -eq "") {
+    if ([string]::IsNullOrEmpty($Label)) {
         $Label = [System.IO.Path]::GetFileName($Destination)
     }
 
@@ -189,24 +189,62 @@ function Download-File {
             Write-Log "DEBUG" "URL: $Url"
             Write-Log "DEBUG" "目标: $Destination"
 
-            # 使用 WebClient 避免 Invoke-WebRequest 在 PS5.1 的编码问题
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "Matrix-Installer/1.0.2")
-            $wc.DownloadFile($Url, $Destination)
-            $wc.Dispose()
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Headers.Add("User-Agent", "Matrix-Installer/1.0.2")
+
+            # 进度条支持
+            $global:downloadCompleted = $false
+            $progressEvent = Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action {
+                $percent = $EventArgs.ProgressPercentage
+                $bytesReceived = $EventArgs.BytesReceived
+                $totalBytes = $EventArgs.TotalBytesToReceive
+                if ($totalBytes -gt 0) {
+                    $progressText = "$percent% ($bytesReceived / $totalBytes bytes)"
+                } else {
+                    $progressText = "$bytesReceived bytes received"
+                }
+                Write-Progress -Activity "下载中" -Status $Label -PercentComplete $percent -CurrentOperation $progressText
+            }
+
+            $completeEvent = Register-ObjectEvent -InputObject $webClient -EventName DownloadFileCompleted -Action {
+                $global:downloadCompleted = $true
+            }
+
+            # 开始异步下载
+            $webClient.DownloadFileAsync([Uri]$Url, $Destination)
+
+            # 等待完成（最长30分钟）
+            $timeout = 1800
+            $elapsed = 0
+            while (-not $global:downloadCompleted -and $elapsed -lt $timeout) {
+                Start-Sleep -Seconds 1
+                $elapsed++
+            }
+
+            # 清理事件
+            Unregister-Event -SourceIdentifier $progressEvent.Name -ErrorAction SilentlyContinue
+            Unregister-Event -SourceIdentifier $completeEvent.Name -ErrorAction SilentlyContinue
+            $webClient.Dispose()
+
+            Write-Progress -Activity "下载中" -Completed
 
             if (Test-Path $Destination) {
                 $fileSize = (Get-Item $Destination).Length
-                Write-Log "INFO" "下载完成: $Label ($fileSize bytes)"
-                return $true
+                if ($fileSize -gt 0) {
+                    Write-Log "INFO" "下载完成: $Label ($fileSize bytes)"
+                    return $true
+                }
             }
-        } catch {
-            Write-Log "WARN" "下载失败 (第 $i 次/$Retries): $_"
-            if ($i -lt $Retries) {
-                $waitTime = $i * 3
-                Write-Log "INFO" "等待 ${waitTime} 秒后重试..."
-                Start-Sleep -Seconds $waitTime
-            }
+            Write-Log "WARN" "下载失败：未生成有效文件"
+        }
+        catch {
+            Write-Log "WARN" "下载异常 (第 $i 次/$Retries): $_"
+        }
+
+        if ($i -lt $Retries) {
+            $waitTime = $i * 3
+            Write-Log "INFO" "等待 ${waitTime} 秒后重试..."
+            Start-Sleep -Seconds $waitTime
         }
     }
 
@@ -1003,15 +1041,6 @@ switch ($Command) {
             }
         }
 
-        # 创建/更新 matrix.cmd 包装器
-        $MatrixCmdPath = Join-Path $CliDir "matrix.cmd"
-        $cmdContent = @'
-@echo off
-powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
-'@
-        $cmdContent | Out-File -FilePath $MatrixCmdPath -Encoding ASCII -Force
-        Write-Log "INFO" "已更新 CLI 包装器: $MatrixCmdPath"
-
         # 更新版本号
         [System.IO.File]::WriteAllText($localVersionPath, $remoteVersion, [System.Text.UTF8Encoding]::new($false))
 
@@ -1046,6 +1075,11 @@ powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
                 Remove-Item -Path $cliPath -Force
                 Write-Log "INFO" "已删除 CLI: $cliPath"
             }
+            $batPath = Join-Path (Join-Path (Join-Path $env:USERPROFILE ".local") "bin") "matrix.bat"
+            if (Test-Path $batPath) {
+                Remove-Item -Path $batPath -Force
+                Write-Log "INFO" "已删除 CLI 启动器: $batPath"
+            }
 
             Write-Log "INFO" "卸载完成"
         } else {
@@ -1076,14 +1110,15 @@ powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
 $matrixCliContent | Out-File -FilePath $MatrixCliPath -Encoding UTF8 -Force
 Write-Log "INFO" "已创建 CLI: $MatrixCliPath"
 
-# 创建 matrix.cmd 包装器（使 matrix 命令可在 cmd/PowerShell 中直接使用）
-$MatrixCmdPath = Join-Path $CliDir "matrix.cmd"
-$cmdContent = @'
+# 创建 matrix.bat 包装器（解决 Windows 命令提示符无法直接执行 .ps1 的问题）
+$MatrixBatPath = Join-Path $CliDir "matrix.bat"
+$batContent = @"
 @echo off
-powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
-'@
-$cmdContent | Out-File -FilePath $MatrixCmdPath -Encoding ASCII -Force
-Write-Log "INFO" "已创建 CLI 包装器: $MatrixCmdPath"
+powershell -ExecutionPolicy Bypass -File "%~dp0matrix.ps1" %*
+"@
+$batContent | Out-File -FilePath $MatrixBatPath -Encoding ASCII -Force
+Write-Log "INFO" "已创建 CLI 启动器: $MatrixBatPath"
+
 # ==========================================
 # 配置 PATH
 # ==========================================

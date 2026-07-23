@@ -55,8 +55,8 @@ write_to_profiles() {
 
 # ---------- 版本信息下载 ----------
 # latest-version.txt 的固定地址
-#LATEST_VERSION_URL="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
-LATEST_VERSION_URL="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
+LATEST_VERSION_URL="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+#LATEST_VERSION_URL="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
 
 log_info "获取最新版本信息 ..."
 VERSION_TMP=$(mktemp)
@@ -385,8 +385,8 @@ get_latest_version_info() {
     if [ -f "$url_file" ]; then
         version_url=$(cat "$url_file")
     else
-#        version_url="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
-        version_url="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
+        version_url="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+#        version_url="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
     fi
     local tmpfile
     tmpfile=$(mktemp)

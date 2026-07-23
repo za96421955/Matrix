@@ -60,10 +60,20 @@ function Exit-WithError {
 # 版本信息读取
 # ==========================================
 
-# 从当前目录读取 latest-version.txt
+# 从当前目录读取 latest-version.txt，若不存在则从 Gitee 下载
 $VersionFile = Join-Path $ScriptDir "latest-version.txt"
 if (-not (Test-Path $VersionFile)) {
-    Exit-WithError "未找到版本信息文件: $VersionFile"
+    Write-Host "[INFO] 未找到本地版本文件，正在从 Gitee 下载..."
+    $versionUrl = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
+    try {
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("User-Agent", "Matrix-Installer/1.0.2")
+        $wc.DownloadFile($versionUrl, $VersionFile)
+        $wc.Dispose()
+        Write-Host "[INFO] 版本信息文件下载完成"
+    } catch {
+        Exit-WithError "无法下载版本信息文件: $_"
+    }
 }
 
 # 手动解析 key=value 格式，支持内嵌变量展开

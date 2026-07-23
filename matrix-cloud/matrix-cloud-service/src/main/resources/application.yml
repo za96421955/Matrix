@@ -1,5 +1,5 @@
 server:
-  port: 8090
+  port: 18090
 management:
   server:
     port: 8001
@@ -39,7 +39,7 @@ mybatis-plus:
 
 ---
 matrix:
-  service:
+#  service:
   mqtt:
     broker-url: tcp://localhost:1883
 #    username: admin

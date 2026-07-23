@@ -11,14 +11,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "matrix")
 public class MatrixServiceProperties {
 
-    private Service service = new Service();
     private Mqtt mqtt = new Mqtt();
     private Github github = new Github();
-
-    @Data
-    public static class Service {
-
-    }
 
     @Data
     public static class Mqtt {

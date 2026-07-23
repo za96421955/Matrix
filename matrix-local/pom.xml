@@ -23,7 +23,9 @@
         <spring-boot.version>4.0.6</spring-boot.version>
         <sqlite.version>3.45.3.0</sqlite.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <fastjson2.version>2.0.53</fastjson2.version>
         <caffeine.version>3.2.3</caffeine.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -64,7 +66,7 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-            <version>3.5.5</version>
+            <version>${mybatis-plus.version}</version>
         </dependency>
 
         <!-- Caffeine -->
@@ -91,14 +93,7 @@
         <dependency>
             <groupId>com.alibaba.fastjson2</groupId>
             <artifactId>fastjson2</artifactId>
-            <version>2.0.53</version>
-        </dependency>
-
-        <!-- Hutool -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-            <version>5.8.26</version>
+            <version>${fastjson2.version}</version>
         </dependency>
 
         <!-- matrix modules -->
@@ -116,6 +111,23 @@
             <groupId>com.matrix</groupId>
             <artifactId>matrix-cloud-service</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <!-- local 单机 SQLite，无需分库分表 -->
+                <exclusion>
+                    <groupId>org.apache.shardingsphere</groupId>
+                    <artifactId>shardingsphere-jdbc</artifactId>
+                </exclusion>
+                <!-- local 单机运行，无需注册发现和配置中心 -->
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-client</artifactId>
+                </exclusion>
+                <!-- local 无需 Redis -->
+                <exclusion>
+                    <groupId>org.redisson</groupId>
+                    <artifactId>redisson-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -145,7 +157,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

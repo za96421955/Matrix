@@ -35,6 +35,8 @@
         <spring-cloud.version>2025.1.1</spring-cloud.version>
         <!-- Spring Cloud Alibaba -->
         <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
+        <!-- httpclient 4.x: referenced by matrix-cloud-common/src/util/HttpClient.java -->
+        <httpclient.version>4.5.14</httpclient.version>
     </properties>
 
     <dependencyManagement>
@@ -97,11 +99,11 @@
                 <version>3.5.5</version>
             </dependency>
 
-            <!-- Apache HttpClient -->
+            <!-- Apache HttpClient 4.x -->
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.14</version>
+                <version>${httpclient.version}</version>
             </dependency>
 
             <!-- MQTT Paho Client v5 -->
@@ -116,32 +118,6 @@
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
                 <version>2.0.53</version>
-            </dependency>
-
-            <!-- Hutool -->
-            <dependency>
-                <groupId>cn.hutool</groupId>
-                <artifactId>hutool-all</artifactId>
-                <version>5.8.26</version>
-            </dependency>
-
-            <!-- JWT -->
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-api</artifactId>
-                <version>0.12.5</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-impl</artifactId>
-                <version>0.12.5</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
-                <version>0.12.5</version>
-                <scope>runtime</scope>
             </dependency>
 
             <!-- matrix -->
@@ -188,5 +164,3 @@
     </build>
 
 </project>
-
-

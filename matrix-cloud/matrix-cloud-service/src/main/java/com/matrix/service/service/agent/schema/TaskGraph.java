@@ -13,36 +13,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskChain {
+public class TaskGraph {
 
-    @Description("任务块列表、同步执行。块内的任务列表同步/异步执行。")
-    private List<ExecutionBlock> blocks;
+    @Description("无序任务列表。")
+    private List<Task> tasks;
 
     @Override
     public String toString() {
         return JSONObject.toJSONString(this);
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ExecutionBlock {
-
-        @Description("任务列表是否同步执行, 默认: true。")
-        private Boolean sync;
-
-        @Description("任务块目标。")
-        private String goal;
-
-        @Description("任务列表。")
-        private List<Task> tasks;
-
-        @Override
-        public String toString() {
-            return JSONObject.toJSONString(this);
-        }
-
     }
 
     @Data
@@ -57,14 +35,14 @@ public class TaskChain {
         @Description("任务名称, 驼峰变量名 (示例: taskName)。")
         private String name;
 
-        @Description("执行方案。")
-        private String action;
-
         @Description("任务目标。")
         private String goal;
 
-        @Description("关键结果。")
-        private String result;
+        @Description("执行方案。")
+        private String action;
+
+        @Description("期望结果。")
+        private String expect;
 
         @Override
         public String toString() {

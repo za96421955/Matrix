@@ -258,7 +258,7 @@ function Start-WebuiProxyPython {
     if ($pythonCmd) {
         Write-Log "INFO" "使用 Python 启动 WebUI 代理 (端口 $WebuiPort -> 后端 $BackendPort)"
 
-        $logFile = Join-Path $LogsDir "webui-proxy.log"
+        $logFile = Join-Path $LogsDir "webui.log"
         $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
         $startupInfo.FileName = $pythonCmd.Source
         $startupInfo.Arguments = "-u `"$ProxyScript`""
@@ -407,7 +407,7 @@ $jvmArgs = @(
 )
 
 # 8. 启动后端服务
-$serviceLogFile = Join-Path $LogsDir "matrix-local.log"
+$serviceLogFile = Join-Path $LogsDir "app.log"
 Write-Log "INFO" "正在启动 Matrix 后端服务..."
 
 try {

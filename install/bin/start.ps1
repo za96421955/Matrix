@@ -18,10 +18,10 @@ $OutputEncoding = [Text.Encoding]::UTF8
 
 # 路径定义
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BinDir = $ScriptDir
 
 $MatrixHome = Join-Path $env:USERPROFILE ".matrix"
 $LocalDir = Join-Path $MatrixHome "local"
+$BinDir = Join-Path $LocalDir "bin"          # 固定 bin 目录，不再依赖脚本所在位置
 $JdksDir = Join-Path $MatrixHome "jdk21"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
@@ -470,4 +470,3 @@ Write-Log "INFO" "=========================================="
 Write-Log "INFO" "后端服务: http://localhost:$serverPort"
 Write-Log "INFO" "WebUI:    http://localhost:10908 (API 自动代理至 :10906/v1)"
 Write-Log "INFO" "日志目录: $LogsDir"
-Write-Log "INFO" "停止服务: $BinDir\stop.ps1"

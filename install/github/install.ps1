@@ -500,11 +500,11 @@ switch ($Command) {
         Write-Log "INFO" "  端口检查需要管理员权限"
     }
     "logs" {
-        $f = Join-Path $LogsDir "matrix-local.log"
+        $f = Join-Path $LogsDir "app.log"
         if (Test-Path $f) { Get-Content $f -Tail 50 -Wait } else { Write-Log "WARN" "日志文件不存在" }
     }
     "webui-logs" {
-        $f = Join-Path $LogsDir "webui-proxy.log"
+        $f = Join-Path $LogsDir "webui.log"
         if (Test-Path $f) { Get-Content $f -Tail 50 -Wait } else { Write-Log "WARN" "日志文件不存在" }
     }
     "update" {

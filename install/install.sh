@@ -342,16 +342,33 @@ if [ -f "$JDK_ARCHIVE" ]; then
     log_info "✓ JDK 已存在"
 else
     log_info "下载 JDK $JDK_VERSION ..."
-    curl -# -L "$JDK_DL_URL" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
+    curl -f# -L "$JDK_DL_URL" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
+    # 校验下载文件是否为正确的压缩格式
+    file_type=$(file -b "$JDK_ARCHIVE" 2>/dev/null)
+    case "$file_type" in
+        *gzip*|*bzip2*|*Zip*|*compress*)
+            ;;
+        *)
+            log_error "下载的文件不是预期的压缩格式, 类型为: $file_type"
+            log_error "可能是网络/CDN问题导致下载了错误内容(如HTML页面)"
+            log_error "请尝试手动下载或切换网络后重试"
+            log_error "官方下载地址：$JDK_DL_URL"
+            exit 1
+            ;;
+    esac
     mkdir -p "$JDK_DIR"
     if [ "$os_type" = "windows" ]; then
         unzip -q "$JDK_ARCHIVE" -d "$JDK_DIR" && mv "$JDK_DIR"/jdk-*/* "$JDK_DIR/" 2>/dev/null && rmdir "$JDK_DIR"/jdk-* 2>/dev/null
     else
         tar -xzf "$JDK_ARCHIVE" -C "$JDK_DIR" --strip-components=1
     fi
-    [ $? -ne 0 ] && { log_error "JDK 解压失败"; exit 1; }
+    if [ $? -ne 0 ]; then
+        log_error "JDK 解压失败"
+        log_error "下载的文件可能是损坏的或不完整的, 请检查网络连接后重试"
+        exit 1
+    fi
     rm -f "$JDK_ARCHIVE"
-    log_info "✓ JDK 下载完成"
+    log_info "JDK 下载完成"
 fi
 
 # ---------- 安装 matrix CLI ----------

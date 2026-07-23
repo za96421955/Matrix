@@ -65,7 +65,7 @@ public class TaskGraphPatternService extends AbstractTaskPatternService<TaskGrap
             while (true) {
                 PatternRequest executorRequest = request.clone();
 
-                // 获取待执行任务
+                // 2.1. 获取待执行任务
                 TaskGraph.Task task = this.getNextTask(sink, executorRequest, taskGraph, 0);
                 if (null == task) {
                     log.info("[任务图模式] 任务结束, userId={}, sessionId={}",
@@ -73,7 +73,7 @@ public class TaskGraphPatternService extends AbstractTaskPatternService<TaskGrap
                     break;
                 }
 
-                // 执行任务
+                // 2.2. 执行任务
                 String taskResult = this.executorTaskRetry(sink, executorRequest.clone(), task, 0);
                 if (StringUtils.isBlank(taskResult)) {
                     continue;
@@ -81,43 +81,43 @@ public class TaskGraphPatternService extends AbstractTaskPatternService<TaskGrap
                 executorRequest.getMessages().add(Message.user(task.getGoal()));
                 executorRequest.getMessages().add(Message.assistant(taskResult));
 
-                // 2.2. 观察任务执行结果是否满足目标
-                String checkResult = this.callResultByClone(sink, executorRequest.clone(),
-                        Prompt.Observer.CHECK_RESULT.formatted(task.getGoal()));
-                if (checkResult.contains("true")) {
+                // 2.3. 观察任务执行结果是否满足目标
+                ObserverResult observerResult = this.observer(sink, executorRequest.clone(), task.getGoal());
+                if (observerResult.isSuccess()) {
                     request.getMessages().add(Message.user(task.getGoal()));
                     request.getMessages().add(Message.assistant(taskResult));
                     continue;
                 }
-                log.error("[任务图模式] 任务执行结果不满足目标, userId={}, goal={}, reason={}",
-                        request.getUserId(), task.getGoal(), checkResult);
-                executorRequest.getMessages().add(Message.user(checkResult));
+                executorRequest.getMessages().add(Message.user(observerResult.getReason()));
 
-                // 2.3. 不满足目标，是否需要重新规划任务
-                checkResult = this.callResultByClone(sink, executorRequest.clone(),
-                        Prompt.Observer.CHECK_TASK.formatted(task.getGoal()));
-                if (checkResult.contains("false")) {
-                    continue;
+                // 2.4. 不满足目标，是否需要重新规划任务
+                if (observerResult.isTaskRetry()) {
+                    isTaskRetry = true;
+                    request.getMessages().add(Message.user(observerResult.getReason()));
+                    break;
                 }
-
-                // 2.4. 需要重新规划任务
-                log.error("[任务图模式] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, goal={}, reason={}",
-                        request.getUserId(), task.getGoal(), checkResult);
-                isTaskRetry = true;
-                request.getMessages().add(Message.user(checkResult));
-                break;
             }
+
             // 3. 需要重新规划
             if (isTaskRetry) {
+                log.info("[任务图模式] 重新规划任务、清理当前任务缓存, userId={}", request.getUserId());
+                taskPatternContext.clear(request.getUserId(), request.getSessionId());
                 continue;
             }
 
-            // TODO 检查最终目标
-
+            // 4. 检查最终目标, 不满足则重新规划任务
+            ObserverResult observerResult = this.observer(sink, request.clone(), taskGraph.getUltimateGoal());
+            if (!observerResult.isSuccess()) {
+                log.info("[任务图模式] 任务最终结果检查不通过, 重新规划任务、清理当前任务缓存, userId={}, sessionId={}, reason={}",
+                        request.getUserId(), request.getSessionId(), observerResult.getReason());
+                taskPatternContext.clear(request.getUserId(), request.getSessionId());
+                request.getMessages().add(Message.user(observerResult.getReason()));
+                continue;
+            }
             break;
         }
 
-        // 3. 结果总结
+        // 5. 结果总结
         String result = this.callResultByClone(sink, request, Prompt.Task.SUMMARY_RESULT);
         request.getMessages().removeLast();
         request.getMessages().add(Message.assistant(result));

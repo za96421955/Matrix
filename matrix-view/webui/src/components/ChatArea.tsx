@@ -879,15 +879,15 @@ export default function ChatArea() {
 
     // ===================== 模式映射 =====================
     const patternOptions: { value: Pattern; label: string }[] = [
-        {value: 'chat', label: '对话'},
-        {value: 'plan', label: '规划·执行'},
-        {value: 'task', label: '任务'},
-        {value: 'observer', label: '观察者'},
+        {value: 'auto', label: '自动'},
+        {value: 'plan', label: '规划'},
+        {value: 'execute', label: '执行'},
+        {value: 'task-chain', label: '任务'},
+        {value: 'task-graph', label: '图'},
         {value: 'agent', label: '技能'},
         {value: 'coding', label: '需求开发'},
         {value: 'information', label: '资料整理'},
     ]
-
     // ===================== UI 渲染 =====================
     return (
         <div className="flex-1 flex flex-col h-full min-w-0">

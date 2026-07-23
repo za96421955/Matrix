@@ -176,7 +176,7 @@ export const useChatStore = create<ChatState>()(
             sessionsLoading: false,
             sessionsLoaded: false,
             userAuthLevel: 0,
-            pattern: 'plan',
+            pattern: 'auto',
             itemPath: '',
             projectPathHistory: [],
             currentClientId: '',

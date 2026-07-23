@@ -1,7 +1,6 @@
 package com.matrix.service.service.chat;
 
 import com.alibaba.fastjson2.JSON;
-import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.ChatRequest;
@@ -9,7 +8,7 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.service.agent.PatternService;
-import com.matrix.service.service.agent.impl.*;
+import com.matrix.service.service.agent.impl.AutoPatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -36,23 +35,8 @@ public class ChatService {
     private SessionService sessionService;
     @Resource
     private MessageService messageService;
-
     @Resource
-    private ChatPatternService chatPatternService;
-    @Resource
-    private SkillPatternService skillPatternService;
-    @Resource
-    private PlanPatternService planPatternService;
-    @Resource
-    private TaskChainPatternService taskChainPatternService;
-    @Resource
-    private TaskGraphPatternService taskGraphPatternService;
-//    @Resource
-//    private ObserverTaskChainPatternService observerTaskChainPatternService;
-    @Resource
-    private CodingPatternService codingPatternService;
-    @Resource
-    private InformationPatternService informationPatternService;
+    private AutoPatternService autoPatternService;
 
     /**
      * @description 对话入口（SSE 流式）
@@ -64,24 +48,8 @@ public class ChatService {
         if (chatContext.isConversation(request.getUserId(), request.getSessionId())) {
             return Flux.just(Response.error(ErrorCode.IN_THE_CONVERSATION.getMessage()));
         }
-
         // 获取模式服务
-        PatternService patternService;
-        if (StringUtils.isBlank(request.getPattern())) {
-            request.setPattern(Constant.Pattern.CHAT);
-        }
-        switch (request.getPattern()) {
-//            case Constant.Pattern.CHAT -> patternService = chatPatternService;
-            case Constant.Pattern.AGENT -> patternService = skillPatternService;
-            case Constant.Pattern.PLAN -> patternService = planPatternService;
-            case Constant.Pattern.TASK_CHAIN -> patternService = taskChainPatternService;
-//            case Constant.Pattern.OBSERVER -> patternService = observerTaskChainPatternService;
-            case Constant.Pattern.TASK_GRAPH -> patternService = taskGraphPatternService;
-            case Constant.Pattern.CODING -> patternService = codingPatternService;
-            case Constant.Pattern.INFORMATION -> patternService = informationPatternService;
-            default -> patternService = chatPatternService;
-        }
-
+        PatternService patternService = autoPatternService.getPatternService(request.getPattern());
         // 流式响应
         return Mono.fromCallable(() -> sessionService.getOrCreateSession(
                 request.getUserId(), request.getSessionId(), request.getMessages().getFirst().getContent()))

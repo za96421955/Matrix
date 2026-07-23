@@ -64,6 +64,10 @@ public interface Constant {
      * 模式
      */
     interface Pattern {
+
+        /** 自动模式 */
+        String AUTO = "auto";
+
         /** 对话模式 */
         String CHAT = "chat";
 
@@ -73,11 +77,11 @@ public interface Constant {
         /** 计划模式 */
         String PLAN = "plan";
 
-        /** 任务模式 */
-        String TASK_CHAIN = "task";
+        /** 执行模式 */
+        String EXECUTE = "execute";
 
-        /** 观察者模式 */
-        String OBSERVER = "observer";
+        /** 任务模式 */
+        String TASK_CHAIN = "task-chain";
 
         /** 任务图模式 */
         String TASK_GRAPH = "task-graph";
@@ -87,6 +91,7 @@ public interface Constant {
 
         /** 资料模式 */
         String INFORMATION = "information";
+
     }
 
 }

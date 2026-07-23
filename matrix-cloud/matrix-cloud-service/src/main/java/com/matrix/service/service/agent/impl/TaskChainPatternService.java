@@ -57,48 +57,37 @@ public class TaskChainPatternService extends AbstractTaskPatternService<TaskChai
             // 1. 构建任务链
             PatternRequest taskRequest = request.clone();
             TaskChain taskChain = this.buildTask(sink, taskRequest);
-            log.info("[任务链（观察者）] 构建任务链, userId={}, taskChain={}", request.getUserId(), taskChain);
+            log.info("[任务链模式] 构建任务链, userId={}, taskChain={}", request.getUserId(), taskChain);
             if (null == taskChain) {
                 continue;
             }
 
             // 2. 执行任务块
             for (TaskChain.ExecutionBlock block : taskChain.getBlocks()) {
-                PatternRequest executorRequest = null;
+                // 2.1. 任务执行
+                PatternRequest executorRequest = taskRequest.clone();
                 int executorRetry = 0;
                 while (++executorRetry <= 3) {
-                    // 2.1. 任务执行
-                    executorRequest = taskRequest.clone();
                     this.executorBlock(sink, executorRequest, block);
 
                     // 2.2. 观察任务执行结果是否满足目标
-                    String result = this.callResultByClone(sink, executorRequest.clone(),
-                            Prompt.Observer.CHECK_RESULT.formatted(block.getGoal()));
-                    if (result.contains("true")) {
+                    ObserverResult observerResult = this.observer(sink, executorRequest.clone(), block.getGoal());
+                    if (observerResult.isSuccess()) {
                         break;
                     }
-                    log.error("[任务链（观察者）] 任务执行结果不满足目标, userId={}, goal={}, reason={}",
-                            request.getUserId(), block.getGoal(), result);
-                    executorRequest.getMessages().add(Message.user(result));
+                    executorRequest.getMessages().add(Message.user(observerResult.getReason()));
 
                     // 2.3. 不满足目标，是否需要重新规划任务
-                    result = this.callResultByClone(sink, executorRequest.clone(),
-                            Prompt.Observer.CHECK_TASK.formatted(block.getGoal()));
-                    if (result.contains("false")) {
-                        continue;
+                    if (observerResult.isTaskRetry()) {
+                        isTaskRetry = true;
+                        request.getMessages().add(Message.user(observerResult.getReason()));
+                        break;
                     }
-
-                    // 2.4. 需要重新规划任务
-                    log.error("[任务链（观察者）] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, goal={}, reason={}",
-                            request.getUserId(), block.getGoal(), result);
-                    isTaskRetry = true;
-                    request.getMessages().add(Message.user(result));
-                    break;
                 }
 
                 // 2.4. 需要重新规划任务，清理缓存、重置任务
                 if (isTaskRetry) {
-                    log.info("[任务链（观察者）] 重新规划任务、清理当前任务缓存, userId={}", request.getUserId());
+                    log.info("[任务链模式] 重新规划任务、清理当前任务缓存, userId={}", request.getUserId());
                     taskPatternContext.clear(request.getUserId(), request.getSessionId());
                     break;
                 }

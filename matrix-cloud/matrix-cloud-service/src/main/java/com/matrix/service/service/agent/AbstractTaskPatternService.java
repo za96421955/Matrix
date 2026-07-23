@@ -9,9 +9,14 @@ import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.context.TaskPatternContext;
 import com.matrix.service.dal.entity.ClientInfo;
 import jakarta.annotation.Resource;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -20,6 +25,7 @@ import java.util.List;
  *
  * @author 陈晨
  */
+@Slf4j
 public abstract class AbstractTaskPatternService<T> extends AbstractPatternService<PatternRequest> {
 
     @Resource
@@ -146,6 +152,56 @@ public abstract class AbstractTaskPatternService<T> extends AbstractPatternServi
         // 可选：去除内容首尾的空白字符（如换行符）
         content = content.trim();
         return content;
+    }
+
+    /**
+     * @description 观察任务执行结果
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected ObserverResult observer(FluxSink<Response> sink, PatternRequest request, String goal) {
+        // 1. 观察任务执行结果是否满足目标
+        String checkResult = this.callResultByClone(sink, request.clone(),
+                Prompt.Observer.CHECK_RESULT.formatted(goal));
+        if (checkResult.contains("true")) {
+            return ObserverResult.builder()
+                    .success(true)
+                    .build();
+        }
+        log.error("[任务模式 (观察者)] 任务执行结果不满足目标, userId={}, sessionId={}, goal={}, reason={}",
+                request.getUserId(), request.getSessionId(), goal, checkResult);
+        request.getMessages().add(Message.user(checkResult));
+
+        // 2. 不满足目标，是否需要重新规划任务
+        checkResult = this.callResultByClone(sink, request.clone(),
+                Prompt.Observer.CHECK_TASK.formatted(goal));
+        if (checkResult.contains("false")) {
+            return ObserverResult.builder()
+                    .success(false)
+                    .reason(checkResult)
+                    .build();
+        }
+
+        // 3. 需要重新规划任务
+        log.error("[任务模式 (观察者)] 任务执行结果不满足目标 & 需要重新规划任务, userId={}, sessionId={}, goal={}, reason={}",
+                request.getUserId(), request.getSessionId(), goal, checkResult);
+        return ObserverResult.builder()
+                .success(false)
+                .taskRetry(true)
+                .reason(checkResult)
+                .build();
+    }
+
+    @Data
+    @Builder
+    protected static class ObserverResult implements Serializable {
+        @Serial
+        private static final long serialVersionUID = -8757955283244354760L;
+
+        private boolean success;
+        private boolean taskRetry;
+        private String reason;
     }
 
 }

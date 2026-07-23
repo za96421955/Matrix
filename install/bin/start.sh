@@ -14,7 +14,7 @@ log_error() {
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1"
 }
 
-SCRIPT_DIR="$HOME/.matrix/client/bin"
+SCRIPT_DIR="$HOME/.matrix/local/bin"
 
 # ============================================================
 # step1: check ~/.jdks for existing JDK21
@@ -231,7 +231,7 @@ log_info "✓ 后端服务启动成功，PID: $REAL_PID"
 # step6: start WebUI HTTP server
 # ============================================================
 WEBUI_DIR="$PROJECT_ROOT/webui"
-WEBUI_PORT=10627
+WEBUI_PORT=9000
 WEBUI_PID_FILE="$SCRIPT_DIR/webui.pid"
 
 if [ -d "$WEBUI_DIR" ] && [ -f "$WEBUI_DIR/index.html" ]; then
@@ -276,6 +276,6 @@ fi
 
 log_info "✓ 全部启动完成"
 echo ""
-echo "后端服务: http://localhost:10626"
+echo "后端服务: http://localhost:9000"
 echo "WebUI:    http://localhost:$WEBUI_PORT"
 echo ""

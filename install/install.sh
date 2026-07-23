@@ -292,7 +292,7 @@ esac
 
 JDK_ARCHIVE="$JDK_DIR/$JDK_FILENAME"
 
-if [ -d "$JDK_DIR/bin" ]; then
+if [ -f "$JDK_ARCHIVE" ]; then
     log_info "✓ JDK 已存在"
 else
     log_info "下载 JDK 21 ..."
@@ -304,8 +304,7 @@ else
         tar -xzf "$JDK_ARCHIVE" -C "$JDK_DIR" --strip-components=1
     fi
     [ $? -ne 0 ] && { log_error "JDK 解压失败"; exit 1; }
-    rm -f "$JDK_ARCHIVE"
-    log_info "✓ JDK 安装完成"
+    log_info "✓ JDK 下载完成"
 fi
 
 # ---------- 安装 matrix CLI ----------

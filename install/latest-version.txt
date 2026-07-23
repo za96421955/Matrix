@@ -21,7 +21,7 @@ JAR_PART_ZIP=matrix-local-${MATRIX_VERSION}.part.zip
 WEBUI_ZIP_NAME=matrix-webui-${MATRIX_VERSION}.zip
 
 # JDK
-JDK_VERSION=21.0.22
+JDK_VERSION=21.0.12
 
 # JDK - Linux ARM64 (aarch64)
 JDK_URL_LINUX_ARM64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-linux-aarch64.tar.gz

@@ -92,11 +92,12 @@ else
 fi
 
 # ---------- 创建目录 ----------
-INSTALL_DIR="$HOME/.matrix/client"
+INSTALL_DIR="$HOME/.matrix/local"
+JDK_DIR="$HOME/.matrix/jdk21"
 CLI_DIR="$HOME/.local/bin"
 
 log_info "创建目录..."
-mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs,webui} "$CLI_DIR"
+mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs,webui} "$CLI_DIR" "$JDK_DIR"
 log_info "✓ 目录就绪"
 
 # ---------- 保存服务器地址 (供 matrix update 使用) ----------
@@ -259,18 +260,46 @@ fi
 
 # ---------- JDK 下载 ----------
 log_info "检查 JDK ..."
-JDK_VERSION="21.0.11+10"
-JDK_API="https://api.adoptium.net/v3/binary/latest/21/ga/${os_type}/${arch_type}/jdk/hotspot/normal/eclipse"
-JDK_ARCHIVE="$JDK_DIR/jdk.tar.gz"
+JDK_VERSION="21.0.12"
+
+# Microsoft JDK 下载 URL 映射
+case "${os_type}-${arch_type}" in
+    linux-x64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-linux-x64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.12-linux-x64.tar.gz"
+        ;;
+    linux-aarch64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-linux-aarch64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.12-linux-aarch64.tar.gz"
+        ;;
+    darwin-x64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-macos-x64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.12-macos-x64.tar.gz"
+        ;;
+    darwin-aarch64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-macos-aarch64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.12-macos-aarch64.tar.gz"
+        ;;
+    windows-x64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-windows-x64.zip"
+        JDK_FILENAME="microsoft-jdk-21.0.12-windows-x64.zip"
+        ;;
+    windows-aarch64)
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-windows-aarch64.zip"
+        JDK_FILENAME="microsoft-jdk-21.0.12-windows-aarch64.zip"
+        ;;
+esac
+
+JDK_ARCHIVE="$JDK_DIR/$JDK_FILENAME"
 
 if [ -d "$JDK_DIR/bin" ]; then
     log_info "✓ JDK 已存在"
 else
     log_info "下载 JDK 21 ..."
-    curl -# -L "$JDK_API" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
+    curl -# -L "$JDK_URL" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
     mkdir -p "$JDK_DIR"
     if [ "$os_type" = "windows" ]; then
-        unzip -q "$JDK_ARCHIVE" -d "$JDK_DIR" && mv "$JDK_DIR"/jdk-*/* "$JDK_DIR/" && rmdir "$JDK_DIR"/jdk-* 2>/dev/null
+        unzip -q "$JDK_ARCHIVE" -d "$JDK_DIR" && mv "$JDK_DIR"/jdk-*/* "$JDK_DIR/" 2>/dev/null && rmdir "$JDK_DIR"/jdk-* 2>/dev/null
     else
         tar -xzf "$JDK_ARCHIVE" -C "$JDK_DIR" --strip-components=1
     fi
@@ -282,8 +311,8 @@ fi
 # ---------- 安装 matrix CLI ----------
 cat > "$CLI_DIR/matrix" << 'CLIEOF'
 #!/bin/bash
-INSTALL_DIR="$HOME/.matrix/client"
-WEBUI_PORT=10627
+INSTALL_DIR="$HOME/.matrix/local"
+WEBUI_PORT=9000
 
 case "$1" in
     status)
@@ -399,7 +428,7 @@ echo " ✓ matrix 安装完成!"
 echo "=============================================="
 echo "安装目录: $INSTALL_DIR"
 echo "JDK 目录: $JDK_DIR"
-echo "WebUI:    http://localhost:10627"
+echo "WebUI:    http://localhost:9000"
 echo ""
 echo "已配置环境变量的文件:"
 get_profile_files | tr ' ' '\n' | while read -r f; do [ -f "$f" ] && echo "  • $f"; done

@@ -74,6 +74,7 @@ if (-not (Test-Path $VersionFile)) {
     } catch {
         Exit-WithError "无法下载版本信息文件: $_"
     }
+}
 
 # 手动解析 key=value 格式，支持内嵌变量展开
 $ConfigTable = @{}
@@ -183,55 +184,15 @@ function Download-File {
     }
 
     for ($i = 1; $i -le $Retries; $i++) {
-        $eventSubscriber = $null
         try {
             Write-Log "INFO" "正在下载 $Label ..."
             Write-Log "DEBUG" "URL: $Url"
             Write-Log "DEBUG" "目标: $Destination"
 
-            # 使用 WebClient 异步下载以支持实时进度显示
+            # 使用 WebClient 避免 Invoke-WebRequest 在 PS5.1 的编码问题
             $wc = New-Object System.Net.WebClient
             $wc.Headers.Add("User-Agent", "Matrix-Installer/1.0.2")
-
-            # 注册下载进度事件，通过 Write-Progress 显示实时进度条
-            $activityName = "正在下载 $Label"
-            $eventSubscriber = Register-ObjectEvent -InputObject $wc -EventName DownloadProgressChanged -Action {
-                param($sender, $e)
-                $percent = $e.ProgressPercentage
-                $received = $e.BytesReceived
-                $total = $e.TotalBytesToReceive
-                $receivedMB = [math]::Round($received / 1MB, 2)
-                if ($total -gt 0) {
-                    $totalMB = [math]::Round($total / 1MB, 2)
-                    $status = "$receivedMB MB / $totalMB MB"
-                } else {
-                    $status = "$receivedMB MB"
-                }
-                Write-Progress -Activity $event.MessageData -Status $status -PercentComplete $percent
-            } -MessageData $activityName
-
-            # 开始异步下载
-            $wc.DownloadFileAsync((New-Object System.Uri($Url)), $Destination)
-
-            # 轮询等待下载完成
-            while ($wc.IsBusy) {
-                Start-Sleep -Milliseconds 200
-            }
-
-            # 清理进度条
-            Write-Progress -Activity $activityName -Completed
-
-            # 取消注册事件
-            if ($eventSubscriber) {
-                Unregister-Event -SourceIdentifier $eventSubscriber.Name -ErrorAction SilentlyContinue
-                $eventSubscriber = $null
-            }
-
-            # 检查异步下载是否发生错误
-            if ($wc.Error) {
-                throw $wc.Error.InnerException
-            }
-
+            $wc.DownloadFile($Url, $Destination)
             $wc.Dispose()
 
             if (Test-Path $Destination) {
@@ -241,13 +202,6 @@ function Download-File {
             }
         } catch {
             Write-Log "WARN" "下载失败 (第 $i 次/$Retries): $_"
-            # 确保进度条和事件被清理
-            try {
-                Write-Progress -Activity "正在下载 $Label" -Completed
-                if ($eventSubscriber) {
-                    Unregister-Event -SourceIdentifier $eventSubscriber.Name -ErrorAction SilentlyContinue
-                }
-            } catch {}
             if ($i -lt $Retries) {
                 $waitTime = $i * 3
                 Write-Log "INFO" "等待 ${waitTime} 秒后重试..."

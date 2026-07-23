@@ -52,8 +52,9 @@ write_to_profiles() {
     done
 }
 
-# ---------- 参数解析 ----------
-SERVER="https://raw.githubusercontent.com/XXXXXX/matrix/master/install"
+# ---------- 下载 URL 常量 ----------
+SERVER="https://gitee.com/za96421955/matrix/raw/release/1.0.1/install"
+RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.1"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)
@@ -95,18 +96,84 @@ INSTALL_DIR="$HOME/.matrix/client"
 CLI_DIR="$HOME/.local/bin"
 
 log_info "创建目录..."
-mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs} "$CLI_DIR"
+mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs,webui} "$CLI_DIR"
 log_info "✓ 目录就绪"
 
 # ---------- 保存服务器地址 (供 matrix update 使用) ----------
 echo "$SERVER" > "$INSTALL_DIR/config/server.url"
+echo "$RELEASE_URL" > "$INSTALL_DIR/config/release.url"
 log_info "✓ 服务器地址已保存"
 
-# ---------- 下载 JAR ----------
-JAR_URL="$SERVER/matrix-client.jar"
-JAR_FILE="$INSTALL_DIR/matrix-client.jar"
-log_info "下载 JAR ..."
-{ curl -# -fL "$JAR_URL" -o "$JAR_FILE" && log_info "✓ JAR 完成"; } || { log_error "下载失败: $JAR_URL"; exit 1; }
+# ---------- 下载 JAR（从 Release 附件下载分卷并合并） ----------
+JAR_FILE="$INSTALL_DIR/matrix-local-1.0.1.jar"
+TMP_DIR="$INSTALL_DIR/.tmp"
+
+log_info "下载 JAR (分卷文件) ..."
+mkdir -p "$TMP_DIR"
+
+# 下载分卷
+curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.z01" -o "$TMP_DIR/matrix-local-1.0.1.part.z01" || {
+    log_error "下载 matrix-local-1.0.1.part.z01 失败"
+    exit 1
+}
+curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.zip" -o "$TMP_DIR/matrix-local-1.0.1.part.zip" || {
+    log_error "下载 matrix-local-1.0.1.part.zip 失败"
+    exit 1
+}
+log_info "✓ 分卷下载完成"
+
+# 合并分卷为 JAR
+log_info "合并分卷为 JAR 文件 ..."
+cd "$TMP_DIR" || exit 1
+
+MERGED=false
+
+# 方法1: 使用 7z
+if command -v 7z &>/dev/null; then
+    log_info "尝试 7z 解压 ..."
+    7z x matrix-local-1.0.1.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
+    if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
+        log_info "✓ 7z 解压成功"
+        MERGED=true
+    fi
+fi
+
+# 方法2: 使用 zip -F (标准 ZIP 分卷修复)
+if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
+    log_info "尝试 zip -F 合并 ..."
+    # Gitee 使用 .part.z01 命名，标准 zip 分卷为 .z01，需重命名
+    cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
+    cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
+    zip -F matrix-local-1.0.1.zip --out "$JAR_FILE" >/dev/null 2>&1
+    if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
+        log_info "✓ zip -F 合并成功"
+        MERGED=true
+    fi
+fi
+
+# 方法3: 使用 cat 直接合并 (部分格式支持)
+if [ "$MERGED" = false ]; then
+    log_info "尝试 cat 合并 ..."
+    cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > "$JAR_FILE" 2>/dev/null
+    if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
+        log_info "✓ cat 合并成功"
+        MERGED=true
+    fi
+fi
+
+# 清理临时文件
+rm -rf "$TMP_DIR"
+
+if [ "$MERGED" = false ]; then
+    log_error "JAR 分卷合并失败，请手动处理："
+    log_error "1. 从 https://gitee.com/za96421955/matrix/releases/tag/v1.0.1 下载 matrix-local-1.0.1.part.z01 和 matrix-local-1.0.1.part.zip"
+    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 matrix-local-1.0.1.part.zip"
+    log_error "3. 将得到的 matrix-local-1.0.1.jar 放入 $INSTALL_DIR/"
+    log_error "4. 重新运行本安装脚本"
+    exit 1
+fi
+
+log_info "✓ JAR 就绪: $(ls -lh "$JAR_FILE" | awk '{print $5}')"
 
 # ---------- 下载 bin/ 脚本 ----------
 BIN_FILES="start.sh stop.sh restart.sh"
@@ -140,6 +207,16 @@ if [ -f "$APPLICATION_YML" ]; then
     log_info "✓ base-path 已更新"
 fi
 
+# ---------- 下载 data/ ----------
+log_info "下载 data/ ..."
+DATA_FILES="schema.sql"
+for f in $DATA_FILES; do
+    fp="$INSTALL_DIR/data/$f"
+    curl -# -fL "$SERVER/data/$f" -o "$fp" || { log_error "下载 $f 失败"; exit 1; }
+    log_info "✓ $f 下载完成"
+done
+log_info "✓ data/ 完成"
+
 # ---------- 下载 settings/ ----------
 SETTINGS_FILES=(
     "settings/MEMORY.md"
@@ -158,6 +235,27 @@ for rp in "${SETTINGS_FILES[@]}"; do
     fi
 done
 log_info "✓ settings/ 完成"
+
+# ---------- 下载 webui ----------
+log_info "下载 webui ..."
+WEBUI_ZIP="$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
+curl -# -fL "$RELEASE_URL/matrix-webui-1.0.1.zip" -o "$WEBUI_ZIP" || {
+    log_warn "webui 下载失败，可稍后手动下载"
+    log_warn "下载地址: $RELEASE_URL/matrix-webui-1.0.1.zip"
+}
+if [ -f "$WEBUI_ZIP" ]; then
+    log_info "解压 webui ..."
+    unzip -o "$WEBUI_ZIP" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
+    if [ -f "$INSTALL_DIR/webui/dist/index.html" ]; then
+        # 将 dist/ 内容上移一级，方便 Python HTTP server 直接 serve
+        mv "$INSTALL_DIR/webui/dist/"* "$INSTALL_DIR/webui/" 2>/dev/null
+        mv "$INSTALL_DIR/webui/dist/".* "$INSTALL_DIR/webui/" 2>/dev/null
+        rm -rf "$INSTALL_DIR/webui/dist" "$WEBUI_ZIP"
+        log_info "✓ webui 部署完成"
+    else
+        log_warn "webui 解压后未找到 dist/index.html，请检查"
+    fi
+fi
 
 # ---------- JDK 下载 ----------
 log_info "检查 JDK ..."
@@ -182,19 +280,31 @@ else
 fi
 
 # ---------- 安装 matrix CLI ----------
-cat > "$CLI_DIR/matrix" << 'EOF'
+cat > "$CLI_DIR/matrix" << 'CLIEOF'
 #!/bin/bash
 INSTALL_DIR="$HOME/.matrix/client"
+WEBUI_PORT=10627
+
 case "$1" in
     status)
+        echo "--- 后端服务 ---"
         if [ -f "$INSTALL_DIR/bin/app.pid" ]; then
-            kill -0 $(cat "$INSTALL_DIR/bin/app.pid") 2>/dev/null && echo "✓ 运行中" || echo "✗ 未运行"
+            kill -0 $(cat "$INSTALL_DIR/bin/app.pid") 2>/dev/null && echo "  ✓ 运行中 (PID: $(cat $INSTALL_DIR/bin/app.pid))" || echo "  ✗ 未运行"
         else
-            echo "✗ 未运行"
+            echo "  ✗ 未运行"
+        fi
+        echo "--- WebUI ---"
+        if [ -f "$INSTALL_DIR/bin/webui.pid" ]; then
+            kill -0 $(cat "$INSTALL_DIR/bin/webui.pid") 2>/dev/null && echo "  ✓ 运行中 (http://localhost:$WEBUI_PORT)" || echo "  ✗ 未运行"
+        else
+            echo "  ✗ 未运行"
         fi
         ;;
     logs)
         tail -f "$INSTALL_DIR/logs/info/info.log" 2>/dev/null || echo "日志文件不存在"
+        ;;
+    webui-logs)
+        tail -f "$INSTALL_DIR/logs/webui.log" 2>/dev/null || echo "WebUI 日志文件不存在"
         ;;
     start)
         bash "$INSTALL_DIR/bin/start.sh"
@@ -208,22 +318,43 @@ case "$1" in
     update)
         echo "正在升级 matrix ..."
         bash "$INSTALL_DIR/bin/stop.sh" 2>/dev/null
-        if [ -f "$INSTALL_DIR/config/server.url" ]; then
-            SERVER=$(cat "$INSTALL_DIR/config/server.url")
+        if [ -f "$INSTALL_DIR/config/release.url" ]; then
+            RELEASE_URL=$(cat "$INSTALL_DIR/config/release.url")
             echo "下载最新 JAR ..."
-            curl -# -fL "$SERVER/matrix-client.jar" -o "$INSTALL_DIR/matrix-client.jar" || {
-                echo "下载 JAR 失败，更新中止"
-                exit 1
-            }
+            TMP_DIR="$INSTALL_DIR/.tmp"
+            mkdir -p "$TMP_DIR"
+            curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.z01" -o "$TMP_DIR/matrix-local-1.0.1.part.z01" || { echo "下载分卷1失败"; exit 1; }
+            curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.zip" -o "$TMP_DIR/matrix-local-1.0.1.part.zip" || { echo "下载分卷2失败"; exit 1; }
+            # 尝试合并
+            cd "$TMP_DIR"
+            if command -v 7z &>/dev/null; then
+                7z x matrix-local-1.0.1.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
+            elif command -v zip &>/dev/null; then
+                cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
+                cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
+                zip -F matrix-local-1.0.1.zip --out "$INSTALL_DIR/matrix-local-1.0.1.jar" >/dev/null 2>&1
+            else
+                cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > "$INSTALL_DIR/matrix-local-1.0.1.jar"
+            fi
+            rm -rf "$TMP_DIR"
+            echo "下载最新 webui ..."
+            curl -# -fL "$RELEASE_URL/matrix-webui-1.0.1.zip" -o "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
+            if [ -f "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip" ]; then
+                unzip -o "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
+                mv "$INSTALL_DIR/webui/dist/"* "$INSTALL_DIR/webui/" 2>/dev/null
+                mv "$INSTALL_DIR/webui/dist/".* "$INSTALL_DIR/webui/" 2>/dev/null
+                rm -rf "$INSTALL_DIR/webui/dist" "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
+            fi
             echo "下载最新 bin 脚本 ..."
-            for f in start.sh stop.sh restart.sh; do
-                curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" || echo "下载 $f 失败，跳过"
+            SERVER=$(cat "$INSTALL_DIR/config/server.url" 2>/dev/null)
+            [ -n "$SERVER" ] && for f in start.sh stop.sh restart.sh; do
+                curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" 2>/dev/null || echo "下载 $f 失败，跳过"
             done
             chmod +x "$INSTALL_DIR/bin/"*.sh
             echo "升级完成，正在重启服务 ..."
             bash "$INSTALL_DIR/bin/start.sh"
         else
-            echo "错误: 找不到 server.url，无法更新"
+            echo "错误: 找不到 release.url，无法更新"
             exit 1
         fi
         ;;
@@ -233,10 +364,12 @@ case "$1" in
         echo "已卸载"
         ;;
     *)
-        echo "用法: matrix {start|stop|restart|status|logs|update|uninstall}"
+        echo "用法: matrix {start|stop|restart|status|logs|webui-logs|update|uninstall}"
+        echo ""
+        echo "WebUI: http://localhost:$WEBUI_PORT"
         ;;
 esac
-EOF
+CLIEOF
 chmod +x "$CLI_DIR/matrix"
 log_info "✓ matrix 已安装"
 
@@ -266,6 +399,7 @@ echo " ✓ matrix 安装完成!"
 echo "=============================================="
 echo "安装目录: $INSTALL_DIR"
 echo "JDK 目录: $JDK_DIR"
+echo "WebUI:    http://localhost:10627"
 echo ""
 echo "已配置环境变量的文件:"
 get_profile_files | tr ' ' '\n' | while read -r f; do [ -f "$f" ] && echo "  • $f"; done
@@ -275,6 +409,7 @@ echo " matrix start       启动服务"
 echo " matrix stop        停止服务"
 echo " matrix restart     重启服务"
 echo " matrix logs        查看日志"
+echo " matrix webui-logs  查看 WebUI 日志"
 echo " matrix status      查看运行状态"
 echo " matrix update      更新升级"
 echo " matrix uninstall   卸载"

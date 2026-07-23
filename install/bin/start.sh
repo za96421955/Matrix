@@ -158,7 +158,7 @@ log_info "正在准备启动服务..."
 
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-JAR_FILE=$(find "$PROJECT_ROOT" -maxdepth 1 -name "matrix-client*.jar" 2>/dev/null | head -1)
+JAR_FILE=$(find "$PROJECT_ROOT" -maxdepth 1 -name "matrix-local*.jar" 2>/dev/null | head -1)
 if [ -z "$JAR_FILE" ]; then
 	log_error "未找到JAR文件"
 	exit 1
@@ -225,4 +225,57 @@ if [ -z "$REAL_PID" ]; then
 fi
 
 echo $REAL_PID > "$SCRIPT_DIR/app.pid"
-log_info "✓ 启动成功，PID: $REAL_PID"
+log_info "✓ 后端服务启动成功，PID: $REAL_PID"
+
+# ============================================================
+# step6: start WebUI HTTP server
+# ============================================================
+WEBUI_DIR="$PROJECT_ROOT/webui"
+WEBUI_PORT=10627
+WEBUI_PID_FILE="$SCRIPT_DIR/webui.pid"
+
+if [ -d "$WEBUI_DIR" ] && [ -f "$WEBUI_DIR/index.html" ]; then
+	log_info "正在启动 WebUI (端口 $WEBUI_PORT) ..."
+
+	# 如果已有 webui 进程，先停止
+	if [ -f "$WEBUI_PID_FILE" ]; then
+		OLD_WEBUI_PID=$(cat "$WEBUI_PID_FILE")
+		kill "$OLD_WEBUI_PID" 2>/dev/null
+		sleep 1
+		rm -f "$WEBUI_PID_FILE"
+	fi
+
+	# 尝试使用 Python3 HTTP 服务器
+	if command -v python3 &>/dev/null; then
+		cd "$WEBUI_DIR" && nohup python3 -m http.server "$WEBUI_PORT" \
+			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
+		WEBUI_PID=$!
+		echo $WEBUI_PID > "$WEBUI_PID_FILE"
+		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
+	elif command -v python &>/dev/null; then
+		cd "$WEBUI_DIR" && nohup python -m SimpleHTTPServer "$WEBUI_PORT" \
+			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
+		WEBUI_PID=$!
+		echo $WEBUI_PID > "$WEBUI_PID_FILE"
+		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
+	elif command -v node &>/dev/null; then
+		# 使用 npx serve 作为 fallback
+		cd "$WEBUI_DIR" && nohup npx serve -s . -l "$WEBUI_PORT" \
+			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
+		WEBUI_PID=$!
+		echo $WEBUI_PID > "$WEBUI_PID_FILE"
+		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
+	else
+		log_warn "未找到 Python3/Node，WebUI 无法自动启动"
+		log_warn "请手动执行: cd $WEBUI_DIR && python3 -m http.server $WEBUI_PORT"
+	fi
+else
+	log_info "WebUI 目录不存在或缺少 index.html，跳过 WebUI 启动"
+	log_info "如需 WebUI，请执行: matrix update"
+fi
+
+log_info "✓ 全部启动完成"
+echo ""
+echo "后端服务: http://localhost:10626"
+echo "WebUI:    http://localhost:$WEBUI_PORT"
+echo ""

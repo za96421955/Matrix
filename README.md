@@ -131,6 +131,9 @@
 
 ## 快速开始
 
+### Deepseek API
+https://platform.deepseek.com/api_keys
+
 ### 一键安装
 
 ```bash

@@ -581,7 +581,15 @@ log_info "✓ 当前 PATH 已更新"
 # ---------- 启动服务 ----------
 log_info "启动 matrix ..."
 cd "$INSTALL_DIR" && bash "$INSTALL_DIR/bin/start.sh"
-
+# 等待3秒后打开浏览器
+if [ $? -eq 0 ]; then
+    sleep 3
+    if command -v open &>/dev/null; then
+        open "http://localhost:10908"
+    elif command -v xdg-open &>/dev/null; then
+        xdg-open "http://localhost:10908"
+    fi
+fi
 # ---------- 完成提示 ----------
 echo ""
 echo "=============================================="

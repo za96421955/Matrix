@@ -589,9 +589,16 @@ Write-Log "INFO" "=========================================="
 Write-Log "INFO" "WebUI: http://localhost:10908"
 Write-Log "INFO" "API:   http://localhost:10906"
 Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
-$startNow = Read-Host "立即启动? (Y/n)"
-if ($startNow -ne "n") {
-    $s = Join-Path $BinDir "start.ps1"
-    if (Test-Path $s) { & $s } else { Write-Log "ERROR" "未找到 start.ps1" }
+# 自动启动服务
+$s = Join-Path $BinDir "start.ps1"
+if (Test-Path $s) {
+    & $s
+    if ($?) {
+        Start-Sleep 3
+        Start-Process "http://localhost:10908"
+        [Environment]::Exit(0)
+    }
+} else {
+    Write-Log "ERROR" "未找到 start.ps1"
 }
 pause

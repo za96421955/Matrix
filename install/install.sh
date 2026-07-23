@@ -329,7 +329,7 @@ case "$1" in
         fi
         ;;
     logs)
-        tail -f "$INSTALL_DIR/logs/info/info.log" 2>/dev/null || echo "日志文件不存在"
+        tail -f "$INSTALL_DIR/logs/app.log" 2>/dev/null || echo "日志文件不存在"
         ;;
     webui-logs)
         tail -f "$INSTALL_DIR/logs/webui.log" 2>/dev/null || echo "WebUI 日志文件不存在"

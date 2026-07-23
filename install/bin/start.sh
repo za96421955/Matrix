@@ -164,6 +164,13 @@ if [ -z "$JAR_FILE" ]; then
 	exit 1
 fi
 
+# JAR 完整性校验
+if ! unzip -tqq "$JAR_FILE" >/dev/null 2>&1; then
+	log_error "JAR文件损坏或无效: $(basename "$JAR_FILE")"
+	log_error "请重新下载或执行: matrix update"
+	exit 1
+fi
+
 # ----------------------------------------------------------
 # 停止旧进程（优雅停机 + 强制兜底）
 # ----------------------------------------------------------
@@ -206,7 +213,7 @@ fi
 mkdir -p "$PROJECT_ROOT/logs"
 
 log_info "正在启动服务..."
-cd "$PROJECT_ROOT" && nohup java -jar "$JAR_FILE" \
+cd "$PROJECT_ROOT" && nohup "$JAVA_CMD" -jar "$JAR_FILE" \
 	-Djava.net.preferIPv4Stack=true \
 	-Djava.net.soReuseaddr=true \
 	> "$PROJECT_ROOT/logs/app.log" 2>&1 &
@@ -220,7 +227,14 @@ if [ -z "$REAL_PID" ]; then
 fi
 
 if [ -z "$REAL_PID" ]; then
-	log_error "启动失败，无法找到 Java 进程，请查看日志：$PROJECT_ROOT/logs/app.log"
+	log_error "启动失败，无法找到 Java 进程"
+	log_error "--- 最近日志 ($PROJECT_ROOT/logs/app.log) ---"
+	if [ -f "$PROJECT_ROOT/logs/app.log" ]; then
+		while IFS= read -r line; do
+			log_error "  $line"
+		done < <(tail -20 "$PROJECT_ROOT/logs/app.log")
+	fi
+	log_error "--- 日志结束 ---"
 	exit 1
 fi
 

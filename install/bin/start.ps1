@@ -53,18 +53,18 @@ if (-not (Test-Path $BinDir)) {
 function Find-Jdk21 {
     # ---- 优先级1: 检查 ~/.jdks/jdk-21* (IDE JDK) ----
     # 对应 start.sh step1: check ~/.jdks for existing JDK21
-    $jdksPattern = Join-Path $env:USERPROFILE ".jdks" "jdk-21*"
+    $jdksPattern = Join-Path (Join-Path $env:USERPROFILE ".jdks") "jdk-21*"
     $jdksDirs = Get-ChildItem -Path $jdksPattern -Directory -ErrorAction SilentlyContinue
     if ($jdksDirs -and $jdksDirs.Count -gt 0) {
         $jdkDir = $jdksDirs[0].FullName
         # 处理 macOS .jdk/Contents/Home 结构
-        $contentsHome = Join-Path $jdkDir "Contents" "Home"
+        $contentsHome = Join-Path (Join-Path $jdkDir "Contents") "Home"
         if (Test-Path $contentsHome) {
             $jdkDir = $contentsHome
         }
-        $javaExe = Join-Path $jdkDir "bin" "java.exe"
+        $javaExe = Join-Path (Join-Path $jdkDir "bin") "java.exe"
         if (-not (Test-Path $javaExe)) {
-            $javaExe = Join-Path $jdkDir "bin" "java"
+            $javaExe = Join-Path (Join-Path $jdkDir "bin") "java"
         }
         if (Test-Path $javaExe) {
             Write-Log "INFO" "✓ JDK21已安装（跳过安装步骤）"
@@ -99,9 +99,9 @@ function Find-Jdk21 {
         $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
     }
     if ($javaHome) {
-        $javaExe = Join-Path $javaHome "bin" "java.exe"
+        $javaExe = Join-Path (Join-Path $javaHome "bin") "java.exe"
         if (-not (Test-Path $javaExe)) {
-            $javaExe = Join-Path $javaHome "bin" "java"
+            $javaExe = Join-Path (Join-Path $javaHome "bin") "java"
         }
         if (Test-Path $javaExe) {
             $versionOutput = & $javaExe -version 2>&1
@@ -113,9 +113,9 @@ function Find-Jdk21 {
     }
 
     # ---- 优先级4: 检查 ~/.matrix/jdk21 (本地捆绑 JDK) ----
-    $localJava = Join-Path $JdksDir "bin" "java.exe"
+    $localJava = Join-Path (Join-Path $JdksDir "bin") "java.exe"
     if (-not (Test-Path $localJava)) {
-        $localJava = Join-Path $JdksDir "bin" "java"
+        $localJava = Join-Path (Join-Path $JdksDir "bin") "java"
     }
     if (Test-Path $localJava) {
         Write-Log "INFO" "找到本地 JDK: $JdksDir"
@@ -124,9 +124,9 @@ function Find-Jdk21 {
 
     # ---- 优先级5: 从本地 jdk21/ 目录解压 (对应 start.sh step3: install JDK21) ----
     # 使用脚本所在目录的上级定位 jdk21 包目录
-    $jdksPackageDir = Join-Path $BinDir ".." ".." "jdk21"
+    $jdksPackageDir = Join-Path (Join-Path (Join-Path $BinDir "..") "..") "jdk21"
     if (-not (Test-Path $jdksPackageDir)) {
-        $jdksPackageDir = Join-Path $LocalDir ".." "jdk21"
+        $jdksPackageDir = Join-Path (Join-Path $LocalDir "..") "jdk21"
     }
     if (Test-Path $jdksPackageDir) {
         # Windows 上查找 zip 文件
@@ -142,9 +142,9 @@ function Find-Jdk21 {
                 Get-ChildItem -Path $extractedDir | Move-Item -Destination $JdksDir -Force
                 Remove-Item -Path $extractedDir -Recurse -Force
             }
-            $javaExe = Join-Path $JdksDir "bin" "java.exe"
+            $javaExe = Join-Path (Join-Path $JdksDir "bin") "java.exe"
             if (-not (Test-Path $javaExe)) {
-                $javaExe = Join-Path $JdksDir "bin" "java"
+                $javaExe = Join-Path (Join-Path $JdksDir "bin") "java"
             }
             if (Test-Path $javaExe) {
                 Write-Log "INFO" "✓ JDK21已安装到 $JdksDir"
@@ -374,7 +374,7 @@ if (-not $jdkHome) {
     exit 1
 }
 Write-Log "INFO" "使用 JDK: $jdkHome"
-$javaExe = Join-Path $jdkHome "bin" "java.exe"
+$javaExe = Join-Path (Join-Path $jdkHome "bin") "java.exe"
 
 # 2. 找到 JAR 文件
 $jarFile = Find-MatrixJar

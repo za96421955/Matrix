@@ -25,7 +25,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $MatrixHome = Join-Path $env:USERPROFILE ".matrix"
 $LocalDir = Join-Path $MatrixHome "local"
 $JdksDir = Join-Path $MatrixHome "jdk21"
-$CliDir = Join-Path $env:USERPROFILE ".local" "bin"
+$CliDir = Join-Path (Join-Path $env:USERPROFILE ".local") "bin"
 
 # 子目录
 $BinDir = Join-Path $LocalDir "bin"
@@ -520,7 +520,7 @@ Write-Log "INFO" "------------------------------------------"
 
 $JdkZipPath = Join-Path $TmpDir $JDK_FILENAME
 
-if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
+if (Test-Path (Join-Path (Join-Path $JdksDir "bin") "java.exe")) {
     Write-Log "INFO" "JDK 21 已安装，跳过下载"
 } else {
     if (Download-File -Url $JDK_URL -Destination $JdkZipPath -Label "JDK 21 ($JDK_FILENAME)") {
@@ -538,7 +538,7 @@ if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
                 Remove-Item -Path $extractedDir -Recurse -Force
             }
 
-            if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
+            if (Test-Path (Join-Path (Join-Path $JdksDir "bin") "java.exe")) {
                 Write-Log "INFO" "JDK 21 安装完成: $JdksDir"
             } else {
                 Write-Log "WARN" "JDK 解压后未找到 java.exe，请检查目录结构: $JdksDir"
@@ -620,8 +620,8 @@ switch ($Command) {
         }
     }
     "status" {
-        $servicePidFile = Join-Path $LocalDir "tmp" "matrix-local.pid"
-        $webuiPidFile = Join-Path $LocalDir "tmp" "matrix-webui.pid"
+        $servicePidFile = Join-Path (Join-Path $LocalDir "tmp") "matrix-local.pid"
+        $webuiPidFile = Join-Path (Join-Path $LocalDir "tmp") "matrix-webui.pid"
 
         Write-Log "INFO" "Matrix 本地服务状态:"
         Write-Log "INFO" ""
@@ -718,7 +718,7 @@ switch ($Command) {
             }
 
             # 删除 CLI
-            $cliPath = Join-Path $env:USERPROFILE ".local" "bin" "matrix.ps1"
+            $cliPath = Join-Path (Join-Path (Join-Path $env:USERPROFILE ".local") "bin") "matrix.ps1"
             if (Test-Path $cliPath) {
                 Remove-Item -Path $cliPath -Force
                 Write-Log "INFO" "已删除 CLI: $cliPath"

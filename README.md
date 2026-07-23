@@ -17,6 +17,60 @@
 ## 用量统计
 ![use.png](use.png)
 
+---
+
+## 快速开始
+
+### 1. Deepseek API
+https://platform.deepseek.com/api_keys
+
+### 2. 一键安装
+### 2.1. Linux、MacOS
+```bash
+curl -fsSL https://raw.githubusercontent.com/za96421955/Matrix/latest/install/install.sh | bash
+```
+### 中国
+```bash
+curl -fsSL https://gitee.com/za96421955/matrix/raw/release/latest/install/install.sh | bash
+```
+
+### 2.2. Windows
+```bash
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/za96421955/Matrix/latest/install/install.ps1" -OutFile "install.ps1"; powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+### 中国
+```bash
+Invoke-WebRequest -Uri "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.ps1" -OutFile "install.ps1"; powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+**若提示系统禁止运行脚本，则先执行：**
+```bash
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+安装过程：
+1. 检测 DEEPSEEK_API_KEY（未设置则交互输入）
+2. 下载 JDK21（内置包，自动解压至 ~/.jdks）
+3. 下载 JAR 分卷并合并（matrix-local-1.0.2.jar）
+4. 下载 WebUI 静态资源
+5. 自动启动服务
+
+安装完成后，使用 `matrix` 命令管理服务：
+
+| 命令 | 功能 |
+|------|------|
+| `matrix start` | 启动后端服务 + WebUI |
+| `matrix stop` | 停止服务 |
+| `matrix restart` | 重启服务 |
+| `matrix status` | 查看运行状态 |
+| `matrix logs` | 查看后端日志 |
+| `matrix webui-logs` | 查看 WebUI 日志 |
+| `matrix update` | 更新升级 |
+| `matrix uninstall` | 卸载 |
+
+安装目录：`~/.matrix/local/`
+
+---
+
 ## 目录结构
 
 ```
@@ -129,44 +183,7 @@
 
 ---
 
-## 快速开始
-
-### Deepseek API
-https://platform.deepseek.com/api_keys
-
-### 一键安装
-
-```bash
-curl -fsSL https://gitee.com/za96421955/matrix/raw/release/latest/install/install.sh | bash
-```
-
-安装过程：
-1. 检测 DEEPSEEK_API_KEY（未设置则交互输入）
-2. 下载 JDK21（内置包，自动解压至 ~/.jdks）
-3. 下载 JAR 分卷并合并（matrix-local-1.0.2.jar）
-4. 下载 WebUI 静态资源
-5. 自动启动服务
-
-安装完成后，使用 `matrix` 命令管理服务：
-
-| 命令 | 功能 |
-|------|------|
-| `matrix start` | 启动后端服务 + WebUI |
-| `matrix stop` | 停止服务 |
-| `matrix restart` | 重启服务 |
-| `matrix status` | 查看运行状态 |
-| `matrix logs` | 查看后端日志 |
-| `matrix webui-logs` | 查看 WebUI 日志 |
-| `matrix update` | 更新升级 |
-| `matrix uninstall` | 卸载 |
-
-安装目录：`~/.matrix/local/`
-
----
-
 ## 各模块操作说明
-
----
 
 ### 1. local 模块（单机运行核心）
 

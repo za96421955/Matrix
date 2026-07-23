@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
-@ConditionalOnMissingBean(TaskComplete.class)
 public class MqttTaskComplete implements TaskComplete {
 
     @Resource

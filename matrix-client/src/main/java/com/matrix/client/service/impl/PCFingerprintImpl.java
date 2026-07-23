@@ -77,7 +77,7 @@ public class PCFingerprintImpl implements Fingerprint {
 
         String fingerprint = sha256Hex(raw);
         log.info("生成指纹：{} (基于 UUID={}, MAC={})", fingerprint, uuid, mac);
-        return fingerprint;
+        return "ha-ce-pc-" + fingerprint;
     }
 
     /**

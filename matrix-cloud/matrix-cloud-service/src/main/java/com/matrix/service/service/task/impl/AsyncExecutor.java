@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -20,7 +21,7 @@ import reactor.core.publisher.Mono;
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(Executor.class)
+@ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class AsyncExecutor implements Executor {
 
     private static final long TASK_TIMEOUT = 60;

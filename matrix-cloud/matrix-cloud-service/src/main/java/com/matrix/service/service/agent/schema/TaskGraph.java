@@ -18,6 +18,9 @@ public class TaskGraph {
     @Description("无序任务列表。")
     private List<Task> tasks;
 
+    @Description("任务最终目标。")
+    private String ultimateGoal;
+
     @Override
     public String toString() {
         return JSONObject.toJSONString(this);

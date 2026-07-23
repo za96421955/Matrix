@@ -1,12 +1,10 @@
 server:
   port: 18091
 
----
 spring:
   application:
     name: matrix-client
 
----
 matrix:
   client:
     name: 个人PC
@@ -16,7 +14,6 @@ matrix:
       settings-path: ${matrix.client.basic.base-path}/settings
       models-path: ${matrix.client.basic.settings-path}/models.yml
       risk-level-path: ${matrix.client.basic.settings-path}/risk-level.yml
-#      agent-path: ${matrix.client.basic.settings-path}/agent
       skill-path: ${matrix.client.basic.settings-path}/skill
       app-path: ${matrix.client.basic.settings-path}/app
   service:
@@ -28,6 +25,7 @@ matrix:
     heartbeat: /v1/client/heartbeat
     ack: /v1/task/ack
   mqtt:
+    enabled: true
     broker-url: tcp://localhost:1883
 #      username: admin
 #      password: admin@123456
@@ -35,5 +33,7 @@ matrix:
     keep-alive: 60
     connect-timeout: 10
     max-reconnect-delay: 32
+  thread-pool:
+    enabled: true
 
 

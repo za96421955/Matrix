@@ -55,8 +55,7 @@ public class MqttConnection {
         log.info("mqtt brokerUrl: {}", brokerUrl);
 
         // 设置 clientId: ha-ce-[pc-]
-        // TODO 终端属于个人所有，所以单环境仅允许注册一个同一终端，多次注册会剔除前者或造成广播？未测试
-        String clientId = "ha-ce-pc-" + fingerprint.get();
+        String clientId = fingerprint.get();
         log.info("Initializing MQTT client: {}", clientId);
         mqttClient = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
         mqttClient.setCallback(new MqttCallback() {

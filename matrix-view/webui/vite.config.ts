@@ -13,11 +13,11 @@ export default defineConfig(({mode}) => {
             },
         },
         server: {
-            port: 9000,
+            port: 19000,
             proxy: {
                 ...({
                     "/v1": {
-                        target: "http://localhost:8090",
+                        target: "http://localhost:18092",
                         changeOrigin: true,
                     }
                 }),

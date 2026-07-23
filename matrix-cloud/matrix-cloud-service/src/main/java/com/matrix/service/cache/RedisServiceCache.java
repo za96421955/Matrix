@@ -3,6 +3,7 @@ package com.matrix.service.cache;
 import jakarta.annotation.Resource;
 import lombok.Getter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
  * @author 陈晨
  */
 @Component
-@ConditionalOnMissingBean(ServiceCache.class)
+@ConditionalOnProperty(name = "matrix.redis.enabled", havingValue = "true")
 public class RedisServiceCache implements ServiceCache {
 
     @Resource

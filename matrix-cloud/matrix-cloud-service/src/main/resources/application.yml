@@ -39,8 +39,12 @@ mybatis-plus:
 
 ---
 matrix:
-#  service:
+  mysql:
+    enabled: true
+  redis:
+    enabled: true
   mqtt:
+    enabled: true
     broker-url: tcp://localhost:1883
 #    username: admin
 #    password: admin@123456

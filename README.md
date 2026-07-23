@@ -1,3 +1,5 @@
+[English](README_EN.md) | [中文](README.md)
+
 # Matrix
 
 **Only supports Deepseek** — 基于 Deepseek API 的 AI 对话 + 指令执行系统。
@@ -129,10 +131,13 @@
 
 ## 快速开始
 
+### Deepseek API
+https://platform.deepseek.com/api_keys
+
 ### 一键安装
 
 ```bash
-curl -fsSL https://gitee.com/za96421955/matrix/raw/release/1.0.2/install/install.sh | bash
+curl -fsSL https://gitee.com/za96421955/matrix/raw/release/latest/install/install.sh | bash
 ```
 
 安装过程：

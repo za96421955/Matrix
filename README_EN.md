@@ -131,6 +131,9 @@
 
 ## Quick Start
 
+### Deepseek API
+https://platform.deepseek.com/api_keys
+
 ### One-Click Installation
 
 ```bash

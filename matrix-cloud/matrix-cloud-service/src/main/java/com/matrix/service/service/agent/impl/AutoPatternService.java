@@ -80,7 +80,7 @@ public class AutoPatternService extends AbstractPatternService<PatternRequest> {
         this.call(executorRequest, true, sink -> {
             String pattern = this.callResultByClone(sink, executorRequest, Prompt.Common.AUTO_PATTERN);
             patternService.set(this.getPatternService(pattern));
-        });
+        }).blockLast();
         // 调用模式
         return patternService.get().call(request);
     }

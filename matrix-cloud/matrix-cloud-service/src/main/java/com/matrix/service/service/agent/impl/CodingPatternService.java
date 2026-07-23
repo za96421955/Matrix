@@ -33,7 +33,7 @@ public class CodingPatternService extends AbstractPatternService<PatternRequest>
     @Resource
     private CodingPatternContext codingPatternContext;
     @Resource
-    private TaskPatternService taskPatternService;
+    private TaskChainPatternService taskChainPatternService;
 
     @Override
     public Flux<Response> call(PatternRequest request) {
@@ -125,7 +125,7 @@ public class CodingPatternService extends AbstractPatternService<PatternRequest>
                 // agent call
                 String prompt = Prompt.Common.WORKING_DIRECTORY.formatted(request.getItemPath()) + "执行<研发>任务";
                 request.getMessages().add(Message.user(prompt));
-                result = taskPatternService.executor(sink, request);
+                result = taskChainPatternService.executor(sink, request);
                 log.info("[编程模式] userId={}, result={}, 开发任务执行", request.getUserId(), result);
                 // 任务结束, 清理缓存
                 codingPatternContext.clear(request.getUserId(), request.getSessionId());

@@ -44,9 +44,11 @@ public class ChatService {
     @Resource
     private PlanPatternService planPatternService;
     @Resource
-    private TaskPatternService taskPatternService;
+    private TaskChainPatternService taskChainPatternService;
     @Resource
-    private ObserverPatternService observerPatternService;
+    private TaskGraphPatternService taskGraphPatternService;
+//    @Resource
+//    private ObserverTaskChainPatternService observerTaskChainPatternService;
     @Resource
     private CodingPatternService codingPatternService;
     @Resource
@@ -66,14 +68,15 @@ public class ChatService {
         // 获取模式服务
         PatternService patternService;
         if (StringUtils.isBlank(request.getPattern())) {
-            request.setPattern(Constant.Pattern.LONG_RANGE);
+            request.setPattern(Constant.Pattern.CHAT);
         }
         switch (request.getPattern()) {
 //            case Constant.Pattern.CHAT -> patternService = chatPatternService;
             case Constant.Pattern.AGENT -> patternService = skillPatternService;
             case Constant.Pattern.PLAN -> patternService = planPatternService;
-            case Constant.Pattern.TASK -> patternService = taskPatternService;
-            case Constant.Pattern.OBSERVER -> patternService = observerPatternService;
+            case Constant.Pattern.TASK_CHAIN -> patternService = taskChainPatternService;
+//            case Constant.Pattern.OBSERVER -> patternService = observerTaskChainPatternService;
+            case Constant.Pattern.TASK_GRAPH -> patternService = taskGraphPatternService;
             case Constant.Pattern.CODING -> patternService = codingPatternService;
             case Constant.Pattern.INFORMATION -> patternService = informationPatternService;
             default -> patternService = chatPatternService;

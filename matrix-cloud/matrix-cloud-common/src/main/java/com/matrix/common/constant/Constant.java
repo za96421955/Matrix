@@ -74,13 +74,13 @@ public interface Constant {
         String PLAN = "plan";
 
         /** 任务模式 */
-        String TASK = "task";
+        String TASK_CHAIN = "task";
 
         /** 观察者模式 */
         String OBSERVER = "observer";
 
-        /** 长程模式 */
-        String LONG_RANGE = "long_range";
+        /** 任务图模式 */
+        String TASK_GRAPH = "task-graph";
 
         /** 编码模式 */
         String CODING = "coding";

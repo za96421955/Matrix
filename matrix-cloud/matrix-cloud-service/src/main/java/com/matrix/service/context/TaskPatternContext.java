@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.agent.schema.TaskChain;
+import com.matrix.service.service.agent.schema.TaskGraph;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +36,10 @@ public class TaskPatternContext {
         RedisKey redisKey = RedisKey.TASK_PATTERN_CHAIN;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.delete(key);
+        // task graph
+        redisKey = RedisKey.TASK_PATTERN_GRAPH;
+        key = redisKey.generateKey(userId, sessionId);
+        serviceCache.delete(key);
         // task complete
         redisKey = RedisKey.TASK_PATTERN_COMPLETE;
         key = redisKey.generateKey(userId, sessionId);
@@ -64,6 +69,31 @@ public class TaskPatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         String taskChain = serviceCache.get(key);
         return StringUtils.isBlank(taskChain) ? null : JSON.parseObject(taskChain, TaskChain.class);
+    }
+
+    /**
+     * @description 设置任务图
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public void setTaskGraph(long userId, long sessionId, TaskGraph taskGraph) {
+        RedisKey redisKey = RedisKey.TASK_PATTERN_GRAPH;
+        String key = redisKey.generateKey(userId, sessionId);
+        serviceCache.set(key, taskGraph.toString(), redisKey.getTtl());
+    }
+
+    /**
+     * @description 获取任务图
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public TaskGraph getTaskGraph(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.TASK_PATTERN_CHAIN;
+        String key = redisKey.generateKey(userId, sessionId);
+        String taskGraph = serviceCache.get(key);
+        return StringUtils.isBlank(taskGraph) ? null : JSON.parseObject(taskGraph, TaskGraph.class);
     }
 
     /**

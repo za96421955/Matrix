@@ -7,7 +7,7 @@ import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.service.cache.ServiceCache;
-import com.matrix.service.service.agent.impl.TaskPatternService;
+import com.matrix.service.service.agent.impl.TaskChainPatternService;
 import com.matrix.service.service.tool.impl.TimerTool;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class TimerTaskScheduler {
     @Resource
     private ServiceCache serviceCache;
     @Resource
-    private TaskPatternService taskPatternService;
+    private TaskChainPatternService taskChainPatternService;
 
     /**
      * @description 定时扫描并执行任务
@@ -113,7 +113,7 @@ public class TimerTaskScheduler {
                                 .toolName(TimerTool.getName())
                                 .messages(List.of(Message.user(taskInfo.getContent())))
                                 .build();
-                        taskPatternService.call(patternRequest)
+                        taskChainPatternService.call(patternRequest)
                                 .onErrorResume(e -> {
                                     log.error("[定时任务] userId={}, sessionId={}, task={}, 执行异常: {}",
                                             userId, taskInfo.getSessionId(), taskInfo.getTitle(), e.getMessage(), e);

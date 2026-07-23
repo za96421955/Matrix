@@ -1,8 +1,5 @@
 package com.matrix.service.service.agent;
 
-import com.matrix.common.util.JSONSchemaUtil;
-import com.matrix.service.service.agent.schema.TaskChain;
-
 /**
  * 智能体提示词
  * <p> <功能详细描述> </p>
@@ -103,7 +100,7 @@ public interface Prompt {
 
     }
 
-    /** 任务链 */
+    /** 任务 */
     interface Task {
 
         String GENERATE_TASK = """
@@ -120,13 +117,30 @@ public interface Prompt {
             ```json
             %s
             ```
-            """.formatted(JSONSchemaUtil.generate(TaskChain.class));
+            """;
 
         String CHECK_TASK_LIST = """
             1. 检查任务流程是否健康、是否存在死循环、冗余步骤等会导致资源浪费、重复执行的情况
             2. 健康: true; 不健康: 说明原因及修改建议
             3. 仅输出 true/问题原因, 不要任何解释
             """;
+
+        String CHECK_TASK_RESULT = """
+            1. 理解上下文, 判断任务结果是否满足用户需求
+            2. 满足: true; 不满足: 说明原因
+            3. 仅输出 true/问题原因, 不要任何解释
+            """;
+
+        String SUMMARY_RESULT = """
+            1. 分析任务完成情况
+            2. 如果是<研发>任务，则补充 git diff 差异信息
+            3. 对执行过程和结果进行完整总结，不要使用任何 emoji 表情
+            """;
+
+    }
+
+    /** 任务链 */
+    interface TaskChain {
 
         String EXECUTOR_TASK = """
             ## 工作目录
@@ -153,17 +167,53 @@ public interface Prompt {
             %s
             """;
 
-        String CHECK_TASK_RESULT = """
-            1. 理解上下文, 判断任务结果是否满足用户需求
-            2. 满足: true; 不满足: 说明原因
-            3. 仅输出 true/问题原因, 不要任何解释
+    }
+
+    /** 任务图 */
+    interface TaskGraph {
+
+        String NEXT = """
+            1. 根据上下文，判断<任务列表>中下一步应该执行的任务，输出<taskName>
+            2. 不要重复执行已完成的任务
+            
+            ## 任务列表
+            ```
+            %s
+            ```
+            
+            ## 已完成的任务列表
+            ```
+            %s
+            ```
+            
+            直接输出<taskName>，不要其他说明：
             """;
 
-        String SUMMARY_RESULT = """
-            1. 分析任务完成情况
-            2. 如果是<研发>任务，则补充 git diff 差异信息
-            3. 对执行过程和结果进行完整总结，不要使用任何 emoji 表情
+        String EXECUTOR_TASK = """
+            ## 工作目录
+            %s
+            
+            ---
+            你是任务执行链中的一个执行单元。
+            【当前任务】%s，是整体规划中的一个步骤。
+            【上下文】中已包含之前所有步骤的完整执行结果，你可以完全信任这些结果。
+
+            要求：
+            1. **严格仅执行当前这一个步骤**，不要重复执行之前已完成的操作，直接基于已有上下文继续。
+            2. 如果当前步骤的前置条件在上下文中已满足，则直接跳过前置检查，进入核心逻辑。
+            3. 对执行过程和结果进行完整总结，不要使用 emoji。
+            
+            ---
+            ## 执行方案：
+            %s
+            
+            ## 任务目标：
+            %s
+            
+            ## 期望结果:
+            %s
             """;
+
     }
 
     /** 观察者 */

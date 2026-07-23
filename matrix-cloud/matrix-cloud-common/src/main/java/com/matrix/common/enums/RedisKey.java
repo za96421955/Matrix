@@ -41,7 +41,9 @@ public enum RedisKey {
     TASK_WAITING_AUTH_LIST("matrix:task:waiting-auth:%s", 60 * 60L),
 
     /** 任务模式：任务链 */
-    TASK_PATTERN_CHAIN("matrix:task:pattern:%s:%s", 6 * 60 * 60L),
+    TASK_PATTERN_CHAIN("matrix:task:chain:pattern:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：任务图 */
+    TASK_PATTERN_GRAPH("matrix:task:graph:pattern:%s:%s", 6 * 60 * 60L),
     /** 任务模式：已完成的任务 */
     TASK_PATTERN_COMPLETE("matrix:task:pattern:complete:%s:%s", 6 * 60 * 60L),
 

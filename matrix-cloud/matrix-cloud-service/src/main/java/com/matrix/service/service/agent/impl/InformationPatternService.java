@@ -33,7 +33,7 @@ public class InformationPatternService extends AbstractPatternService<PatternReq
     @Resource
     private InformationPatternContext informationPatternContext;
     @Resource
-    private TaskPatternService taskPatternService;
+    private TaskChainPatternService taskChainPatternService;
 
     @Override
     public Flux<Response> call(PatternRequest request) {
@@ -124,7 +124,7 @@ public class InformationPatternService extends AbstractPatternService<PatternReq
                 // agent call
                 String prompt = Prompt.Common.WORKING_DIRECTORY.formatted(request.getItemPath()) + "执行<资料整理>任务";
                 request.getMessages().add(Message.user(prompt));
-                result = taskPatternService.executor(sink, request);
+                result = taskChainPatternService.executor(sink, request);
                 log.info("[资料模式] userId={}, result={}, 任务执行", request.getUserId(), result);
                 // 下一环节
                 informationPatternContext.next(request.getUserId(), request.getSessionId(),

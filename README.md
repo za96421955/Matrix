@@ -1,3 +1,5 @@
+[English](README_EN.md) | [中文](README.md)
+
 # Matrix
 
 **Only supports Deepseek** — 基于 Deepseek API 的 AI 对话 + 指令执行系统。

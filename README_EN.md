@@ -1,3 +1,5 @@
+[English](README_EN.md) | [中文](README.md)
+
 # Matrix
 
 **Only supports Deepseek** — An AI conversation + command execution system powered by the Deepseek API.

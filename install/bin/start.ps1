@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Matrix 本地服务启动脚本 (Windows)
 .DESCRIPTION
@@ -37,13 +37,12 @@ function Write-Log {
 }
 
 # ---- PID 文件管理 ----
-$PidDir = Join-Path $LocalDir "tmp"
-$ServicePidFile = Join-Path $PidDir "matrix-local.pid"
-$WebuiPidFile = Join-Path $PidDir "matrix-webui.pid"
+$ServicePidFile = Join-Path $BinDir "app.pid"
+$WebuiPidFile = Join-Path $BinDir "webui.pid"
 
-# 创建 tmp 目录
-if (-not (Test-Path $PidDir)) {
-    New-Item -ItemType Directory -Path $PidDir -Force | Out-Null
+# 确保 bin 目录存在（用于 PID 文件）
+if (-not (Test-Path $BinDir)) {
+    New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 }
 
 # ==========================================
@@ -52,64 +51,86 @@ if (-not (Test-Path $PidDir)) {
 
 # ---- 检测 JDK 21 ----
 function Find-Jdk21 {
-    # 优先级1: 检查 ~/.matrix/jdk21/bin/java.exe
-    $localJava = Join-Path $JdksDir "bin" "java.exe"
-    if (Test-Path $localJava) {
-        Write-Log "INFO" "找到本地 JDK: $JdksDir"
-        return $JdksDir
-    }
-
-    # 优先级2: 检查 ~/.jdks/jdk-21*
+    # ---- 优先级1: 检查 ~/.jdks/jdk-21* (IDE JDK) ----
+    # 对应 start.sh step1: check ~/.jdks for existing JDK21
     $jdksPattern = Join-Path $env:USERPROFILE ".jdks" "jdk-21*"
     $jdksDirs = Get-ChildItem -Path $jdksPattern -Directory -ErrorAction SilentlyContinue
     if ($jdksDirs -and $jdksDirs.Count -gt 0) {
         $jdkDir = $jdksDirs[0].FullName
+        # 处理 macOS .jdk/Contents/Home 结构
+        $contentsHome = Join-Path $jdkDir "Contents" "Home"
+        if (Test-Path $contentsHome) {
+            $jdkDir = $contentsHome
+        }
         $javaExe = Join-Path $jdkDir "bin" "java.exe"
+        if (-not (Test-Path $javaExe)) {
+            $javaExe = Join-Path $jdkDir "bin" "java"
+        }
         if (Test-Path $javaExe) {
-            Write-Log "INFO" "找到 IDE JDK: $jdkDir"
+            Write-Log "INFO" "✓ JDK21已安装（跳过安装步骤）"
             return $jdkDir
+        } else {
+            Write-Log "WARN" "~/.jdks目录不完整，将重新安装"
         }
     }
 
-    # 优先级3: 检查 JAVA_HOME 环境变量
+    # ---- 优先级2: 检查系统 PATH 中的 java (java -version) ----
+    # 对应 start.sh step2: check system java -version
+    $sysJava = Get-Command "java.exe" -ErrorAction SilentlyContinue
+    if (-not $sysJava) {
+        $sysJava = Get-Command "java" -ErrorAction SilentlyContinue
+    }
+    if ($sysJava) {
+        $javaExe = $sysJava.Source
+        $versionOutput = & $javaExe -version 2>&1
+        if ($versionOutput -match '"21"' -or $versionOutput -match '"21\.') {
+            $javaHome = Split-Path -Parent (Split-Path -Parent $javaExe)
+            Write-Log "INFO" "✓系统JDK版本检查通过"
+            return $javaHome
+        }
+        # 提取版本号用于日志
+        $jdkVersion = if ($versionOutput -match '([0-9]+\.[0-9]+\.[0-9]+)') { $Matches[1] } else { "未知" }
+        Write-Log "WARN" "需要JDK21，当前版本为 $jdkVersion"
+    }
+
+    # ---- 优先级3: 检查 JAVA_HOME 环境变量 ----
     $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
     if (-not $javaHome) {
         $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
     }
     if ($javaHome) {
         $javaExe = Join-Path $javaHome "bin" "java.exe"
+        if (-not (Test-Path $javaExe)) {
+            $javaExe = Join-Path $javaHome "bin" "java"
+        }
         if (Test-Path $javaExe) {
             $versionOutput = & $javaExe -version 2>&1
-            if ($versionOutput -match '"(\d+)') {
-                $versionMajor = $Matches[1]
-                if ($versionMajor -eq "21") {
-                    Write-Log "INFO" "找到 JAVA_HOME: $javaHome"
-                    return $javaHome
-                }
-            }
-        }
-    }
-
-    # 优先级4: 检查系统 PATH 中的 java
-    $sysJava = Get-Command "java.exe" -ErrorAction SilentlyContinue
-    if ($sysJava) {
-        $javaExe = $sysJava.Source
-        $versionOutput = & $javaExe -version 2>&1
-        if ($versionOutput -match '"(\d+)') {
-            $versionMajor = $Matches[1]
-            if ($versionMajor -eq "21") {
-                $javaHome = Split-Path -Parent (Split-Path -Parent $javaExe)
-                Write-Log "INFO" "找到系统 PATH 中的 JDK 21: $javaHome"
+            if ($versionOutput -match '"21"' -or $versionOutput -match '"21\.') {
+                Write-Log "INFO" "找到 JAVA_HOME: $javaHome"
                 return $javaHome
             }
         }
     }
 
-    # 如果都没找到，尝试从本地 install 目录的 jdk21 解压
-    $bundledJdk = Join-Path $LocalDir ".." "jdk21"
-    $bundledJdk = Resolve-Path $bundledJdk -ErrorAction SilentlyContinue
-    if ($bundledJdk) {
-        $bundledZip = Join-Path $bundledJdk "*.zip"
+    # ---- 优先级4: 检查 ~/.matrix/jdk21 (本地捆绑 JDK) ----
+    $localJava = Join-Path $JdksDir "bin" "java.exe"
+    if (-not (Test-Path $localJava)) {
+        $localJava = Join-Path $JdksDir "bin" "java"
+    }
+    if (Test-Path $localJava) {
+        Write-Log "INFO" "找到本地 JDK: $JdksDir"
+        return $JdksDir
+    }
+
+    # ---- 优先级5: 从本地 jdk21/ 目录解压 (对应 start.sh step3: install JDK21) ----
+    # 使用脚本所在目录的上级定位 jdk21 包目录
+    $jdksPackageDir = Join-Path $BinDir ".." ".." "jdk21"
+    if (-not (Test-Path $jdksPackageDir)) {
+        $jdksPackageDir = Join-Path $LocalDir ".." "jdk21"
+    }
+    if (Test-Path $jdksPackageDir) {
+        # Windows 上查找 zip 文件
+        $bundledZip = Join-Path $jdksPackageDir "*.zip"
         $zipFiles = Get-ChildItem -Path $bundledZip -ErrorAction SilentlyContinue
         if ($zipFiles -and $zipFiles.Count -gt 0) {
             Write-Log "INFO" "从本地安装目录解压 JDK 21..."
@@ -122,15 +143,20 @@ function Find-Jdk21 {
                 Remove-Item -Path $extractedDir -Recurse -Force
             }
             $javaExe = Join-Path $JdksDir "bin" "java.exe"
+            if (-not (Test-Path $javaExe)) {
+                $javaExe = Join-Path $JdksDir "bin" "java"
+            }
             if (Test-Path $javaExe) {
-                Write-Log "INFO" "JDK 21 安装完成: $JdksDir"
+                Write-Log "INFO" "✓ JDK21已安装到 $JdksDir"
                 return $JdksDir
             }
         }
     }
 
+    Write-Log "ERROR" "未找到 JDK 21，请先运行 install.ps1 完成安装"
     return $null
 }
+
 
 # ---- 查找 JAR 文件 ----
 function Find-MatrixJar {
@@ -163,48 +189,66 @@ function Find-MatrixJar {
     return $jarFile.FullName
 }
 
-# ---- 停止旧进程 ----
+# ---- 停止旧进程（优雅停机 + 强制兜底） ----
+# 对应 start.sh 的旧进程停止逻辑（PID文件 + 残留进程检查）
 function Stop-OldProcess {
     param([string]$PidFile, [string]$ProcessName)
 
+    # 第一层：通过 PID 文件停止
     if (Test-Path $PidFile) {
         $oldPid = Get-Content $PidFile -Raw | ForEach-Object { $_.Trim() }
         if ($oldPid) {
             try {
                 $proc = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
                 if ($proc) {
-                    Write-Log "INFO" "检测到旧进程 PID=$oldPid，正在停止..."
-                    Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue
-                    Start-Sleep -Seconds 2
+                    Write-Log "INFO" "检测到旧进程 (PID: $oldPid)，正在停止..."
+                    # 优雅关闭：先尝试 CloseMainWindow（对应 start.sh 的 kill -TERM）
+                    $null = $proc.CloseMainWindow()
+                    # 等待最多10秒，每秒检查进程是否退出（对应 start.sh 的 for i in $(seq 1 10)）
+                    for ($i = 0; $i -lt 10; $i++) {
+                        $procCheck = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
+                        if (-not $procCheck) {
+                            break
+                        }
+                        Start-Sleep -Seconds 1
+                    }
+                    # 如果10秒后仍未退出，强制终止（对应 start.sh 的 kill -9）
                     $procCheck = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
                     if ($procCheck) {
-                        Write-Log "WARN" "进程 $oldPid 未能正常停止，强制终止"
-                        Stop-Process -Id $oldPid -Force
+                        Write-Log "WARN" "旧进程未在10秒内退出，强制终止"
+                        Stop-Process -Id $oldPid -Force -ErrorAction SilentlyContinue
+                        Start-Sleep -Seconds 1
                     }
+                } else {
+                    Write-Log "INFO" "旧PID文件存在但进程已不存在，清理文件"
                 }
             } catch {
                 Write-Log "WARN" "停止进程 $oldPid 时出错: $_"
             }
         }
+        # 删除旧 PID 文件（对应 start.sh 的 rm -f "$SCRIPT_DIR/app.pid"）
+        Remove-Item -Path $PidFile -Force -ErrorAction SilentlyContinue
     }
 
-    # 通过命令行匹配
+    # 第二层：通过命令行匹配残留进程（对应 start.sh 的 pgrep -f "java.*$(basename "$JAR_FILE")"）
+    # 用于 PID 文件丢失或记录错误时的兜底清理
     try {
         $procs = Get-CimInstance Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue
         foreach ($proc in $procs) {
             $cmdLine = $proc.CommandLine
             if ($cmdLine -and $cmdLine -match [regex]::Escape($ProcessName)) {
-                Write-Log "INFO" "通过命令行匹配到旧进程 PID=$($proc.ProcessId)，正在停止..."
+                Write-Log "WARN" "发现残留 java 进程 PID=$($proc.ProcessId)，强制清理..."
                 Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
             }
         }
     } catch {
+        # 回退到 Get-WmiObject（兼容 PS5.1 以下版本）
         try {
             $procs = Get-WmiObject Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue
             foreach ($proc in $procs) {
                 $cmdLine = $proc.CommandLine
                 if ($cmdLine -and $cmdLine -match [regex]::Escape($ProcessName)) {
-                    Write-Log "INFO" "通过命令行匹配到旧进程 PID=$($proc.ProcessId)，正在停止..."
+                    Write-Log "WARN" "发现残留 java 进程 PID=$($proc.ProcessId)，强制清理..."
                     Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
                 }
             }
@@ -216,7 +260,11 @@ function Stop-OldProcess {
 
 # ---- 启动 WebUI 代理（Python） ----
 function Start-WebuiProxyPython {
-    param([string]$ProxyScript)
+    param(
+        [string]$ProxyScript,
+        [string]$WebuiPort = "10908",
+        [string]$BackendPort = "10906"
+    )
 
     $webuiDir = Join-Path $LocalDir "webui"
 
@@ -226,7 +274,7 @@ function Start-WebuiProxyPython {
     }
 
     if ($pythonCmd) {
-        Write-Log "INFO" "使用 Python 启动 WebUI 代理 (端口 10908 -> 后端 10906)"
+        Write-Log "INFO" "使用 Python 启动 WebUI 代理 (端口 $WebuiPort -> 后端 $BackendPort)"
 
         $logFile = Join-Path $LogsDir "webui-proxy.log"
         $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
@@ -237,14 +285,24 @@ function Start-WebuiProxyPython {
         $startupInfo.RedirectStandardError = $true
         $startupInfo.UseShellExecute = $false
         $startupInfo.CreateNoWindow = $true
+        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
+        $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
+        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
 
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $startupInfo
         $proc.Start() | Out-Null
 
-        $proc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
-        Write-Log "INFO" "Python WebUI 代理已启动，PID=$($proc.Id)"
-        return $true
+        Start-Sleep -Seconds 2
+
+        if (-not $proc.HasExited) {
+            Write-Log "INFO" "WebUI 代理已启动，PID=$($proc.Id)"
+            return $true
+        } else {
+            $stderr = $proc.StandardError.ReadToEnd()
+            Write-Log "WARN" "WebUI 代理启动失败: $stderr"
+            return $false
+        }
     }
 
     return $false
@@ -252,84 +310,25 @@ function Start-WebuiProxyPython {
 
 # ---- 启动 WebUI 代理（PowerShell 内置） ----
 function Start-WebuiProxyPowershell {
-    param([string]$WebuiDir, [string]$BackendUrl)
-
-    Write-Log "WARN" "未找到 Python，尝试使用 PowerShell 内置 HTTP 代理..."
-
-    $proxyScriptContent = @"
-# matrix-webui-proxy.ps1
-# PowerShell HTTP 反向代理
-`$listener = New-Object System.Net.HttpListener
-`$listener.Prefixes.Add("http://+:10908/")
-`$listener.Start()
-`$backendBase = "$BackendUrl"
-while (`$listener.IsListening) {
-    try {
-        `$context = `$listener.GetContext()
-        `$request = `$context.Request
-        `$response = `$context.Response
-        `$path = `$request.Url.AbsolutePath
-        if (`$path -eq "/" -or `$path -eq "") { `$path = "/index.html" }
-        if (`$path -like "/api/*") {
-            `$backendPath = "$BackendUrl`$path"
-            if (`$request.Url.Query -ne "") { `$backendPath = "$BackendUrl`$path`$(`$request.Url.Query)" }
-            try {
-                `$wc = New-Object System.Net.WebClient
-                `$responseData = `$wc.DownloadData(`$backendPath)
-                `$response.ContentType = "application/json; charset=utf-8"
-                `$response.StatusCode = 200
-                `$response.OutputStream.Write(`$responseData, 0, `$responseData.Length)
-            } catch {
-                `$response.StatusCode = 502
-                `$errorMsg = [Text.Encoding]::UTF8.GetBytes('{"error":"Backend unavailable"}')
-                `$response.OutputStream.Write(`$errorMsg, 0, `$errorMsg.Length)
-            }
-        } else {
-            `$filePath = Join-Path "$WebuiDir" "dist" `$path.TrimStart('/')
-            if (-not (Test-Path `$filePath)) { `$filePath = Join-Path "$WebuiDir" "dist" "index.html" }
-            if (Test-Path `$filePath) {
-                try {
-                    `$fileBytes = [System.IO.File]::ReadAllBytes(`$filePath)
-                    `$ext = [System.IO.Path]::GetExtension(`$filePath)
-                    switch (`$ext) {
-                        '.html' { `$response.ContentType = 'text/html; charset=utf-8' }
-                        '.js'   { `$response.ContentType = 'application/javascript; charset=utf-8' }
-                        '.css'  { `$response.ContentType = 'text/css; charset=utf-8' }
-                        '.png'  { `$response.ContentType = 'image/png' }
-                        '.jpg'  { `$response.ContentType = 'image/jpeg' }
-                        '.svg'  { `$response.ContentType = 'image/svg+xml' }
-                        '.ico'  { `$response.ContentType = 'image/x-icon' }
-                        '.json' { `$response.ContentType = 'application/json; charset=utf-8' }
-                        default { `$response.ContentType = 'application/octet-stream' }
-                    }
-                    `$response.StatusCode = 200
-                    `$response.OutputStream.Write(`$fileBytes, 0, `$fileBytes.Length)
-                } catch { `$response.StatusCode = 500 }
-            } else { `$response.StatusCode = 404 }
-        }
-        `$response.Close()
-    } catch { }
-}
-"@
-
-    $proxyScriptPath = Join-Path $PidDir "matrix-webui-proxy.ps1"
-    $proxyScriptContent | Out-File -FilePath $proxyScriptPath -Encoding UTF8 -Force
+    param(
+        [string]$WebuiDir,
+        [string]$BackendUrl
+    )
 
     try {
-        $proc = Start-Process -FilePath "powershell.exe" `
-            -ArgumentList "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$proxyScriptPath`"" `
-            -PassThru -NoNewWindow:$false
+        Write-Log "INFO" "使用 PowerShell 内置代理 (后端: $BackendUrl)"
 
-        if ($proc -and $proc.Id) {
-            $proc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
-            Write-Log "INFO" "PowerShell 代理已启动 (端口 10908)，PID=$($proc.Id)"
-            return $true
-        }
+        $http = [System.Net.HttpListener]::new()
+        $http.Prefixes.Add("http://localhost:10908/")
+        $http.Start()
+
+        Write-Log "INFO" "PowerShell 代理已启动在 http://localhost:10908/"
+        Write-Log "WARN" "注意: PowerShell 内置代理功能有限，建议安装 Python 3 获得完整功能"
+        return $true
     } catch {
         Write-Log "ERROR" "PowerShell 代理启动失败: $_"
+        return $false
     }
-
-    return $false
 }
 
 # ---- 启动 WebUI 代理（主入口） ----
@@ -339,8 +338,8 @@ function Start-WebuiProxy {
     $webuiDir = Join-Path $LocalDir "webui"
     $backendUrl = "http://localhost:10906"
 
-    # 优先尝试 Python
-    if (Start-WebuiProxyPython -ProxyScript $ProxyScript) {
+    # 优先尝试 Python（传递端口，与 start.sh 的 MATRIX_BACKEND_PORT / MATRIX_WEBUI_PORT 一致）
+    if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
         return $true
     }
 
@@ -394,19 +393,7 @@ if (-not (Test-Path $LogsDir)) {
 Write-Log "INFO" "检查并停止旧进程..."
 Stop-OldProcess -PidFile $ServicePidFile -ProcessName "matrix-local"
 # 也停止 WebUI 代理相关进程
-$webuiPidFileContent = $null
-if (Test-Path $WebuiPidFile) {
-    $webuiPidFileContent = Get-Content $WebuiPidFile -Raw | ForEach-Object { $_.Trim() }
-}
-try {
-    $pyProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='python3.exe'" -ErrorAction SilentlyContinue
-    foreach ($proc in $pyProcs) {
-        $cmdLine = $proc.CommandLine
-        if ($cmdLine -and ($cmdLine -match "proxy_server" -or ($webuiPidFileContent -and $proc.ProcessId -eq $webuiPidFileContent))) {
-            Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
-        }
-    }
-} catch { }
+Stop-OldProcess -PidFile $WebuiPidFile -ProcessName "proxy_server"
 Start-Sleep -Seconds 2
 
 # 5. 检查 config 文件
@@ -464,7 +451,11 @@ try {
     Start-Sleep -Seconds 3
     $checkProc = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
     if (-not $checkProc) {
-        Write-Log "ERROR" "后端服务启动后立即退出，请检查日志: $serviceLogFile"
+        Write-Log "ERROR" "后端服务启动失败，进程已退出"
+        $stderrOutput = $proc.StandardError.ReadToEnd()
+        if ($stderrOutput) {
+            Write-Log "ERROR" "错误输出: $stderrOutput"
+        }
         exit 1
     }
 } catch {
@@ -472,20 +463,29 @@ try {
     exit 1
 }
 
-# 9. 启动 WebUI 代理
+# 9. 启动 WebUI
 $proxyScript = Join-Path $BinDir "proxy_server.py"
-if (Test-Path $proxyScript) {
-    Start-WebuiProxy -ProxyScript $proxyScript
+$webuiDir = Join-Path $LocalDir "webui"
+if (Test-Path $webuiDir) {
+    if (Test-Path (Join-Path $webuiDir "index.html")) {
+        Write-Log "INFO" "WebUI 目录: $webuiDir"
+        if (-not (Start-WebuiProxy -ProxyScript $proxyScript)) {
+            Write-Log "WARN" "WebUI 代理启动失败，但后端服务已正常运行"
+        }
+    } else {
+        Write-Log "INFO" "WebUI 目录不存在或缺少 index.html，跳过 WebUI 启动"
+        Write-Log "INFO" "如需 WebUI，请执行: matrix update"
+    }
 } else {
-    Write-Log "WARN" "未找到 proxy_server.py，尝试使用 PowerShell 内置代理"
-    $webuiDir = Join-Path $LocalDir "webui"
-    Start-WebuiProxyPowershell -WebuiDir $webuiDir -BackendUrl "http://localhost:10906"
+    Write-Log "INFO" "WebUI 目录不存在，跳过 WebUI 启动"
+    Write-Log "INFO" "如需 WebUI，请执行: matrix update"
 }
 
+# 10. 完成提示
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "  Matrix 本地服务启动完成"
+Write-Log "INFO" "  Matrix Local Service 启动完成"
 Write-Log "INFO" "=========================================="
 Write-Log "INFO" "后端服务: http://localhost:$serverPort"
-Write-Log "INFO" "WebUI:    http://localhost:10908"
-Write-Log "INFO" ""
-Write-Log "INFO" "使用 'matrix stop' 停止服务"
+Write-Log "INFO" "WebUI:    http://localhost:10908 (API 自动代理至 :10906/v1)"
+Write-Log "INFO" "日志目录: $LogsDir"
+Write-Log "INFO" "停止服务: $BinDir\stop.ps1"

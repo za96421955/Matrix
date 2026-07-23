@@ -242,14 +242,15 @@ echo $REAL_PID > "$SCRIPT_DIR/app.pid"
 log_info "✓ 后端服务启动成功，PID: $REAL_PID"
 
 # ============================================================
-# step6: start WebUI HTTP server
+# step6: start WebUI proxy server
 # ============================================================
-WEBUI_DIR="$PROJECT_ROOT/webui"
-WEBUI_PORT=9000
+WEBUI_PORT=10908
 WEBUI_PID_FILE="$SCRIPT_DIR/webui.pid"
+PROXY_SCRIPT="$SCRIPT_DIR/proxy_server.py"
+BACKEND_PORT=10906
 
-if [ -d "$WEBUI_DIR" ] && [ -f "$WEBUI_DIR/index.html" ]; then
-	log_info "正在启动 WebUI (端口 $WEBUI_PORT) ..."
+if [ -d "$PROJECT_ROOT/webui" ] && [ -f "$PROJECT_ROOT/webui/index.html" ]; then
+	log_info "正在启动 WebUI 代理服务器 (端口 $WEBUI_PORT, 后端 :$BACKEND_PORT/v1) ..."
 
 	# 如果已有 webui 进程，先停止
 	if [ -f "$WEBUI_PID_FILE" ]; then
@@ -259,29 +260,19 @@ if [ -d "$WEBUI_DIR" ] && [ -f "$WEBUI_DIR/index.html" ]; then
 		rm -f "$WEBUI_PID_FILE"
 	fi
 
-	# 尝试使用 Python3 HTTP 服务器
 	if command -v python3 &>/dev/null; then
-		cd "$WEBUI_DIR" && nohup python3 -m http.server "$WEBUI_PORT" \
+		MATRIX_WEBUI_DIR="$PROJECT_ROOT/webui" \
+		MATRIX_BACKEND_PORT="$BACKEND_PORT" \
+		MATRIX_WEBUI_PORT="$WEBUI_PORT" \
+		nohup python3 "$PROXY_SCRIPT" \
 			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
 		WEBUI_PID=$!
 		echo $WEBUI_PID > "$WEBUI_PID_FILE"
-		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
-	elif command -v python &>/dev/null; then
-		cd "$WEBUI_DIR" && nohup python -m SimpleHTTPServer "$WEBUI_PORT" \
-			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
-		WEBUI_PID=$!
-		echo $WEBUI_PID > "$WEBUI_PID_FILE"
-		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
-	elif command -v node &>/dev/null; then
-		# 使用 npx serve 作为 fallback
-		cd "$WEBUI_DIR" && nohup npx serve -s . -l "$WEBUI_PORT" \
-			> "$PROJECT_ROOT/logs/webui.log" 2>&1 &
-		WEBUI_PID=$!
-		echo $WEBUI_PID > "$WEBUI_PID_FILE"
-		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT)"
+		log_info "✓ WebUI 启动成功 (http://localhost:$WEBUI_PORT，API 代理至 :$BACKEND_PORT)"
 	else
-		log_warn "未找到 Python3/Node，WebUI 无法自动启动"
-		log_warn "请手动执行: cd $WEBUI_DIR && python3 -m http.server $WEBUI_PORT"
+		log_warn "未找到 Python3，WebUI 无法自动启动"
+		log_warn "请手动执行: cd $PROJECT_ROOT/webui && python3 -m http.server $WEBUI_PORT"
+		log_warn "注意: 此方式 API 请求会 404，建议安装 Python3 后使用代理脚本"
 	fi
 else
 	log_info "WebUI 目录不存在或缺少 index.html，跳过 WebUI 启动"
@@ -290,6 +281,6 @@ fi
 
 log_info "✓ 全部启动完成"
 echo ""
-echo "后端服务: http://localhost:9000"
-echo "WebUI:    http://localhost:$WEBUI_PORT"
+echo "后端服务: http://localhost:$BACKEND_PORT"
+echo "WebUI:    http://localhost:$WEBUI_PORT (API 自动代理至 :$BACKEND_PORT/v1)"
 echo ""

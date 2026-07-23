@@ -1,5 +1,5 @@
 server:
-  port: 18090
+  port: 10906
 management:
   server:
     port: 8001

@@ -182,7 +182,7 @@ fi
 log_info "✓ JAR 就绪: $(ls -lh "$JAR_FILE" | awk '{print $5}')"
 
 # ---------- 下载 bin/ 脚本 ----------
-BIN_FILES="start.sh stop.sh restart.sh"
+BIN_FILES="proxy_server.py start.sh stop.sh restart.sh"
 log_info "下载 bin/ 脚本 ..."
 for f in $BIN_FILES; do
     curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" || { log_error "下载 $f 失败"; exit 1; }
@@ -316,7 +316,7 @@ fi
 cat > "$CLI_DIR/matrix" << 'CLIEOF'
 #!/bin/bash
 INSTALL_DIR="$HOME/.matrix/local"
-WEBUI_PORT=9000
+WEBUI_PORT=10908
 
 case "$1" in
     status)
@@ -434,7 +434,7 @@ echo " ✓ matrix 安装完成!"
 echo "=============================================="
 echo "安装目录: $INSTALL_DIR"
 echo "JDK 目录: $JDK_DIR"
-echo "WebUI:    http://localhost:9000"
+echo "WebUI:    http://localhost:10908"
 echo ""
 echo "已配置环境变量的文件:"
 get_profile_files | tr ' ' '\n' | while read -r f; do [ -f "$f" ] && echo "  • $f"; done

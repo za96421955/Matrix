@@ -10,10 +10,7 @@ RELEASE_TAG=v1.0.2
 
 # GitHub 基础 URL（固定值，不随版本变化）
 RAW_BASE=https://gitee.com/za96421955/matrix/raw/release
-#RAW_BASE=https://raw.githubusercontent.com/za96421955/Matrix/refs/tags
-
 RELEASE_BASE=https://gitee.com/za96421955/matrix/releases/download
-#RELEASE_BASE=https://github.com/za96421955/Matrix/releases/download
 
 # JAR 分卷文件名
 JAR_FILE_NAME=matrix-local-${MATRIX_VERSION}.jar

@@ -1,0 +1,48 @@
+# Matrix latest version info
+# This file is sourced by install.sh and matrix CLI for dynamic version discovery
+# Update this file when releasing a new version
+
+# Matrix 整体版本号
+MATRIX_VERSION=1.0.2
+
+# Release 标签
+RELEASE_TAG=v1.0.2
+
+# GitHub 基础 URL（固定值，不随版本变化）
+RAW_BASE=https://raw.githubusercontent.com/za96421955/Matrix/refs/tags
+RELEASE_BASE=https://github.com/za96421955/Matrix/releases/download
+
+# JAR 分卷文件名
+JAR_FILE_NAME=matrix-local-${MATRIX_VERSION}.jar
+JAR_PART_Z01=matrix-local-${MATRIX_VERSION}.part.z01
+JAR_PART_ZIP=matrix-local-${MATRIX_VERSION}.part.zip
+
+# WebUI
+WEBUI_ZIP_NAME=matrix-webui-${MATRIX_VERSION}.zip
+
+# JDK
+JDK_VERSION=21.0.12
+
+# JDK - Linux ARM64 (aarch64)
+JDK_URL_LINUX_ARM64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-linux-aarch64.tar.gz
+JDK_FILENAME_LINUX_ARM64=microsoft-jdk-${JDK_VERSION}-linux-aarch64.tar.gz
+
+# JDK - Linux x86_64
+JDK_URL_LINUX_X86_64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-linux-x64.tar.gz
+JDK_FILENAME_LINUX_X86_64=microsoft-jdk-${JDK_VERSION}-linux-x64.tar.gz
+
+# JDK - macOS ARM64 (Apple Silicon)
+JDK_URL_MAC_ARM64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-macos-aarch64.tar.gz
+JDK_FILENAME_MAC_ARM64=microsoft-jdk-${JDK_VERSION}-macos-aarch64.tar.gz
+
+# JDK - macOS x86_64 (Intel)
+JDK_URL_MAC_X86_64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-macos-x64.tar.gz
+JDK_FILENAME_MAC_X86_64=microsoft-jdk-${JDK_VERSION}-macos-x64.tar.gz
+
+# JDK - Windows ARM64
+JDK_URL_WIN_ARM64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-windows-aarch64.zip
+JDK_FILENAME_WIN_ARM64=microsoft-jdk-${JDK_VERSION}-windows-aarch64.zip
+
+# JDK - Windows x86_64
+JDK_URL_WIN_X86_64=https://aka.ms/download-jdk/microsoft-jdk-${JDK_VERSION}-windows-x64.zip
+JDK_FILENAME_WIN_X86_64=microsoft-jdk-${JDK_VERSION}-windows-x64.zip

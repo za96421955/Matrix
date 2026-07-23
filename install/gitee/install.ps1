@@ -25,7 +25,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $MatrixHome = Join-Path $env:USERPROFILE ".matrix"
 $LocalDir = Join-Path $MatrixHome "local"
 $JdksDir = Join-Path $MatrixHome "jdk21"
-$CliDir = Join-Path $env:USERPROFILE ".local" "bin"
+$CliDir = Join-Path (Join-Path $env:USERPROFILE ".local") "bin"
 
 # 子目录
 $BinDir = Join-Path $LocalDir "bin"
@@ -573,7 +573,7 @@ $WebuiZipPath = Join-Path $TmpDir $WEBUI_ZIP_NAME
 
 if (Download-And-Extract -Url $WebuiZipUrl -ZipPath $WebuiZipPath -ExtractDir $WebuiDir -Label "WebUI ($WEBUI_ZIP_NAME)") {
     # 处理 dist/ 文件夹（对应 install.sh 中 dist/ 上移逻辑）
-    $distIndexHtml = Join-Path $WebuiDir "dist" "index.html"
+    $distIndexHtml = Join-Path (Join-Path $WebuiDir "dist") "index.html"
     if (Test-Path $distIndexHtml) {
         Write-Log "INFO" "检测到 dist/ 目录，上移内容..."
         # 将 dist/ 下所有文件（含隐藏文件）上移到 $WebuiDir
@@ -603,7 +603,7 @@ Write-Log "INFO" "------------------------------------------"
 
 $JdkZipPath = Join-Path $TmpDir $JDK_FILENAME
 
-if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
+if (Test-Path (Join-Path (Join-Path $JdksDir "bin") "java.exe")) {
     Write-Log "INFO" "JDK 21 已安装，跳过下载"
 } else {
     if (Download-File -Url $JDK_URL -Destination $JdkZipPath -Label "JDK 21 ($JDK_FILENAME)") {
@@ -621,7 +621,7 @@ if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
                 Remove-Item -Path $extractedDir -Recurse -Force
             }
 
-            if (Test-Path (Join-Path $JdksDir "bin" "java.exe")) {
+            if (Test-Path (Join-Path (Join-Path $JdksDir "bin") "java.exe")) {
                 Write-Log "INFO" "JDK 21 安装完成: $JdksDir"
             } else {
                 Write-Log "WARN" "JDK 解压后未找到 java.exe，请检查目录结构: $JdksDir"
@@ -967,7 +967,7 @@ switch ($Command) {
             if (Test-Path $webuiTmpZip) {
                 Expand-Archive -Path $webuiTmpZip -DestinationPath $webuiDir -Force
                 # 处理 dist/
-                $distIndexHtml = Join-Path $webuiDir "dist" "index.html"
+                $distIndexHtml = Join-Path (Join-Path $webuiDir "dist") "index.html"
                 if (Test-Path $distIndexHtml) {
                     Get-ChildItem -Path (Join-Path $webuiDir "dist") -Force | Move-Item -Destination $webuiDir -Force
                     Remove-Item -Path (Join-Path $webuiDir "dist") -Recurse -Force -ErrorAction SilentlyContinue
@@ -1022,7 +1022,7 @@ switch ($Command) {
             }
 
             # 删除 CLI
-            $cliPath = Join-Path $env:USERPROFILE ".local" "bin" "matrix.ps1"
+            $cliPath = Join-Path (Join-Path (Join-Path $env:USERPROFILE ".local") "bin") "matrix.ps1"
             if (Test-Path $cliPath) {
                 Remove-Item -Path $cliPath -Force
                 Write-Log "INFO" "已删除 CLI: $cliPath"

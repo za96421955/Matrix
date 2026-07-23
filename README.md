@@ -132,7 +132,7 @@
 ### 一键安装
 
 ```bash
-curl -fsSL https://gitee.com/za96421955/matrix/raw/release/1.0.2/install/install.sh | bash
+curl -fsSL https://gitee.com/za96421955/matrix/raw/release/latest/install/install.sh | bash
 ```
 
 安装过程：

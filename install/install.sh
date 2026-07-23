@@ -54,8 +54,8 @@ write_to_profiles() {
 }
 
 # ---------- 版本信息下载 ----------
-# latest-version.txt 的固定地址（指向 Gitee latest 分支，不随版本变化）
-LATEST_VERSION_URL="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+# latest-version.txt 的固定地址（指向 GitHub latest 分支，不随版本变化）
+LATEST_VERSION_URL="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
 
 log_info "获取最新版本信息 ..."
 VERSION_TMP=$(mktemp)
@@ -76,8 +76,8 @@ fi
 log_info "最新版本: v${MATRIX_VERSION}"
 
 # ---------- 构建动态 URL ----------
-SERVER="${GITEE_RAW_BASE}/${MATRIX_VERSION}/install"
-RELEASE_URL="${GITEE_RELEASE_BASE}/${RELEASE_TAG}"
+SERVER="${RAW_BASE}/${MATRIX_VERSION}/install"
+RELEASE_URL="${RELEASE_BASE}/${RELEASE_TAG}"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)
@@ -384,7 +384,7 @@ get_latest_version_info() {
     if [ -f "$url_file" ]; then
         version_url=$(cat "$url_file")
     else
-        version_url="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+        version_url="https://raw.githubusercontent.com/za96421955/Matrix/latest/install/latest-version.txt"
     fi
     local tmpfile
     tmpfile=$(mktemp)
@@ -452,8 +452,8 @@ case "$1" in
         get_latest_version_info || { echo "更新失败: 无法获取版本信息"; exit 1; }
         REMOTE_VERSION="$MATRIX_VERSION"
         REMOTE_TAG="$RELEASE_TAG"
-        REMOTE_BASE="$GITEE_RELEASE_BASE"
-        RAW_BASE="$GITEE_RAW_BASE"
+        REMOTE_BASE="$RELEASE_BASE"
+        RAW_BASE="$RAW_BASE"
         JAR_Z01="$JAR_PART_Z01"
         JAR_ZIP="$JAR_PART_ZIP"
         JAR_FINAL="$JAR_FILE_NAME"

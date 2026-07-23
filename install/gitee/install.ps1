@@ -488,7 +488,7 @@ if (Test-Path $ApplicationYml) {
     Write-Log "INFO" "base-path 已更新为 $LocalDir"
 }
 # 保存服务器地址和版本号（供 matrix update 使用）
-$LatestVersionUrl = "https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+$LatestVersionUrl = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
 $ServerUrlPath = Join-Path $ConfigDir "server.url"
 $VersionPath = Join-Path $ConfigDir "version"
 [System.IO.File]::WriteAllText($ServerUrlPath, $LatestVersionUrl, [System.Text.UTF8Encoding]::new($false))
@@ -685,7 +685,7 @@ function Get-LatestVersionInfo {
         $versionUrl = Get-Content $urlFile -Raw | ForEach-Object { $_.Trim() }
     }
     if ([string]::IsNullOrEmpty($versionUrl)) {
-        $versionUrl = "https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+        $versionUrl = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
     }
     try {
         $wc = New-Object System.Net.WebClient

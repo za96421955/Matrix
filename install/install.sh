@@ -54,7 +54,7 @@ write_to_profiles() {
 
 # ---------- 下载 URL 常量 ----------
 SERVER="https://gitee.com/za96421955/matrix/raw/release/1.0.2/install"
-RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.1"
+RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.2"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)
@@ -106,19 +106,19 @@ echo "$RELEASE_URL" > "$INSTALL_DIR/config/release.url"
 log_info "✓ 服务器地址已保存"
 
 # ---------- 下载 JAR（从 Release 附件下载分卷并合并） ----------
-JAR_FILE="$INSTALL_DIR/matrix-local-1.0.1.jar"
+JAR_FILE="$INSTALL_DIR/matrix-local-1.0.2.jar"
 TMP_DIR="$INSTALL_DIR/.tmp"
 
 log_info "下载 JAR (分卷文件) ..."
 mkdir -p "$TMP_DIR"
 
 # 下载分卷
-curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.z01" -o "$TMP_DIR/matrix-local-1.0.1.part.z01" || {
-    log_error "下载 matrix-local-1.0.1.part.z01 失败"
+curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.z01" -o "$TMP_DIR/matrix-local-1.0.2.part.z01" || {
+    log_error "下载 matrix-local-1.0.2.part.z01 失败"
     exit 1
 }
-curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.zip" -o "$TMP_DIR/matrix-local-1.0.1.part.zip" || {
-    log_error "下载 matrix-local-1.0.1.part.zip 失败"
+curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.zip" -o "$TMP_DIR/matrix-local-1.0.2.part.zip" || {
+    log_error "下载 matrix-local-1.0.2.part.zip 失败"
     exit 1
 }
 log_info "✓ 分卷下载完成"
@@ -132,7 +132,7 @@ MERGED=false
 # 方法1: 使用 7z (直接解压分卷)
 if command -v 7z &>/dev/null; then
     log_info "尝试 7z 解压 ..."
-    7z x matrix-local-1.0.1.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
+    7z x matrix-local-1.0.2.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
     if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
         log_info "✓ 7z 解压成功"
         MERGED=true
@@ -142,9 +142,9 @@ fi
 # 方法2: 使用 zip -F 合并分卷后 unzip 解压
 if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
     log_info "尝试 zip -F + unzip 合并 ..."
-    cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
-    cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
-    zip -F matrix-local-1.0.1.zip --out combined.zip >/dev/null 2>&1
+    cp matrix-local-1.0.2.part.z01 matrix-local-1.0.2.z01
+    cp matrix-local-1.0.2.part.zip matrix-local-1.0.2.zip
+    zip -F matrix-local-1.0.2.zip --out combined.zip >/dev/null 2>&1
     if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
         unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
         if [ -f "$JAR_FILE" ]; then
@@ -157,7 +157,7 @@ fi
 # 方法3: 使用 cat 合并分卷后 unzip 解压
 if [ "$MERGED" = false ] && command -v unzip &>/dev/null; then
     log_info "尝试 cat + unzip 合并 ..."
-    cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > combined.zip 2>/dev/null
+    cat matrix-local-1.0.2.part.z01 matrix-local-1.0.2.part.zip > combined.zip 2>/dev/null
     if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
         unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
         if [ -f "$JAR_FILE" ]; then
@@ -172,9 +172,9 @@ rm -rf "$TMP_DIR"
 
 if [ "$MERGED" = false ]; then
     log_error "JAR 分卷合并失败，请手动处理："
-    log_error "1. 从 https://gitee.com/za96421955/matrix/releases/tag/v1.0.1 下载 matrix-local-1.0.1.part.z01 和 matrix-local-1.0.1.part.zip"
-    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 matrix-local-1.0.1.part.zip"
-    log_error "3. 将得到的 matrix-local-1.0.1.jar 放入 $INSTALL_DIR/"
+    log_error "1. 从 https://gitee.com/za96421955/matrix/releases/tag/v1.0.2 下载 matrix-local-1.0.2.part.z01 和 matrix-local-1.0.2.part.zip"
+    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 matrix-local-1.0.2.part.zip"
+    log_error "3. 将得到的 matrix-local-1.0.2.jar 放入 $INSTALL_DIR/"
     log_error "4. 重新运行本安装脚本"
     exit 1
 fi
@@ -244,10 +244,10 @@ log_info "✓ settings/ 完成"
 
 # ---------- 下载 webui ----------
 log_info "下载 webui ..."
-WEBUI_ZIP="$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
-curl -# -fL "$RELEASE_URL/matrix-webui-1.0.1.zip" -o "$WEBUI_ZIP" || {
+WEBUI_ZIP="$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
+curl -# -fL "$RELEASE_URL/matrix-webui-1.0.2.zip" -o "$WEBUI_ZIP" || {
     log_warn "webui 下载失败，可稍后手动下载"
-    log_warn "下载地址: $RELEASE_URL/matrix-webui-1.0.1.zip"
+    log_warn "下载地址: $RELEASE_URL/matrix-webui-1.0.2.zip"
 }
 if [ -f "$WEBUI_ZIP" ]; then
     log_info "解压 webui ..."
@@ -265,33 +265,33 @@ fi
 
 # ---------- JDK 下载 ----------
 log_info "检查 JDK ..."
-JDK_VERSION="21.0.12"
+JDK_VERSION="21.0.22"
 
 # Microsoft JDK 下载 URL 映射
 case "${os_type}-${arch_type}" in
     linux-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-linux-x64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.12-linux-x64.tar.gz"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-linux-x64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.22-linux-x64.tar.gz"
         ;;
     linux-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-linux-aarch64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.12-linux-aarch64.tar.gz"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-linux-aarch64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.22-linux-aarch64.tar.gz"
         ;;
     darwin-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-macos-x64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.12-macos-x64.tar.gz"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-macos-x64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.22-macos-x64.tar.gz"
         ;;
     darwin-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-macos-aarch64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.12-macos-aarch64.tar.gz"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-macos-aarch64.tar.gz"
+        JDK_FILENAME="microsoft-jdk-21.0.22-macos-aarch64.tar.gz"
         ;;
     windows-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-windows-x64.zip"
-        JDK_FILENAME="microsoft-jdk-21.0.12-windows-x64.zip"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-windows-x64.zip"
+        JDK_FILENAME="microsoft-jdk-21.0.22-windows-x64.zip"
         ;;
     windows-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.12-windows-aarch64.zip"
-        JDK_FILENAME="microsoft-jdk-21.0.12-windows-aarch64.zip"
+        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-windows-aarch64.zip"
+        JDK_FILENAME="microsoft-jdk-21.0.22-windows-aarch64.zip"
         ;;
 esac
 
@@ -356,29 +356,29 @@ case "$1" in
             echo "下载最新 JAR ..."
             TMP_DIR="$INSTALL_DIR/.tmp"
             mkdir -p "$TMP_DIR"
-            curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.z01" -o "$TMP_DIR/matrix-local-1.0.1.part.z01" || { echo "下载分卷1失败"; exit 1; }
-            curl -# -fL "$RELEASE_URL/matrix-local-1.0.1.part.zip" -o "$TMP_DIR/matrix-local-1.0.1.part.zip" || { echo "下载分卷2失败"; exit 1; }
+            curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.z01" -o "$TMP_DIR/matrix-local-1.0.2.part.z01" || { echo "下载分卷1失败"; exit 1; }
+            curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.zip" -o "$TMP_DIR/matrix-local-1.0.2.part.zip" || { echo "下载分卷2失败"; exit 1; }
             # 尝试合并
             cd "$TMP_DIR"
             if command -v 7z &>/dev/null; then
-                7z x matrix-local-1.0.1.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
+                7z x matrix-local-1.0.2.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
             elif command -v zip &>/dev/null; then
-                cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
-                cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
-                zip -F matrix-local-1.0.1.zip --out combined.zip >/dev/null 2>&1
+                cp matrix-local-1.0.2.part.z01 matrix-local-1.0.2.z01
+                cp matrix-local-1.0.2.part.zip matrix-local-1.0.2.zip
+                zip -F matrix-local-1.0.2.zip --out combined.zip >/dev/null 2>&1
                 unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
             else
-                cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > combined.zip 2>/dev/null
+                cat matrix-local-1.0.2.part.z01 matrix-local-1.0.2.part.zip > combined.zip 2>/dev/null
                 unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
             fi
             rm -rf "$TMP_DIR"
             echo "下载最新 webui ..."
-            curl -# -fL "$RELEASE_URL/matrix-webui-1.0.1.zip" -o "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
-            if [ -f "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip" ]; then
-                unzip -o "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
+            curl -# -fL "$RELEASE_URL/matrix-webui-1.0.2.zip" -o "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
+            if [ -f "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip" ]; then
+                unzip -o "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
                 mv "$INSTALL_DIR/webui/dist/"* "$INSTALL_DIR/webui/" 2>/dev/null
                 mv "$INSTALL_DIR/webui/dist/".* "$INSTALL_DIR/webui/" 2>/dev/null
-                rm -rf "$INSTALL_DIR/webui/dist" "$INSTALL_DIR/webui/matrix-webui-1.0.1.zip"
+                rm -rf "$INSTALL_DIR/webui/dist" "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
             fi
             echo "下载最新 bin 脚本 ..."
             SERVER=$(cat "$INSTALL_DIR/config/server.url" 2>/dev/null)

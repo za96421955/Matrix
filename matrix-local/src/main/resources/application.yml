@@ -62,4 +62,4 @@ matrix:
     heartbeat: /v1/client/heartbeat
     ack: /v1/task/ack
   github:
-    token: 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
+    token:

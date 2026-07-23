@@ -4,6 +4,12 @@
 
 ---
 
+## 主页面
+![index.png](index.png)
+
+## 用量统计
+![use.png](use.png)
+
 ## 目录结构
 
 ```
@@ -127,7 +133,7 @@ curl -fsSL https://gitee.com/za96421955/matrix/raw/release/1.0.2/install/install
 安装过程：
 1. 检测 DEEPSEEK_API_KEY（未设置则交互输入）
 2. 下载 JDK21（内置包，自动解压至 ~/.jdks）
-3. 下载 JAR 分卷并合并（matrix-local-1.0.1.jar）
+3. 下载 JAR 分卷并合并（matrix-local-1.0.2.jar）
 4. 下载 WebUI 静态资源
 5. 自动启动服务
 
@@ -163,7 +169,7 @@ curl -fsSL https://gitee.com/za96421955/matrix/raw/release/1.0.2/install/install
 matrix start
 
 # 方式二：直接运行 JAR
-java -jar matrix-local-1.0.1.jar
+java -jar matrix-local-1.0.2.jar
 
 # 方式三：IDEA 开发
 # 运行 LocalApplication.java 主类

@@ -883,7 +883,7 @@ export default function ChatArea() {
         {value: 'plan', label: '规划'},
         {value: 'execute', label: '执行'},
         {value: 'task-chain', label: '任务'},
-        {value: 'task-graph', label: '图'},
+        {value: 'task-graph', label: '目标'},
         {value: 'agent', label: '技能'},
         {value: 'coding', label: '需求开发'},
         {value: 'information', label: '资料整理'},

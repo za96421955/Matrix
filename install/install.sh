@@ -129,7 +129,7 @@ cd "$TMP_DIR" || exit 1
 
 MERGED=false
 
-# 方法1: 使用 7z
+# 方法1: 使用 7z (直接解压分卷)
 if command -v 7z &>/dev/null; then
     log_info "尝试 7z 解压 ..."
     7z x matrix-local-1.0.1.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
@@ -139,26 +139,31 @@ if command -v 7z &>/dev/null; then
     fi
 fi
 
-# 方法2: 使用 zip -F (标准 ZIP 分卷修复)
+# 方法2: 使用 zip -F 合并分卷后 unzip 解压
 if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
-    log_info "尝试 zip -F 合并 ..."
-    # Gitee 使用 .part.z01 命名，标准 zip 分卷为 .z01，需重命名
+    log_info "尝试 zip -F + unzip 合并 ..."
     cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
     cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
-    zip -F matrix-local-1.0.1.zip --out "$JAR_FILE" >/dev/null 2>&1
-    if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
-        log_info "✓ zip -F 合并成功"
-        MERGED=true
+    zip -F matrix-local-1.0.1.zip --out combined.zip >/dev/null 2>&1
+    if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
+        unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+        if [ -f "$JAR_FILE" ]; then
+            log_info "✓ zip -F + unzip 合并成功"
+            MERGED=true
+        fi
     fi
 fi
 
-# 方法3: 使用 cat 直接合并 (部分格式支持)
-if [ "$MERGED" = false ]; then
-    log_info "尝试 cat 合并 ..."
-    cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > "$JAR_FILE" 2>/dev/null
-    if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
-        log_info "✓ cat 合并成功"
-        MERGED=true
+# 方法3: 使用 cat 合并分卷后 unzip 解压
+if [ "$MERGED" = false ] && command -v unzip &>/dev/null; then
+    log_info "尝试 cat + unzip 合并 ..."
+    cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > combined.zip 2>/dev/null
+    if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
+        unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+        if [ -f "$JAR_FILE" ]; then
+            log_info "✓ cat + unzip 合并成功"
+            MERGED=true
+        fi
     fi
 fi
 
@@ -360,9 +365,11 @@ case "$1" in
             elif command -v zip &>/dev/null; then
                 cp matrix-local-1.0.1.part.z01 matrix-local-1.0.1.z01
                 cp matrix-local-1.0.1.part.zip matrix-local-1.0.1.zip
-                zip -F matrix-local-1.0.1.zip --out "$INSTALL_DIR/matrix-local-1.0.1.jar" >/dev/null 2>&1
+                zip -F matrix-local-1.0.1.zip --out combined.zip >/dev/null 2>&1
+                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
             else
-                cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > "$INSTALL_DIR/matrix-local-1.0.1.jar"
+                cat matrix-local-1.0.1.part.z01 matrix-local-1.0.1.part.zip > combined.zip 2>/dev/null
+                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
             fi
             rm -rf "$TMP_DIR"
             echo "下载最新 webui ..."

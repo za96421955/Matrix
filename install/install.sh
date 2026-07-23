@@ -4,6 +4,7 @@ export LC_ALL=en_US.UTF-8
 
 # ============================================================
 # matrix 一键安装脚本
+# 版本信息从 latest-version.txt 动态获取
 # ============================================================
 
 # ---------- 日志函数 ----------
@@ -52,9 +53,31 @@ write_to_profiles() {
     done
 }
 
-# ---------- 下载 URL 常量 ----------
-SERVER="https://gitee.com/za96421955/matrix/raw/release/1.0.2/install"
-RELEASE_URL="https://gitee.com/za96421955/matrix/releases/download/v1.0.2"
+# ---------- 版本信息下载 ----------
+# latest-version.txt 的固定地址（指向 Gitee latest 分支，不随版本变化）
+LATEST_VERSION_URL="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+
+log_info "获取最新版本信息 ..."
+VERSION_TMP=$(mktemp)
+if ! curl -sL "$LATEST_VERSION_URL" -o "$VERSION_TMP"; then
+    log_error "无法获取版本信息，请检查网络连接: $LATEST_VERSION_URL"
+    exit 1
+fi
+
+source "$VERSION_TMP"
+rm -f "$VERSION_TMP"
+
+# 验证关键变量是否加载成功
+if [ -z "$MATRIX_VERSION" ]; then
+    log_error "版本信息加载失败 (MATRIX_VERSION 为空)"
+    exit 1
+fi
+
+log_info "最新版本: v${MATRIX_VERSION}"
+
+# ---------- 构建动态 URL ----------
+SERVER="${GITEE_RAW_BASE}/${MATRIX_VERSION}/install"
+RELEASE_URL="${GITEE_RELEASE_BASE}/${RELEASE_TAG}"
 
 # ---------- 系统架构检测 ----------
 OS=$(uname -s)
@@ -100,25 +123,25 @@ log_info "创建目录..."
 mkdir -p "$INSTALL_DIR"/{bin,data,config,settings,logs,webui} "$CLI_DIR" "$JDK_DIR"
 log_info "✓ 目录就绪"
 
-# ---------- 保存服务器地址 (供 matrix update 使用) ----------
-echo "$SERVER" > "$INSTALL_DIR/config/server.url"
-echo "$RELEASE_URL" > "$INSTALL_DIR/config/release.url"
-log_info "✓ 服务器地址已保存"
+# ---------- 保存服务器地址和版本号 (供 matrix update 使用) ----------
+echo "$LATEST_VERSION_URL" > "$INSTALL_DIR/config/server.url"
+echo "$MATRIX_VERSION" > "$INSTALL_DIR/config/version"
+log_info "✓ 服务器地址和版本号已保存"
 
 # ---------- 下载 JAR（从 Release 附件下载分卷并合并） ----------
-JAR_FILE="$INSTALL_DIR/matrix-local-1.0.2.jar"
+JAR_FILE="$INSTALL_DIR/$JAR_FILE_NAME"
 TMP_DIR="$INSTALL_DIR/.tmp"
 
 log_info "下载 JAR (分卷文件) ..."
 mkdir -p "$TMP_DIR"
 
 # 下载分卷
-curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.z01" -o "$TMP_DIR/matrix-local-1.0.2.part.z01" || {
-    log_error "下载 matrix-local-1.0.2.part.z01 失败"
+curl -# -fL "$RELEASE_URL/$JAR_PART_Z01" -o "$TMP_DIR/$JAR_PART_Z01" || {
+    log_error "下载 $JAR_PART_Z01 失败"
     exit 1
 }
-curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.zip" -o "$TMP_DIR/matrix-local-1.0.2.part.zip" || {
-    log_error "下载 matrix-local-1.0.2.part.zip 失败"
+curl -# -fL "$RELEASE_URL/$JAR_PART_ZIP" -o "$TMP_DIR/$JAR_PART_ZIP" || {
+    log_error "下载 $JAR_PART_ZIP 失败"
     exit 1
 }
 log_info "✓ 分卷下载完成"
@@ -132,7 +155,7 @@ MERGED=false
 # 方法1: 使用 7z (直接解压分卷)
 if command -v 7z &>/dev/null; then
     log_info "尝试 7z 解压 ..."
-    7z x matrix-local-1.0.2.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
+    7z x "$JAR_PART_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
     if [ -f "$JAR_FILE" ] && file "$JAR_FILE" | grep -qiE "zip|java|archive"; then
         log_info "✓ 7z 解压成功"
         MERGED=true
@@ -142,9 +165,9 @@ fi
 # 方法2: 使用 zip -F 合并分卷后 unzip 解压
 if [ "$MERGED" = false ] && command -v zip &>/dev/null; then
     log_info "尝试 zip -F + unzip 合并 ..."
-    cp matrix-local-1.0.2.part.z01 matrix-local-1.0.2.z01
-    cp matrix-local-1.0.2.part.zip matrix-local-1.0.2.zip
-    zip -F matrix-local-1.0.2.zip --out combined.zip >/dev/null 2>&1
+    cp "$JAR_PART_Z01" "${JAR_FILE_NAME%.jar}.z01"
+    cp "$JAR_PART_ZIP" "${JAR_FILE_NAME%.jar}.zip"
+    zip -F "${JAR_FILE_NAME%.jar}.zip" --out combined.zip >/dev/null 2>&1
     if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
         unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
         if [ -f "$JAR_FILE" ]; then
@@ -157,7 +180,7 @@ fi
 # 方法3: 使用 cat 合并分卷后 unzip 解压
 if [ "$MERGED" = false ] && command -v unzip &>/dev/null; then
     log_info "尝试 cat + unzip 合并 ..."
-    cat matrix-local-1.0.2.part.z01 matrix-local-1.0.2.part.zip > combined.zip 2>/dev/null
+    cat "$JAR_PART_Z01" "$JAR_PART_ZIP" > combined.zip 2>/dev/null
     if [ -f combined.zip ] && unzip -tqq combined.zip 2>/dev/null; then
         unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
         if [ -f "$JAR_FILE" ]; then
@@ -172,9 +195,9 @@ rm -rf "$TMP_DIR"
 
 if [ "$MERGED" = false ]; then
     log_error "JAR 分卷合并失败，请手动处理："
-    log_error "1. 从 https://gitee.com/za96421955/matrix/releases/tag/v1.0.2 下载 matrix-local-1.0.2.part.z01 和 matrix-local-1.0.2.part.zip"
-    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 matrix-local-1.0.2.part.zip"
-    log_error "3. 将得到的 matrix-local-1.0.2.jar 放入 $INSTALL_DIR/"
+    log_error "1. 从 $RELEASE_URL 下载 $JAR_PART_Z01 和 $JAR_PART_ZIP"
+    log_error "2. 将两个文件放在同一目录，使用 7-Zip/WinRAR 解压 $JAR_PART_ZIP"
+    log_error "3. 将得到的 $JAR_FILE_NAME 放入 $INSTALL_DIR/"
     log_error "4. 重新运行本安装脚本"
     exit 1
 fi
@@ -244,10 +267,10 @@ log_info "✓ settings/ 完成"
 
 # ---------- 下载 webui ----------
 log_info "下载 webui ..."
-WEBUI_ZIP="$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
-curl -# -fL "$RELEASE_URL/matrix-webui-1.0.2.zip" -o "$WEBUI_ZIP" || {
+WEBUI_ZIP="$INSTALL_DIR/webui/$WEBUI_ZIP_NAME"
+curl -# -fL "$RELEASE_URL/$WEBUI_ZIP_NAME" -o "$WEBUI_ZIP" || {
     log_warn "webui 下载失败，可稍后手动下载"
-    log_warn "下载地址: $RELEASE_URL/matrix-webui-1.0.2.zip"
+    log_warn "下载地址: $RELEASE_URL/$WEBUI_ZIP_NAME"
 }
 if [ -f "$WEBUI_ZIP" ]; then
     log_info "解压 webui ..."
@@ -265,33 +288,33 @@ fi
 
 # ---------- JDK 下载 ----------
 log_info "检查 JDK ..."
-JDK_VERSION="21.0.22"
 
-# Microsoft JDK 下载 URL 映射
+# 根据系统架构选择 JDK 下载 URL 和文件名
+JDK_VAR_PREFIX="os_type: ${os_type}; arch_type: ${arch_type}"
 case "${os_type}-${arch_type}" in
     linux-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-linux-x64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.22-linux-x64.tar.gz"
+        JDK_DL_URL=$JDK_URL_LINUX_X86_64
+        JDK_FILENAME=$JDK_FILENAME_LINUX_X86_64
         ;;
     linux-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-linux-aarch64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.22-linux-aarch64.tar.gz"
+        JDK_DL_URL=$JDK_URL_LINUX_ARM64
+        JDK_FILENAME=$JDK_FILENAME_LINUX_ARM64
         ;;
     darwin-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-macos-x64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.22-macos-x64.tar.gz"
+        JDK_DL_URL=$JDK_URL_MAC_X86_64
+        JDK_FILENAME=$JDK_FILENAME_MAC_X86_64
         ;;
     darwin-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-macos-aarch64.tar.gz"
-        JDK_FILENAME="microsoft-jdk-21.0.22-macos-aarch64.tar.gz"
+        JDK_DL_URL=$JDK_URL_MAC_ARM64
+        JDK_FILENAME=$JDK_FILENAME_MAC_ARM64
         ;;
     windows-x64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-windows-x64.zip"
-        JDK_FILENAME="microsoft-jdk-21.0.22-windows-x64.zip"
+        JDK_DL_URL=$JDK_URL_WIN_X86_64
+        JDK_FILENAME=$JDK_FILENAME_WIN_X86_64
         ;;
     windows-aarch64)
-        JDK_URL="https://aka.ms/download-jdk/microsoft-jdk-21.0.22-windows-aarch64.zip"
-        JDK_FILENAME="microsoft-jdk-21.0.22-windows-aarch64.zip"
+        JDK_DL_URL=$JDK_URL_WIN_ARM64
+        JDK_FILENAME=$JDK_FILENAME_WIN_ARM64
         ;;
 esac
 
@@ -300,8 +323,8 @@ JDK_ARCHIVE="$JDK_DIR/$JDK_FILENAME"
 if [ -f "$JDK_ARCHIVE" ]; then
     log_info "✓ JDK 已存在"
 else
-    log_info "下载 JDK 21 ..."
-    curl -# -L "$JDK_URL" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
+    log_info "下载 JDK $JDK_VERSION ..."
+    curl -# -L "$JDK_DL_URL" -o "$JDK_ARCHIVE" || { log_error "JDK 下载失败"; exit 1; }
     mkdir -p "$JDK_DIR"
     if [ "$os_type" = "windows" ]; then
         unzip -q "$JDK_ARCHIVE" -d "$JDK_DIR" && mv "$JDK_DIR"/jdk-*/* "$JDK_DIR/" 2>/dev/null && rmdir "$JDK_DIR"/jdk-* 2>/dev/null
@@ -309,6 +332,7 @@ else
         tar -xzf "$JDK_ARCHIVE" -C "$JDK_DIR" --strip-components=1
     fi
     [ $? -ne 0 ] && { log_error "JDK 解压失败"; exit 1; }
+    rm -f "$JDK_ARCHIVE"
     log_info "✓ JDK 下载完成"
 fi
 
@@ -317,6 +341,45 @@ cat > "$CLI_DIR/matrix" << 'CLIEOF'
 #!/bin/bash
 INSTALL_DIR="$HOME/.matrix/local"
 WEBUI_PORT=10908
+
+# ---------- 辅助函数 ----------
+get_latest_version_info() {
+    local url_file="$INSTALL_DIR/config/server.url"
+    local version_url
+    if [ -f "$url_file" ]; then
+        version_url=$(cat "$url_file")
+    else
+        version_url="https://gitee.com/za96421955/matrix/raw/latest/install/latest-version.txt"
+    fi
+    local tmpfile
+    tmpfile=$(mktemp)
+    if ! curl -sL "$version_url" -o "$tmpfile"; then
+        echo "无法获取版本信息"
+        rm -f "$tmpfile"
+        return 1
+    fi
+    source "$tmpfile"
+    rm -f "$tmpfile"
+    return 0
+}
+
+compare_versions() {
+    # 语义化版本比较，返回: -1(本地<远程), 0(相等), 1(本地>远程)
+    local v1="$1" v2="$2"
+    local IFS=.
+    local a1 a2 a3 b1 b2 b3
+    read -r a1 a2 a3 <<< "$v1"
+    read -r b1 b2 b3 <<< "$v2"
+    a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
+    b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
+    if [ "$a1" -gt "$b1" ] 2>/dev/null; then return 1; fi
+    if [ "$a1" -lt "$b1" ] 2>/dev/null; then return 255; fi
+    if [ "$a2" -gt "$b2" ] 2>/dev/null; then return 1; fi
+    if [ "$a2" -lt "$b2" ] 2>/dev/null; then return 255; fi
+    if [ "$a3" -gt "$b3" ] 2>/dev/null; then return 1; fi
+    if [ "$a3" -lt "$b3" ] 2>/dev/null; then return 255; fi
+    return 0
+}
 
 case "$1" in
     status)
@@ -349,49 +412,93 @@ case "$1" in
         bash "$INSTALL_DIR/bin/restart.sh"
         ;;
     update)
-        echo "正在升级 matrix ..."
-        bash "$INSTALL_DIR/bin/stop.sh" 2>/dev/null
-        if [ -f "$INSTALL_DIR/config/release.url" ]; then
-            RELEASE_URL=$(cat "$INSTALL_DIR/config/release.url")
-            echo "下载最新 JAR ..."
-            TMP_DIR="$INSTALL_DIR/.tmp"
-            mkdir -p "$TMP_DIR"
-            curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.z01" -o "$TMP_DIR/matrix-local-1.0.2.part.z01" || { echo "下载分卷1失败"; exit 1; }
-            curl -# -fL "$RELEASE_URL/matrix-local-1.0.2.part.zip" -o "$TMP_DIR/matrix-local-1.0.2.part.zip" || { echo "下载分卷2失败"; exit 1; }
-            # 尝试合并
-            cd "$TMP_DIR"
-            if command -v 7z &>/dev/null; then
-                7z x matrix-local-1.0.2.part.zip -o"$INSTALL_DIR" -y >/dev/null 2>&1
-            elif command -v zip &>/dev/null; then
-                cp matrix-local-1.0.2.part.z01 matrix-local-1.0.2.z01
-                cp matrix-local-1.0.2.part.zip matrix-local-1.0.2.zip
-                zip -F matrix-local-1.0.2.zip --out combined.zip >/dev/null 2>&1
-                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
-            else
-                cat matrix-local-1.0.2.part.z01 matrix-local-1.0.2.part.zip > combined.zip 2>/dev/null
-                unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
-            fi
-            rm -rf "$TMP_DIR"
-            echo "下载最新 webui ..."
-            curl -# -fL "$RELEASE_URL/matrix-webui-1.0.2.zip" -o "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
-            if [ -f "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip" ]; then
-                unzip -o "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
-                mv "$INSTALL_DIR/webui/dist/"* "$INSTALL_DIR/webui/" 2>/dev/null
-                mv "$INSTALL_DIR/webui/dist/".* "$INSTALL_DIR/webui/" 2>/dev/null
-                rm -rf "$INSTALL_DIR/webui/dist" "$INSTALL_DIR/webui/matrix-webui-1.0.2.zip"
-            fi
-            echo "下载最新 bin 脚本 ..."
-            SERVER=$(cat "$INSTALL_DIR/config/server.url" 2>/dev/null)
-            [ -n "$SERVER" ] && for f in start.sh stop.sh restart.sh; do
-                curl -# -fL "$SERVER/bin/$f" -o "$INSTALL_DIR/bin/$f" 2>/dev/null || echo "下载 $f 失败，跳过"
-            done
-            chmod +x "$INSTALL_DIR/bin/"*.sh
-            echo "升级完成，正在重启服务 ..."
-            bash "$INSTALL_DIR/bin/start.sh"
-        else
-            echo "错误: 找不到 release.url，无法更新"
-            exit 1
+        echo "检查更新 ..."
+        # 获取远程版本信息
+        get_latest_version_info || { echo "更新失败: 无法获取版本信息"; exit 1; }
+        REMOTE_VERSION="$MATRIX_VERSION"
+        REMOTE_TAG="$RELEASE_TAG"
+        REMOTE_BASE="$GITEE_RELEASE_BASE"
+        RAW_BASE="$GITEE_RAW_BASE"
+        JAR_Z01="$JAR_PART_Z01"
+        JAR_ZIP="$JAR_PART_ZIP"
+        JAR_FINAL="$JAR_FILE_NAME"
+        WEBUI_ZIP_FILE="$WEBUI_ZIP_NAME"
+
+        # 读取本地版本
+        LOCAL_VERSION=""
+        [ -f "$INSTALL_DIR/config/version" ] && LOCAL_VERSION=$(cat "$INSTALL_DIR/config/version")
+
+        # 比较版本
+        if [ -n "$LOCAL_VERSION" ]; then
+            compare_versions "$LOCAL_VERSION" "$REMOTE_VERSION"
+            case $? in
+                0)
+                    echo "✓ 已是最新版本 v${LOCAL_VERSION}"
+                    exit 0
+                    ;;
+                1)
+                    echo "本地版本 v${LOCAL_VERSION} 高于远程 v${REMOTE_VERSION}，无需更新"
+                    exit 0
+                    ;;
+            esac
         fi
+
+        echo "发现新版本: v${REMOTE_VERSION} (当前: ${LOCAL_VERSION:-未知})"
+        echo "正在升级 matrix ..."
+
+        # 停止服务
+        bash "$INSTALL_DIR/bin/stop.sh" 2>/dev/null
+
+        # 更新 JAR
+        RELEASE_URL="${REMOTE_BASE}/${REMOTE_TAG}"
+        TMP_DIR="$INSTALL_DIR/.tmp"
+        mkdir -p "$TMP_DIR"
+
+        echo "下载最新 JAR ..."
+        curl -# -fL "$RELEASE_URL/$JAR_Z01" -o "$TMP_DIR/$JAR_Z01" || { echo "下载分卷1失败"; exit 1; }
+        curl -# -fL "$RELEASE_URL/$JAR_ZIP" -o "$TMP_DIR/$JAR_ZIP" || { echo "下载分卷2失败"; exit 1; }
+
+        # 尝试合并
+        cd "$TMP_DIR"
+        if command -v 7z &>/dev/null; then
+            7z x "$JAR_ZIP" -o"$INSTALL_DIR" -y >/dev/null 2>&1
+        elif command -v zip &>/dev/null; then
+            cp "$JAR_Z01" "${JAR_FINAL%.jar}.z01"
+            cp "$JAR_ZIP" "${JAR_FINAL%.jar}.zip"
+            zip -F "${JAR_FINAL%.jar}.zip" --out combined.zip >/dev/null 2>&1
+            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+        else
+            cat "$JAR_Z01" "$JAR_ZIP" > combined.zip 2>/dev/null
+            unzip -o combined.zip -d "$INSTALL_DIR" >/dev/null 2>&1
+        fi
+        rm -rf "$TMP_DIR"
+
+        # 更新 webui
+        echo "下载最新 webui ..."
+        WEBUI_TMP_ZIP="$INSTALL_DIR/webui/$WEBUI_ZIP_FILE"
+        curl -# -fL "$RELEASE_URL/$WEBUI_ZIP_FILE" -o "$WEBUI_TMP_ZIP" 2>/dev/null
+        if [ -f "$WEBUI_TMP_ZIP" ]; then
+            unzip -o "$WEBUI_TMP_ZIP" -d "$INSTALL_DIR/webui/" >/dev/null 2>&1
+            mv "$INSTALL_DIR/webui/dist/"* "$INSTALL_DIR/webui/" 2>/dev/null
+            mv "$INSTALL_DIR/webui/dist/".* "$INSTALL_DIR/webui/" 2>/dev/null
+            rm -rf "$INSTALL_DIR/webui/dist" "$WEBUI_TMP_ZIP"
+        else
+            echo "webui 下载失败，跳过"
+        fi
+
+        # 更新 bin 脚本
+        echo "下载最新 bin 脚本 ..."
+        SERVER_URL="${RAW_BASE}/${REMOTE_VERSION}/install"
+        for f in start.sh stop.sh restart.sh; do
+            curl -# -fL "$SERVER_URL/bin/$f" -o "$INSTALL_DIR/bin/$f" 2>/dev/null || echo "下载 $f 失败，跳过"
+        done
+        chmod +x "$INSTALL_DIR/bin/"*.sh
+
+        # 更新版本号
+        echo "$REMOTE_VERSION" > "$INSTALL_DIR/config/version"
+
+        echo "升级完成，正在重启服务 ..."
+        bash "$INSTALL_DIR/bin/start.sh"
         ;;
     uninstall)
         bash "$INSTALL_DIR/bin/stop.sh" 2>/dev/null

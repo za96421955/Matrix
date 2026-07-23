@@ -1049,6 +1049,15 @@ switch ($Command) {
             }
         }
 
+        # 创建/更新 matrix.cmd 包装器
+        $MatrixCmdPath = Join-Path $CliDir "matrix.cmd"
+        $cmdContent = @'
+@echo off
+powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
+'@
+        $cmdContent | Out-File -FilePath $MatrixCmdPath -Encoding ASCII -Force
+        Write-Log "INFO" "已更新 CLI 包装器: $MatrixCmdPath"
+
         # 更新版本号
         [System.IO.File]::WriteAllText($localVersionPath, $remoteVersion, [System.Text.UTF8Encoding]::new($false))
 
@@ -1113,6 +1122,14 @@ switch ($Command) {
 $matrixCliContent | Out-File -FilePath $MatrixCliPath -Encoding UTF8 -Force
 Write-Log "INFO" "已创建 CLI: $MatrixCliPath"
 
+# 创建 matrix.cmd 包装器（使 matrix 命令可在 cmd/PowerShell 中直接使用）
+$MatrixCmdPath = Join-Path $CliDir "matrix.cmd"
+$cmdContent = @'
+@echo off
+powershell -ExecutionPolicy Bypass -File "%~dpn0.ps1" %*
+'@
+$cmdContent | Out-File -FilePath $MatrixCmdPath -Encoding ASCII -Force
+Write-Log "INFO" "已创建 CLI 包装器: $MatrixCmdPath"
 # ==========================================
 # 配置 PATH
 # ==========================================

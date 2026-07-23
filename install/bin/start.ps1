@@ -52,7 +52,6 @@ if (-not (Test-Path $BinDir)) {
 # ---- 检测 JDK 21 ----
 function Find-Jdk21 {
     # ---- 优先级1: 检查 ~/.jdks/jdk-21* (IDE JDK) ----
-    # 对应 start.sh step1: check ~/.jdks for existing JDK21
     $jdksPattern = Join-Path (Join-Path $env:USERPROFILE ".jdks") "jdk-21*"
     $jdksDirs = Get-ChildItem -Path $jdksPattern -Directory -ErrorAction SilentlyContinue
     if ($jdksDirs -and $jdksDirs.Count -gt 0) {
@@ -75,7 +74,6 @@ function Find-Jdk21 {
     }
 
     # ---- 优先级2: 检查系统 PATH 中的 java (java -version) ----
-    # 对应 start.sh step2: check system java -version
     $sysJava = Get-Command "java.exe" -ErrorAction SilentlyContinue
     if (-not $sysJava) {
         $sysJava = Get-Command "java" -ErrorAction SilentlyContinue
@@ -88,7 +86,6 @@ function Find-Jdk21 {
             Write-Log "INFO" "✓系统JDK版本检查通过"
             return $javaHome
         }
-        # 提取版本号用于日志
         $jdkVersion = if ($versionOutput -match '([0-9]+\.[0-9]+\.[0-9]+)') { $Matches[1] } else { "未知" }
         Write-Log "WARN" "需要JDK21，当前版本为 $jdkVersion"
     }
@@ -122,14 +119,12 @@ function Find-Jdk21 {
         return $JdksDir
     }
 
-    # ---- 优先级5: 从本地 jdk21/ 目录解压 (对应 start.sh step3: install JDK21) ----
-    # 使用脚本所在目录的上级定位 jdk21 包目录
+    # ---- 优先级5: 从本地 jdk21/ 目录解压 ----
     $jdksPackageDir = Join-Path (Join-Path (Join-Path $BinDir "..") "..") "jdk21"
     if (-not (Test-Path $jdksPackageDir)) {
         $jdksPackageDir = Join-Path (Join-Path $LocalDir "..") "jdk21"
     }
     if (Test-Path $jdksPackageDir) {
-        # Windows 上查找 zip 文件
         $bundledZip = Join-Path $jdksPackageDir "*.zip"
         $zipFiles = Get-ChildItem -Path $bundledZip -ErrorAction SilentlyContinue
         if ($zipFiles -and $zipFiles.Count -gt 0) {
@@ -157,7 +152,6 @@ function Find-Jdk21 {
     return $null
 }
 
-
 # ---- 查找 JAR 文件 ----
 function Find-MatrixJar {
     $jarPattern = Join-Path $LocalDir "matrix-local-*.jar"
@@ -168,7 +162,6 @@ function Find-MatrixJar {
 
     $jarFile = $jarFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-    # 校验 JAR 完整性
     try {
         $stream = [System.IO.File]::OpenRead($jarFile.FullName)
         $reader = New-Object System.IO.BinaryReader($stream)
@@ -189,12 +182,10 @@ function Find-MatrixJar {
     return $jarFile.FullName
 }
 
-# ---- 停止旧进程（优雅停机 + 强制兜底） ----
-# 对应 start.sh 的旧进程停止逻辑（PID文件 + 残留进程检查）
+# ---- 停止旧进程 ----
 function Stop-OldProcess {
     param([string]$PidFile, [string]$ProcessName)
 
-    # 第一层：通过 PID 文件停止
     if (Test-Path $PidFile) {
         $oldPid = Get-Content $PidFile -Raw | ForEach-Object { $_.Trim() }
         if ($oldPid) {
@@ -202,17 +193,12 @@ function Stop-OldProcess {
                 $proc = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
                 if ($proc) {
                     Write-Log "INFO" "检测到旧进程 (PID: $oldPid)，正在停止..."
-                    # 优雅关闭：先尝试 CloseMainWindow（对应 start.sh 的 kill -TERM）
                     $null = $proc.CloseMainWindow()
-                    # 等待最多10秒，每秒检查进程是否退出（对应 start.sh 的 for i in $(seq 1 10)）
                     for ($i = 0; $i -lt 10; $i++) {
                         $procCheck = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
-                        if (-not $procCheck) {
-                            break
-                        }
+                        if (-not $procCheck) { break }
                         Start-Sleep -Seconds 1
                     }
-                    # 如果10秒后仍未退出，强制终止（对应 start.sh 的 kill -9）
                     $procCheck = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
                     if ($procCheck) {
                         Write-Log "WARN" "旧进程未在10秒内退出，强制终止"
@@ -226,12 +212,9 @@ function Stop-OldProcess {
                 Write-Log "WARN" "停止进程 $oldPid 时出错: $_"
             }
         }
-        # 删除旧 PID 文件（对应 start.sh 的 rm -f "$SCRIPT_DIR/app.pid"）
         Remove-Item -Path $PidFile -Force -ErrorAction SilentlyContinue
     }
 
-    # 第二层：通过命令行匹配残留进程（对应 start.sh 的 pgrep -f "java.*$(basename "$JAR_FILE")"）
-    # 用于 PID 文件丢失或记录错误时的兜底清理
     try {
         $procs = Get-CimInstance Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue
         foreach ($proc in $procs) {
@@ -242,7 +225,6 @@ function Stop-OldProcess {
             }
         }
     } catch {
-        # 回退到 Get-WmiObject（兼容 PS5.1 以下版本）
         try {
             $procs = Get-WmiObject Win32_Process -Filter "Name='java.exe'" -ErrorAction SilentlyContinue
             foreach ($proc in $procs) {
@@ -285,9 +267,12 @@ function Start-WebuiProxyPython {
         $startupInfo.RedirectStandardError = $true
         $startupInfo.UseShellExecute = $false
         $startupInfo.CreateNoWindow = $true
+
+        # 环境变量：强制监听 127.0.0.1，避免防火墙拦截
         $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
         $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
         $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
+        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_HOST"] = "127.0.0.1"
 
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $startupInfo
@@ -296,7 +281,7 @@ function Start-WebuiProxyPython {
         Start-Sleep -Seconds 2
 
         if (-not $proc.HasExited) {
-            Write-Log "INFO" "WebUI 代理已启动，PID=$($proc.Id)"
+            Write-Log "INFO" "WebUI 代理已启动 (监听 127.0.0.1:$WebuiPort)，PID=$($proc.Id)"
             return $true
         } else {
             $stderr = $proc.StandardError.ReadToEnd()
@@ -319,10 +304,11 @@ function Start-WebuiProxyPowershell {
         Write-Log "INFO" "使用 PowerShell 内置代理 (后端: $BackendUrl)"
 
         $http = [System.Net.HttpListener]::new()
-        $http.Prefixes.Add("http://localhost:10908/")
+        # 也改为只监听 127.0.0.1
+        $http.Prefixes.Add("http://127.0.0.1:10908/")
         $http.Start()
 
-        Write-Log "INFO" "PowerShell 代理已启动在 http://localhost:10908/"
+        Write-Log "INFO" "PowerShell 代理已启动在 http://127.0.0.1:10908/"
         Write-Log "WARN" "注意: PowerShell 内置代理功能有限，建议安装 Python 3 获得完整功能"
         return $true
     } catch {
@@ -336,20 +322,17 @@ function Start-WebuiProxy {
     param([string]$ProxyScript)
 
     $webuiDir = Join-Path $LocalDir "webui"
-    $backendUrl = "http://localhost:10906"
+    $backendUrl = "http://localhost:10906"   # 后端依然用 localhost 无妨
 
-    # 优先尝试 Python（传递端口，与 start.sh 的 MATRIX_BACKEND_PORT / MATRIX_WEBUI_PORT 一致）
     if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
         return $true
     }
 
-    # Python 失败，尝试 PowerShell 内置代理
     Write-Log "WARN" "Python 不可用，尝试 PowerShell 内置代理..."
     if (Start-WebuiProxyPowershell -WebuiDir $webuiDir -BackendUrl $backendUrl) {
         return $true
     }
 
-    # 都失败，提示安装 Python
     Write-Log "ERROR" "未能启动 WebUI 代理。"
     Write-Log "ERROR" "请安装 Python 3 后重试。"
     Write-Log "INFO" "可以从 https://www.python.org/downloads/ 下载安装"
@@ -392,7 +375,6 @@ if (-not (Test-Path $LogsDir)) {
 # 4. 停止旧进程
 Write-Log "INFO" "检查并停止旧进程..."
 Stop-OldProcess -PidFile $ServicePidFile -ProcessName "matrix-local"
-# 也停止 WebUI 代理相关进程
 Stop-OldProcess -PidFile $WebuiPidFile -ProcessName "proxy_server"
 Start-Sleep -Seconds 2
 

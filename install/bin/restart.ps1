@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Matrix 本地服务重启脚本 (Windows)
 .DESCRIPTION

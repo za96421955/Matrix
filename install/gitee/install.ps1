@@ -130,7 +130,7 @@ $RawConfig = Parse-VersionFile -FilePath $VersionFile
 # 展开所有变量引用（需要多次迭代，因为变量可能嵌套引用）
 for ($i = 0; $i -lt 20; $i++) {
     $changed = $false
-    foreach ($key in $RawConfig.Keys) {
+    foreach ($key in @($RawConfig.Keys)) {
         $oldValue = $RawConfig[$key]
         $newValue = Resolve-VariableRefs -Config $RawConfig -Value $oldValue
         if ($newValue -ne $oldValue) {

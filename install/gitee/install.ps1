@@ -691,8 +691,7 @@ Write-Log "INFO" "清理临时文件..."
 }
 
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "Matrix 安装完成，执行以下指令，启动服务："
-Write-Log "INFO" "matrix start"
+Write-Log "INFO" "Matrix 安装完成，启动服务"
 Write-Log "INFO" "=========================================="
 $stopScript = Join-Path $BinDir "restart.ps1"
 if (Test-Path $stopScript) { & $stopScript }

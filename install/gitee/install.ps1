@@ -445,41 +445,56 @@ function Write-Log($Level="INFO", $Message) {
 }
 
 function Get-LatestVersionInfo {
-    $url = "https://raw.giteeusercontent.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
+    # 使用与安装脚本一致的 URL
+    $url = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
     try {
-        $content = (New-Object System.Net.WebClient).DownloadString($url)
-        $res = @{}
-        # 第一遍：按 = 分割，记录所有键值对（支持变量名含数字，处理 \r 行尾）
-        $reader = [System.IO.StringReader]::new($content)
-        while (($line = $reader.ReadLine()) -ne $null) {
-            $trimmed = $line.Trim()
-            if ($trimmed -eq "" -or $trimmed.StartsWith("#")) { continue }
-            $eq = $trimmed.IndexOf("=")
-            if ($eq -gt 0) {
-                $key = $trimmed.Substring(0, $eq).Trim()
-                $value = $trimmed.Substring($eq + 1).Trim()
-                $res[$key] = $value
-            }
+        Write-Log "INFO" "正在获取版本信息..."
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("User-Agent", "Matrix-CLI/1.0.3")
+        $content = $wc.DownloadString($url)
+    } catch {
+        Write-Log "ERROR" "无法下载版本信息文件: $_"
+        return $null
+    }
+
+    $res = @{}
+    $reader = [System.IO.StringReader]::new($content)
+    while (($line = $reader.ReadLine()) -ne $null) {
+        $trimmed = $line.Trim()
+        if ($trimmed -eq "" -or $trimmed.StartsWith("#")) { continue }
+        $eq = $trimmed.IndexOf("=")
+        if ($eq -gt 0) {
+            $key = $trimmed.Substring(0, $eq).Trim()
+            $value = $trimmed.Substring($eq + 1).Trim()
+            $res[$key] = $value
         }
-        $reader.Dispose()
-        # 第二遍：多轮解析 ${...} 变量引用
-        for ($i = 0; $i -lt 10; $i++) {
-            $changed = $false
-            foreach ($k in @($res.Keys)) {
-                $matches = [regex]::Matches($res[$k], '\$\{(\w+)\}')
-                if ($matches.Count -eq 0) { continue }
-                foreach ($m in $matches) {
-                    $var = $m.Groups[1].Value
-                    if ($res.ContainsKey($var)) {
-                        $res[$k] = $res[$k].Replace($m.Groups[0].Value, $res[$var])
-                        $changed = $true
-                    }
+    }
+    $reader.Dispose()
+
+    # 多轮变量引用替换
+    for ($i = 0; $i -lt 10; $i++) {
+        $changed = $false
+        foreach ($k in @($res.Keys)) {
+            $matches = [regex]::Matches($res[$k], '\$\{(\w+)\}')
+            if ($matches.Count -eq 0) { continue }
+            foreach ($m in $matches) {
+                $var = $m.Groups[1].Value
+                if ($res.ContainsKey($var)) {
+                    $res[$k] = $res[$k].Replace($m.Groups[0].Value, $res[$var])
+                    $changed = $true
                 }
             }
-            if (-not $changed) { break }
         }
-        return $res
-    } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }
+        if (-not $changed) { break }
+    }
+
+    # 必须包含 MATRIX_VERSION
+    if (-not $res.ContainsKey("MATRIX_VERSION") -or [string]::IsNullOrEmpty($res["MATRIX_VERSION"])) {
+        Write-Log "ERROR" "版本信息中缺少 MATRIX_VERSION，请检查网络或文件内容"
+        return $null
+    }
+
+    return $res
 }
 
 function Download-File {
@@ -556,11 +571,12 @@ switch ($Command) {
     "update" {
         Write-Log "INFO" "检查更新..."
         $info = Get-LatestVersionInfo
-        if (-not $info) { exit 1 }
+        if (-not $info) {
+            Write-Log "ERROR" "获取版本信息失败，更新中止"
+            exit 1
+        }
         $rv = $info["MATRIX_VERSION"]
-        Write-Log "DEBUG" "返回的键: $($info.Keys -join ', ')"
-        Write-Log "DEBUG" "MATRIX_VERSION 值: '$rv'"
-        Write-Log "INFO" "更新到 v$rv"
+        Write-Log "INFO" "当前最新版本: v$rv"
         $stopScript = Join-Path $BinDir "stop.ps1"
         if (Test-Path $stopScript) { & $stopScript }
         Start-Sleep 2
@@ -673,18 +689,18 @@ Write-Log "INFO" "清理临时文件..."
 # 完成
 # ==========================================
 
-Write-Log "INFO" "=========================================="
-Write-Log "INFO" "  Matrix 安装完成！"
-Write-Log "INFO" "=========================================="
-Write-Log "INFO" "WebUI: http://localhost:10908"
-Write-Log "INFO" "API:   http://localhost:10906"
-Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
-# 使用 matrix restart 后台启动服务
-$matrixScript = Join-Path $BinDir "matrix.ps1"
-if (Test-Path $matrixScript) {
-    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$matrixScript`" restart" -WindowStyle Hidden
+# 执行 matrix restart 启动服务
+$matrixCmd = Join-Path $CliDir "matrix.ps1"
+if (Test-Path $matrixCmd) {
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$matrixCmd`" restart" -WindowStyle Hidden
     Start-Sleep 3
     Start-Process "http://localhost:10908"
 } else {
-    Write-Log "ERROR" "未找到 matrix.ps1"
+    Write-Log "ERROR" "未找到 matrix CLI"
 }
+
+Write-Log "INFO" "=========================================="
+Write-Log "INFO" "  Matrix 安装完成！"
+Write-Log "INFO" "=========================================="
+Write-Log "INFO" "前台页面:     http://localhost:10908"
+Write-Log "INFO" "后台服务:     http://localhost:10906"

@@ -128,7 +128,9 @@ if __name__ == "__main__":
         server.shutdown()
         sys.exit(0)
 
-    signal.signal(signal.SIGTERM, shutdown)
+    # 注册信号处理，Windows 上不存在 SIGTERM，需要条件判断
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
 
     try:

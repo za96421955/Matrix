@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/za96421955/Matrix/latest/install/gi
 ```
 ### 中国
 ```bash
-curl -fsSL https://gitee.com/za96421955/matrix/raw/release/latest/install/gitee/install.sh | bash
+curl -fsSL https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.sh | bash
 ```
 
 ### 2.2. Windows

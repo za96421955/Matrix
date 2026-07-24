@@ -660,7 +660,7 @@ Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
 # 自动启动服务
 $s = Join-Path $BinDir "restart.ps1"
 if (Test-Path $s) {
-    & $s
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$s`"" -WindowStyle Hidden
     if ($?) {
         Start-Sleep 3
         Start-Process "http://localhost:10908"

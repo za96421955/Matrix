@@ -445,7 +445,7 @@ function Write-Log($Level="INFO", $Message) {
 }
 
 function Get-LatestVersionInfo {
-    $url = if (Test-Path (Join-Path $ConfigDir "server.url")) { (Get-Content (Join-Path $ConfigDir "server.url") -Raw).Trim() } else { "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt" }
+    $url = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
     try {
         $content = (New-Object System.Net.WebClient).DownloadString($url)
         $res = @{}
@@ -656,7 +656,7 @@ Write-Log "INFO" "WebUI: http://localhost:10908"
 Write-Log "INFO" "API:   http://localhost:10906"
 Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
 # 自动启动服务
-$s = Join-Path $BinDir "start.ps1"
+$s = Join-Path $BinDir "restart.ps1"
 if (Test-Path $s) {
     & $s
     if ($?) {

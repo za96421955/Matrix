@@ -320,10 +320,9 @@ function Start-WebuiProxy {
         }
     }
 
-    Write-Log "ERROR" "Failed to start WebUI proxy. Python 3 not available."
-    Write-Log "INFO" "Please install Python 3 manually from https://www.python.org/downloads/"
-    Write-Log "INFO" "During installation, check 'Add Python to PATH'"
-    Write-Log "INFO" "After installation, re-run start.ps1"
+    Write-Log "ERROR" "WebUI 启动失败，Python 3 安装失败。请在管理员 PowerShell 执行以下指令，手动安装 Python 3："
+    Write-Log "ERROR" "winget install --id=Python.Python.3.12 --exact --silent --accept-package-agreements"
+    Write-Log "ERROR" ""
     return $false
 }
 

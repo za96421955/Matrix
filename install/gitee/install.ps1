@@ -536,6 +536,8 @@ switch ($Command) {
         $info = Get-LatestVersionInfo
         if (-not $info) { exit 1 }
         $rv = $info["MATRIX_VERSION"]
+        Write-Log "DEBUG" "返回的键: $($info.Keys -join ', ')"
+        Write-Log "DEBUG" "MATRIX_VERSION 值: '$rv'"
         Write-Log "INFO" "更新到 v$rv"
         $stopScript = Join-Path $BinDir "stop.ps1"
         if (Test-Path $stopScript) { & $stopScript }
@@ -662,9 +664,9 @@ if (Test-Path $s) {
     if ($?) {
         Start-Sleep 3
         Start-Process "http://localhost:10908"
-        [Environment]::Exit(0)
+        # [Environment]::Exit(0)
     }
 } else {
-    Write-Log "ERROR" "未找到 start.ps1"
+    Write-Log "ERROR" "未找到 restart.ps1"
 }
 pause

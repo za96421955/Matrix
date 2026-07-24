@@ -445,16 +445,36 @@ function Write-Log($Level="INFO", $Message) {
 }
 
 function Get-LatestVersionInfo {
-    $url = "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
+    $url = "https://raw.giteeusercontent.com/za96421955/matrix/raw/latest/install/gitee/latest-version.txt"
     try {
         $content = (New-Object System.Net.WebClient).DownloadString($url)
         $res = @{}
+        # 第一遍：按 = 分割，记录所有键值对（支持变量名含数字，处理 \r 行尾）
         foreach ($line in $content -split "`n") {
-            if ($line -match '^([A-Z_]+)=(.+)$') {
-                $k = $matches[1]
-                $v = $matches[2] -replace '\$\{(\w+)\}', { param($m) $res[$m.Groups[1].Value] }
-                $res[$k] = $v
+            $trimmed = $line.Trim()
+            if ($trimmed -eq "" -or $trimmed.StartsWith("#")) { continue }
+            $eq = $trimmed.IndexOf("=")
+            if ($eq -gt 0) {
+                $key = $trimmed.Substring(0, $eq).Trim()
+                $value = $trimmed.Substring($eq + 1).Trim()
+                $res[$key] = $value
             }
+        }
+        # 第二遍：多轮解析 ${...} 变量引用
+        for ($i = 0; $i -lt 10; $i++) {
+            $changed = $false
+            foreach ($k in @($res.Keys)) {
+                $matches = [regex]::Matches($res[$k], '\$\{(\w+)\}')
+                if ($matches.Count -eq 0) { continue }
+                foreach ($m in $matches) {
+                    $var = $m.Groups[1].Value
+                    if ($res.ContainsKey($var)) {
+                        $res[$k] = $res[$k].Replace($m.Groups[0].Value, $res[$var])
+                        $changed = $true
+                    }
+                }
+            }
+            if (-not $changed) { break }
         }
         return $res
     } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }

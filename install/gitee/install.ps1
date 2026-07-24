@@ -556,7 +556,7 @@ switch ($Command) {
                 $mergedOk = $false
                 # 7z
                 try {
-                    $7z = @( "${env:ProgramFiles}-Zipz.exe", "${env:ProgramFiles(x86)}-Zipz.exe" ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+                    $7z = @( "${env:ProgramFiles}\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe" ) | Where-Object { Test-Path $_ } | Select-Object -First 1
                     if (-not $7z -and (Get-Command "7z" -ErrorAction SilentlyContinue)) { $7z = (Get-Command "7z").Source }
                     if ($7z) {
                         Write-Log "INFO" "使用 7z 解压..."

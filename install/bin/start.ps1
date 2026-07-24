@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Matrix 本地服务启动脚本 (Windows)
 .DESCRIPTION

@@ -450,7 +450,8 @@ function Get-LatestVersionInfo {
         $content = (New-Object System.Net.WebClient).DownloadString($url)
         $res = @{}
         # 第一遍：按 = 分割，记录所有键值对（支持变量名含数字，处理 \r 行尾）
-        foreach ($line in $content -split "`n") {
+        $reader = [System.IO.StringReader]::new($content)
+        while (($line = $reader.ReadLine()) -ne $null) {
             $trimmed = $line.Trim()
             if ($trimmed -eq "" -or $trimmed.StartsWith("#")) { continue }
             $eq = $trimmed.IndexOf("=")
@@ -460,6 +461,7 @@ function Get-LatestVersionInfo {
                 $res[$key] = $value
             }
         }
+        $reader.Dispose()
         # 第二遍：多轮解析 ${...} 变量引用
         for ($i = 0; $i -lt 10; $i++) {
             $changed = $false
@@ -677,16 +679,12 @@ Write-Log "INFO" "=========================================="
 Write-Log "INFO" "WebUI: http://localhost:10908"
 Write-Log "INFO" "API:   http://localhost:10906"
 Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
-# 自动启动服务
-$s = Join-Path $BinDir "restart.ps1"
-if (Test-Path $s) {
-    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$s`"" -WindowStyle Hidden
-    if ($?) {
-        Start-Sleep 3
-        Start-Process "http://localhost:10908"
-        # [Environment]::Exit(0)
-    }
+# 使用 matrix restart 后台启动服务
+$matrixScript = Join-Path $BinDir "matrix.ps1"
+if (Test-Path $matrixScript) {
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$matrixScript`" restart" -WindowStyle Hidden
+    Start-Sleep 3
+    Start-Process "http://localhost:10908"
 } else {
-    Write-Log "ERROR" "未找到 restart.ps1"
+    Write-Log "ERROR" "未找到 matrix.ps1"
 }
-pause

@@ -439,6 +439,13 @@ $BinDir = Join-Path $LocalDir "bin"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
 
+# 确保使用 TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# 临时目录
+$TmpDir = Join-Path $env:TEMP "matrix-update"
+if (-not (Test-Path $TmpDir)) { New-Item -ItemType Directory -Path $TmpDir -Force | Out-Null }
+
 function Write-Log($Level="INFO", $Message) {
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message"
 }
@@ -459,7 +466,21 @@ function Get-LatestVersionInfo {
     } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }
 }
 
-
+function Download-File {
+    param($Url, $OutFile, $MaxRetries = 3)
+    for ($i = 1; $i -le $MaxRetries; $i++) {
+        try {
+            Write-Log "INFO" "下载中... ($i/$MaxRetries)"
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($Url, $OutFile)
+            return $true
+        } catch {
+            Write-Log "WARN" "下载失败 ($i/$MaxRetries): $_"
+            if ($i -eq $MaxRetries) { return $false }
+            Start-Sleep 2
+        }
+    }
+}
 
 switch ($Command) {
     "start" {
@@ -503,64 +524,69 @@ switch ($Command) {
         $info = Get-LatestVersionInfo
         if (-not $info) { exit 1 }
         $rv = $info["MATRIX_VERSION"]
-        # 不再比较版本，直接更新
         Write-Log "INFO" "更新到 v$rv"
         $stopScript = Join-Path $BinDir "stop.ps1"
         if (Test-Path $stopScript) { & $stopScript }
         Start-Sleep 2
         $releaseUrl = "$($info['RELEASE_BASE'])/$($info['RELEASE_TAG'])"
-        $jarPath = Join-Path $LocalDir $info['JAR_FILE_NAME']
-        $jarDownloaded = Download-File -Url "$releaseUrl/$($info['JAR_FILE_NAME'])" -Destination $jarPath -Label "matrix-local JAR"
-        if (-not $jarDownloaded) {
-            Write-Log "WARN" "完整 JAR 下载失败，尝试分卷下载..."
-            $z01Path = Join-Path $TmpDir $info['JAR_PART_Z01']
-            $zipPath = Join-Path $TmpDir $info['JAR_PART_ZIP']
-            $z01Ok = Download-File -Url "$releaseUrl/$($info['JAR_PART_Z01'])" -Destination $z01Path -Label "JAR 分卷 1/2"
-            $zipOk = Download-File -Url "$releaseUrl/$($info['JAR_PART_ZIP'])" -Destination $zipPath -Label "JAR 分卷 2/2"
-            if ($z01Ok -and $zipOk) {
-                Write-Log "INFO" "分卷下载完成，开始合并..."
-                $mergedOk = $false
-                # 7z
-                try {
-                    $7z = @( "${env:ProgramFiles}\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe" ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-                    if (-not $7z -and (Get-Command "7z" -ErrorAction SilentlyContinue)) { $7z = (Get-Command "7z").Source }
-                    if ($7z) {
-                        Write-Log "INFO" "使用 7z 解压..."
-                        & $7z x "$zipPath" -o"$TmpDir" -y | Out-Null
-                        $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
-                        if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "7z 成功" }
-                    }
-                } catch { Write-Log "WARN" "7z 失败: $_" }
-                # copy /B
-                if (-not $mergedOk) {
+        $jarFileName = $info['JAR_FILE_NAME']
+        $jarPath = Join-Path $LocalDir $jarFileName
+        if (Download-File -Url "$releaseUrl/$jarFileName" -OutFile $jarPath) {
+            Write-Log "INFO" "下载成功"
+        } else {
+            Write-Log "WARN" "单文件下载失败，尝试分卷合并..."
+            $parts = @()
+            $index = 1
+            while ($true) {
+                $partUrl = "$releaseUrl/$jarFileName.part$index"
+                $partFile = Join-Path $TmpDir "$jarFileName.part$index"
+                if (-not (Download-File -Url $partUrl -OutFile $partFile)) { break }
+                $parts += $partFile
+                $index++
+            }
+            if ($parts.Count -gt 0) {
+                Write-Log "INFO" "合并 $($parts.Count) 个分卷到 $jarPath"
+                $merged = $false
+                # fallback 1: 7z 解压
+                $7z = Get-Command "7z" -ErrorAction SilentlyContinue
+                if ($7z) {
+                    & 7z x "$($parts[0])" -o"$LocalDir" -y -bso0 -bsp0 | Out-Null
+                    if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
+                }
+                # fallback 2: copy /B 合并
+                if (-not $merged) {
+                    $partPaths = ($parts -join '+')
+                    cmd /c "copy /B $partPaths $jarPath >nul 2>&1" | Out-Null
+                    if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
+                }
+                # fallback 3: 二进制流合并
+                if (-not $merged) {
+                    Write-Log "INFO" "尝试二进制合并..."
                     try {
-                        $combined = Join-Path $TmpDir "combined.zip"
-                        cmd /c "copy /B `"$z01Path`" + `"$zipPath`" `"$combined`" >nul 2>&1"
-                        if (Test-Path $combined) {
-                            Expand-Archive $combined -DestinationPath $TmpDir -Force
-                            $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
-                            if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "copy /B 成功" }
+                        $fs = [System.IO.File]::OpenWrite($jarPath)
+                        foreach ($p in $parts) {
+                            $data = [System.IO.File]::ReadAllBytes($p)
+                            $fs.Write($data, 0, $data.Length)
                         }
-                    } catch { Write-Log "WARN" "copy /B 失败: $_" }
+                        $fs.Close()
+                        if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
+                    } catch {
+                        Write-Log "ERROR" "二进制合并失败: $_"
+                    }
                 }
-                # 二进制合并
-                if (-not $mergedOk) {
-                    try {
-                        $combined = Join-Path $TmpDir "combined.zip"
-                        $b1 = [IO.File]::ReadAllBytes($z01Path)
-                        $b2 = [IO.File]::ReadAllBytes($zipPath)
-                        $all = New-Object byte[] ($b1.Length + $b2.Length)
-                        [Buffer]::BlockCopy($b1, 0, $all, 0, $b1.Length)
-                        [Buffer]::BlockCopy($b2, 0, $all, $b1.Length, $b2.Length)
-                        [IO.File]::WriteAllBytes($combined, $all)
-                        Expand-Archive $combined -DestinationPath $TmpDir -Force
-                        $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
-                        if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "二进制合并成功" }
-                    } catch { Write-Log "WARN" "二进制合并失败: $_" }
+                if ($merged) {
+                    Write-Log "INFO" "分卷合并成功"
+                } else {
+                    Write-Log "ERROR" "所有合并方式均失败，更新中止"
+                    exit 1
                 }
-                if (-not $mergedOk) { Write-Log "WARN" "JAR 合并失败，更新中止"; exit 1 }
-            } else { Write-Log "WARN" "分卷下载失败，更新中止"; exit 1 }
+            } else {
+                Write-Log "ERROR" "下载失败，更新中止"
+                exit 1
+            }
         }
+        # 清理临时文件
+        if (Test-Path $TmpDir) { Remove-Item $TmpDir -Recurse -Force -ErrorAction SilentlyContinue }
         Write-Log "INFO" "更新完成，请手动重启"
     }
     "uninstall" {
@@ -579,6 +605,7 @@ switch ($Command) {
     }
 }
 '@ | Out-File -FilePath $matrixPs1 -Encoding UTF8 -Force
+ | Out-File -FilePath $matrixPs1 -Encoding UTF8 -Force
 
 $matrixBat = Join-Path $CliDir "matrix.bat"
 @"

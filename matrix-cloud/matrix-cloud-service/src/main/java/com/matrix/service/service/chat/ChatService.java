@@ -51,8 +51,7 @@ public class ChatService {
         // 获取模式服务
         PatternService patternService = autoPatternService.getPatternService(request.getPattern());
         // 流式响应
-        return Mono.fromCallable(() -> sessionService.getOrCreateSession(
-                request.getUserId(), request.getSessionId(), request.getMessages().getFirst().getContent()))
+        return Mono.fromCallable(() -> sessionService.getOrCreateSession(request, request.getMessages().getFirst().getContent()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMapMany(session -> {
                     // 标记: 对话中

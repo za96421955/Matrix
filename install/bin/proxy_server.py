@@ -120,7 +120,7 @@ if __name__ == "__main__":
     print(f"[INFO] 后端代理地址: http://{BACKEND_HOST}:{BACKEND_PORT}")
     print(f"[INFO] 监听端口: {LISTEN_PORT}")
 
-    server = http.server.HTTPServer(("0.0.0.0", LISTEN_PORT), ProxyHTTPRequestHandler)
+    server = http.server.HTTPServer(("127.0.0.1", LISTEN_PORT), ProxyHTTPRequestHandler)
     print(f"[INFO] 代理服务器启动成功: http://localhost:{LISTEN_PORT}")
 
     def shutdown(signum, frame):
@@ -128,7 +128,9 @@ if __name__ == "__main__":
         server.shutdown()
         sys.exit(0)
 
-    signal.signal(signal.SIGTERM, shutdown)
+    # 注册信号处理，Windows 上不存在 SIGTERM，需要条件判断
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
 
     try:

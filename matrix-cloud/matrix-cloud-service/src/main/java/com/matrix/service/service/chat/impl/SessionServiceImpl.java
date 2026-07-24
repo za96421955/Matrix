@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.dto.request.ChatRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.exception.BusinessException;
 import com.matrix.service.dal.entity.SessionInfo;
@@ -44,23 +45,27 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public SessionInfo getOrCreateSession(Long userId, Long sessionId, String input) {
+    public SessionInfo getOrCreateSession(ChatRequest request, String input) {
         SessionInfo sessionInfo = null;
-        if (sessionId != null) {
-            sessionInfo = this.getById(userId, sessionId);
+        if (request.getSessionId() != null) {
+            sessionInfo = this.getById(request.getUserId(), request.getSessionId());
         }
         if (sessionInfo == null) {
             // 查询 userInfo，获取 userAuthLevel
-            UserInfo userInfo = userService.getUserInfo(userId);
-            if (null == userInfo) {
-                throw new BusinessException(ErrorCode.SESSION_USER_NOT_FOUND);
+            Integer authLevel = request.getAuthLevel();
+            if (null == authLevel) {
+                UserInfo userInfo = userService.getUserInfo(request.getUserId());
+                if (null == userInfo) {
+                    throw new BusinessException(ErrorCode.SESSION_USER_NOT_FOUND);
+                }
+                authLevel = userInfo.getAuthLevel();
             }
             sessionInfo = SessionInfo.builder()
-                    .userId(userId)
+                    .userId(request.getUserId())
                     .title(StringUtils.isBlank(input)
                             ? Constant.NEW_SESSION_TITLE
                             : input.substring(0, Math.min(10, input.length())))
-                    .authLevel(userInfo.getAuthLevel())
+                    .authLevel(authLevel)
                     .createTime(new Date())
                     .updateTime(new Date())
                     .creator(Constant.SYSTEM_USER)

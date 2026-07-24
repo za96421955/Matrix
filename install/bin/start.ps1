@@ -202,15 +202,16 @@ function Start-WebuiProxyPython {
     param([string]$ProxyScript, [string]$WebuiPort = "10908", [string]$BackendPort = "10906")
     $webuiDir = Join-Path $LocalDir "webui"
 
-    # 按优先级查找真正的 Python
+    # 按优先级查找真正的 Python（优先系统安装，跳过 WindowsApps Store 存根）
     $pythonPath = $null
     $candidates = @(
         { Get-Command "python" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source },
-        { Get-Command "python3" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source },
         { Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe" },
         { Join-Path $env:LOCALAPPDATA "Programs\Python\Python311\python.exe" },
+        { Join-Path $env:LOCALAPPDATA "Programs\Python\Python310\python.exe" },
         { Join-Path $env:ProgramFiles "Python312\python.exe" },
-        { Join-Path $env:ProgramFiles "Python311\python.exe" }
+        { Join-Path $env:ProgramFiles "Python311\python.exe" },
+        { Get-Command "python3" -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch 'WindowsApps' } | Select-Object -ExpandProperty Source }
     )
 
     foreach ($candidate in $candidates) {
@@ -238,15 +239,15 @@ function Start-WebuiProxyPython {
     Write-Log "INFO" "Script: $ProxyScript"
 
     $logFile = Join-Path $LogsDir "webui.log"
-    $arguments = "-u `"$ProxyScript`""
-    $redirectCmd = "`"$pythonPath`" $arguments > `"$logFile`" 2>&1"
 
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startupInfo.FileName = "cmd.exe"
-    $startupInfo.Arguments = "/c $redirectCmd"
+    $startupInfo.FileName = $pythonPath
+    $startupInfo.Arguments = "-u `"$ProxyScript`""
     $startupInfo.WorkingDirectory = $webuiDir
     $startupInfo.UseShellExecute = $false
     $startupInfo.CreateNoWindow = $true
+    $startupInfo.RedirectStandardOutput = $true
+    $startupInfo.RedirectStandardError = $true
     $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
     $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
     $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
@@ -254,7 +255,24 @@ function Start-WebuiProxyPython {
 
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $startupInfo
+
+    # 异步重定向输出到日志文件
+    $outEvent = Register-ObjectEvent -InputObject $proc -EventName 'OutputDataReceived' -Action {
+        $data = $EventArgs.Data
+        if ($data) {
+            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
+        }
+    } -MessageData $logFile
+    $errEvent = Register-ObjectEvent -InputObject $proc -EventName 'ErrorDataReceived' -Action {
+        $data = $EventArgs.Data
+        if ($data) {
+            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
+        }
+    } -MessageData $logFile
+
     $proc.Start() | Out-Null
+    $proc.BeginOutputReadLine()
+    $proc.BeginErrorReadLine()
 
     Start-Sleep -Seconds 2
 

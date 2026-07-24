@@ -5,18 +5,16 @@
     检测 JDK 21，启动 Matrix 后端 Java 服务，启动 WebUI 代理服务
 .NOTES
     对应 start.sh 的 PowerShell 实现
-    版本: 1.0.2
+    版本: 1.0.3
 #>
 
 # ==========================================
 # 初始化
 # ==========================================
 
-# 编码设置
 $OutputEncoding = [Text.Encoding]::UTF8
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
-# 路径定义
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $MatrixHome = Join-Path $env:USERPROFILE ".matrix"
@@ -26,21 +24,15 @@ $JdksDir = Join-Path $MatrixHome "jdk21"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
 
-# ---- 日志函数 ----
 function Write-Log {
-    param(
-        [string]$Level = "INFO",
-        [string]$Message
-    )
+    param([string]$Level = "INFO", [string]$Message)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "[$timestamp] [$Level] $Message"
 }
 
-# ---- PID 文件管理 ----
 $ServicePidFile = Join-Path $BinDir "app.pid"
 $WebuiPidFile = Join-Path $BinDir "webui.pid"
 
-# 确保 bin 目录存在（用于 PID 文件）
 if (-not (Test-Path $BinDir)) {
     New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 }
@@ -49,14 +41,11 @@ if (-not (Test-Path $BinDir)) {
 # 函数定义
 # ==========================================
 
-# ---- 检测 JDK 21 ----
 function Find-Jdk21 {
-    # ---- 优先级1: 检查 ~/.jdks/jdk-21* (IDE JDK) ----
     $jdksPattern = Join-Path (Join-Path $env:USERPROFILE ".jdks") "jdk-21*"
     $jdksDirs = Get-ChildItem -Path $jdksPattern -Directory -ErrorAction SilentlyContinue
     if ($jdksDirs -and $jdksDirs.Count -gt 0) {
         $jdkDir = $jdksDirs[0].FullName
-        # 处理 macOS .jdk/Contents/Home 结构
         $contentsHome = Join-Path (Join-Path $jdkDir "Contents") "Home"
         if (Test-Path $contentsHome) {
             $jdkDir = $contentsHome
@@ -73,11 +62,8 @@ function Find-Jdk21 {
         }
     }
 
-    # ---- 优先级2: 检查系统 PATH 中的 java (java -version) ----
     $sysJava = Get-Command "java.exe" -ErrorAction SilentlyContinue
-    if (-not $sysJava) {
-        $sysJava = Get-Command "java" -ErrorAction SilentlyContinue
-    }
+    if (-not $sysJava) { $sysJava = Get-Command "java" -ErrorAction SilentlyContinue }
     if ($sysJava) {
         $javaExe = $sysJava.Source
         $versionOutput = & $javaExe -version 2>&1
@@ -90,11 +76,8 @@ function Find-Jdk21 {
         Write-Log "WARN" "需要JDK21，当前版本为 $jdkVersion"
     }
 
-    # ---- 优先级3: 检查 JAVA_HOME 环境变量 ----
     $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
-    if (-not $javaHome) {
-        $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
-    }
+    if (-not $javaHome) { $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine") }
     if ($javaHome) {
         $javaExe = Join-Path (Join-Path $javaHome "bin") "java.exe"
         if (-not (Test-Path $javaExe)) {
@@ -109,7 +92,6 @@ function Find-Jdk21 {
         }
     }
 
-    # ---- 优先级4: 检查 ~/.matrix/jdk21 (本地捆绑 JDK) ----
     $localJava = Join-Path (Join-Path $JdksDir "bin") "java.exe"
     if (-not (Test-Path $localJava)) {
         $localJava = Join-Path (Join-Path $JdksDir "bin") "java"
@@ -119,15 +101,13 @@ function Find-Jdk21 {
         return $JdksDir
     }
 
-    # ---- 优先级5: 从本地 jdk21/ 目录解压 ----
     $jdksPackageDir = Join-Path (Join-Path (Join-Path $BinDir "..") "..") "jdk21"
     if (-not (Test-Path $jdksPackageDir)) {
         $jdksPackageDir = Join-Path (Join-Path $LocalDir "..") "jdk21"
     }
     if (Test-Path $jdksPackageDir) {
-        $bundledZip = Join-Path $jdksPackageDir "*.zip"
-        $zipFiles = Get-ChildItem -Path $bundledZip -ErrorAction SilentlyContinue
-        if ($zipFiles -and $zipFiles.Count -gt 0) {
+        $zipFiles = Get-ChildItem -Path (Join-Path $jdksPackageDir "*.zip") -ErrorAction SilentlyContinue
+        if ($zipFiles) {
             Write-Log "INFO" "从本地安装目录解压 JDK 21..."
             $zipFile = $zipFiles[0].FullName
             Expand-Archive -Path $zipFile -DestinationPath $JdksDir -Force
@@ -152,13 +132,9 @@ function Find-Jdk21 {
     return $null
 }
 
-# ---- 查找 JAR 文件 ----
 function Find-MatrixJar {
-    $jarPattern = Join-Path $LocalDir "matrix-local-*.jar"
-    $jarFiles = Get-ChildItem -Path $jarPattern -ErrorAction SilentlyContinue
-    if (-not $jarFiles -or $jarFiles.Count -eq 0) {
-        return $null
-    }
+    $jarFiles = Get-ChildItem -Path (Join-Path $LocalDir "matrix-local-*.jar") -ErrorAction SilentlyContinue
+    if (-not $jarFiles) { return $null }
 
     $jarFile = $jarFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
@@ -182,7 +158,6 @@ function Find-MatrixJar {
     return $jarFile.FullName
 }
 
-# ---- 停止旧进程 ----
 function Stop-OldProcess {
     param([string]$PidFile, [string]$ProcessName)
 
@@ -240,7 +215,6 @@ function Stop-OldProcess {
     }
 }
 
-# ---- 启动 WebUI 代理（Python） ----
 function Start-WebuiProxyPython {
     param(
         [string]$ProxyScript,
@@ -251,9 +225,7 @@ function Start-WebuiProxyPython {
     $webuiDir = Join-Path $LocalDir "webui"
 
     $pythonCmd = Get-Command "python3" -ErrorAction SilentlyContinue
-    if (-not $pythonCmd) {
-        $pythonCmd = Get-Command "python" -ErrorAction SilentlyContinue
-    }
+    if (-not $pythonCmd) { $pythonCmd = Get-Command "python" -ErrorAction SilentlyContinue }
 
     if (-not $pythonCmd) {
         Write-Log "WARN" "未找到 Python 解释器"
@@ -271,11 +243,11 @@ function Start-WebuiProxyPython {
 
     $logFile = Join-Path $LogsDir "webui.log"
 
-    # 通过 cmd.exe /c 启动 Python，将 stdout/stderr 重定向到 webui.log
-    # 这样日志可以正确写入文件，且 PowerShell 不会因为管道阻塞而丢失输出
+    # 构建命令行：使用 cmd.exe /c 进行重定向，避免管道问题
     $pythonExe = $pythonCmd.Source
-    $arguments = "-u `"$ProxyScript`""
-    $redirectCmd = "`"$pythonExe`" $arguments > `"$logFile`" 2>&1"
+    # 将路径加双引号保护，使用两对双引号转义（"" 在双引号字符串中表示一个双引号）
+    $arguments = "-u ""$ProxyScript"""
+    $redirectCmd = """$pythonExe"" $arguments > ""$logFile"" 2>&1"
 
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startupInfo.FileName = "cmd.exe"
@@ -284,7 +256,6 @@ function Start-WebuiProxyPython {
     $startupInfo.UseShellExecute = $false
     $startupInfo.CreateNoWindow = $true
 
-    # 环境变量：强制监听 127.0.0.1，避免防火墙拦截
     $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
     $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
     $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
@@ -298,12 +269,10 @@ function Start-WebuiProxyPython {
 
     if (-not $proc.HasExited) {
         Write-Log "INFO" "WebUI 代理已启动 (监听 127.0.0.1:$WebuiPort)，PID=$($proc.Id)"
-        # 将 webui 进程的 PID 写入 webui.pid，与 start.sh 行为一致
         $proc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
         return $true
     } else {
         Write-Log "WARN" "WebUI 代理启动失败 (ExitCode: $($proc.ExitCode))"
-        # 此时 stdout/stderr 已通过重定向写入日志文件，读取日志文件内容显示给用户
         if (Test-Path $logFile) {
             $logContent = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
             if ($logContent) {
@@ -314,21 +283,15 @@ function Start-WebuiProxyPython {
     }
 }
 
-# ---- 自动安装 Python 3 (Windows) ----
 function Install-Python3 {
-    # 仅在 Windows 上有包管理器时执行
-    if (-not $IsWindows) {
-        return $false
-    }
+    if (-not $IsWindows) { return $false }
 
-    # 检测管理员权限
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if (-not $isAdmin) {
         Write-Log "WARN" "当前非管理员权限，无法自动安装 Python 3"
         return $false
     }
 
-    # 按优先级检测包管理器并安装
     $installers = @(
         @{ Name = "winget"; Test = { Get-Command "winget" -ErrorAction SilentlyContinue }; Cmd = "winget install --id=Python.Python.3.12 --exact --silent --accept-package-agreements" },
         @{ Name = "choco";  Test = { Get-Command "choco" -ErrorAction SilentlyContinue };  Cmd = "choco install python3 -y" },
@@ -342,7 +305,6 @@ function Install-Python3 {
             $result = Invoke-Expression $installer.Cmd
             if ($LASTEXITCODE -eq 0) {
                 Write-Log "INFO" "$($installer.Name) 安装成功，正在刷新 PATH 环境变量..."
-                # 从注册表刷新 PATH，使新安装的 Python 在当前进程中立即可用
                 $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
                 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
                 $env:PATH = "$machinePath;$userPath"
@@ -356,19 +318,16 @@ function Install-Python3 {
     return $false
 }
 
-# ---- 启动 WebUI 代理（主入口） ----
 function Start-WebuiProxy {
     param([string]$ProxyScript)
 
     $webuiDir = Join-Path $LocalDir "webui"
     $backendUrl = "http://localhost:10906"
 
-    # 优先尝试 Python 代理
     if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
         return $true
     }
 
-    # Python 不可用，尝试自动安装
     Write-Log "WARN" "WebUI 代理需要 Python 3 才能启动"
 
     if (Install-Python3) {
@@ -378,17 +337,16 @@ function Start-WebuiProxy {
         }
     }
 
-    # 所有方式均失败，输出详细手动安装指引
     Write-Log "ERROR" "未能启动 WebUI 代理，Python 3 不可用且自动安装失败"
-    Write-Log "INFO"  "请手动安装 Python 3："
-    Write-Log "INFO"  "  方案 1：从 https://www.python.org/downloads/ 下载安装包"
-    Write-Log "INFO"  "         安装时务必勾选 'Add Python to PATH'"
-    Write-Log "INFO"  "  方案 2：通过 winget 安装（管理员 PowerShell）："
-    Write-Log "INFO"  "         winget install --id=Python.Python.3.12 --exact"
-    Write-Log "INFO"  "  方案 3：通过 Chocolatey 安装（管理员 PowerShell）："
-    Write-Log "INFO"  "         choco install python3 -y"
-    Write-Log "INFO"  "  安装后重新运行 start.ps1 即可"
-    Write-Log "INFO"  "  或手动运行 Python 代理：python3 $(Resolve-Path $ProxyScript)"
+    Write-Log "INFO" "请手动安装 Python 3："
+    Write-Log "INFO" "  方案 1：从 https://www.python.org/downloads/ 下载安装包"
+    Write-Log "INFO" "         安装时务必勾选 'Add Python to PATH'"
+    Write-Log "INFO" "  方案 2：通过 winget 安装（管理员 PowerShell）："
+    Write-Log "INFO" "         winget install --id=Python.Python.3.12 --exact"
+    Write-Log "INFO" "  方案 3：通过 Chocolatey 安装（管理员 PowerShell）："
+    Write-Log "INFO" "         choco install python3 -y"
+    Write-Log "INFO" "  安装后重新运行 start.ps1 即可"
+    Write-Log "INFO" "  或手动运行 Python 代理：python3 $(Resolve-Path $ProxyScript)"
     return $false
 }
 
@@ -401,7 +359,6 @@ Write-Log "INFO" "  Matrix Local Service Start (Windows)"
 Write-Log "INFO" "=========================================="
 Write-Log "INFO" "安装目录: $LocalDir"
 
-# 1. 检测 JDK 21
 $jdkHome = Find-Jdk21
 if (-not $jdkHome) {
     Write-Log "ERROR" "未找到 JDK 21"
@@ -411,7 +368,6 @@ if (-not $jdkHome) {
 Write-Log "INFO" "使用 JDK: $jdkHome"
 $javaExe = Join-Path (Join-Path $jdkHome "bin") "java.exe"
 
-# 2. 找到 JAR 文件
 $jarFile = Find-MatrixJar
 if (-not $jarFile) {
     Write-Log "ERROR" "未找到 matrix-local-*.jar 文件"
@@ -419,25 +375,21 @@ if (-not $jarFile) {
     exit 1
 }
 
-# 3. 检查日志目录
 if (-not (Test-Path $LogsDir)) {
     New-Item -ItemType Directory -Path $LogsDir -Force | Out-Null
 }
 
-# 4. 停止旧进程
 Write-Log "INFO" "检查并停止旧进程..."
 Stop-OldProcess -PidFile $ServicePidFile -ProcessName "matrix-local"
 Stop-OldProcess -PidFile $WebuiPidFile -ProcessName "proxy_server"
 Start-Sleep -Seconds 2
 
-# 5. 检查 config 文件
 $configFile = Join-Path $ConfigDir "application.yml"
 if (-not (Test-Path $configFile)) {
     Write-Log "WARN" "未找到 config/application.yml，将使用默认配置"
     $configFile = ""
 }
 
-# 6. 读取端口配置
 $serverPort = "10906"
 if (Test-Path $configFile) {
     $configContent = Get-Content $configFile -Raw -Encoding UTF8
@@ -449,25 +401,20 @@ if (Test-Path $configFile) {
 Write-Log "INFO" "服务端口: $serverPort"
 Write-Log "INFO" "日志目录: $LogsDir"
 
-# 7. JVM 参数
 $jvmArgs = @(
     "-Xmx256m",
     "-Xms128m",
     "-Dfile.encoding=UTF-8",
-    "-Dlogging.file.path=`"$LogsDir`"",
+    "-Dlogging.file.path=""$LogsDir""",
     "-Dserver.port=$serverPort"
 )
 
-# 8. 启动后端服务
 $serviceLogFile = Join-Path $LogsDir "app.log"
 Write-Log "INFO" "正在启动 Matrix 后端服务..."
 
 try {
-    # 通过 cmd.exe /c 启动 Java，将 stdout/stderr 重定向到 app.log
-    # 修复：使用 cmd.exe 的 > 重定向操作符，而非 PowerShell 的管道重定向
-    # 这样 app.log 才能正确写入，且不会因管道缓冲区阻塞导致进程卡死
-    $javaCmd = "`"$javaExe`" $($jvmArgs -join ' ') -jar `"$jarFile`""
-    $redirectCmd = "$javaCmd > `"$serviceLogFile`" 2>&1"
+    $javaCmd = """$javaExe"" $($jvmArgs -join ' ') -jar ""$jarFile"""
+    $redirectCmd = "$javaCmd > ""$serviceLogFile"" 2>&1"
 
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startupInfo.FileName = "cmd.exe"
@@ -490,7 +437,6 @@ try {
     $checkProc = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
     if (-not $checkProc) {
         Write-Log "ERROR" "后端服务启动失败，进程已退出"
-        # 从日志文件中读取错误信息
         if (Test-Path $serviceLogFile) {
             $logContent = Get-Content $serviceLogFile -Raw -ErrorAction SilentlyContinue
             if ($logContent) {
@@ -504,8 +450,7 @@ try {
     exit 1
 }
 
-# 9. 启动 WebUI
-# 优先从固定 bin 目录查找 proxy_server.py，若不存在则回退到脚本所在目录
+# 查找 proxy_server.py
 $proxyScript = Join-Path $BinDir "proxy_server.py"
 if (-not (Test-Path $proxyScript)) {
     $fallbackScript = Join-Path $ScriptDir "proxy_server.py"
@@ -536,7 +481,6 @@ if ($proxyScript -and (Test-Path $webuiDir)) {
     Write-Log "INFO" "如需 WebUI，请执行: matrix update"
 }
 
-# 10. 完成提示
 Write-Log "INFO" "=========================================="
 Write-Log "INFO" "  Matrix Local Service 启动完成"
 Write-Log "INFO" "=========================================="

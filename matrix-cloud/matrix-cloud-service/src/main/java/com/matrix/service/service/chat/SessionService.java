@@ -1,6 +1,7 @@
 package com.matrix.service.service.chat;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.matrix.common.dto.request.ChatRequest;
 import com.matrix.service.dal.entity.SessionInfo;
 
 /**
@@ -14,7 +15,7 @@ public interface SessionService {
      *
      * @author 陈晨
      */
-    SessionInfo getOrCreateSession(Long userId, Long sessionId, String input);
+    SessionInfo getOrCreateSession(ChatRequest request, String input);
 
     /**
      * @description 分页查询会话

@@ -46,8 +46,7 @@ public class ChatController {
         String input = (request.getMessages() != null && !request.getMessages().isEmpty())
                 ? request.getMessages().getFirst().getContent()
                 : "";
-        SessionInfo session = sessionService.getOrCreateSession(
-                userInfo.getUserId(), request.getSessionId(), input);
+        SessionInfo session = sessionService.getOrCreateSession(request, input);
         Long sessionId = session.getId();
         //设置 sessionId后异步启动 completions
         request.setSessionId(sessionId);

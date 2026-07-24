@@ -638,7 +638,9 @@ switch ($Command) {
                 if (-not $mergedOk) { Write-Log "ERROR" "JAR 合并失败，请手动下载并放置到 $jarPath"; exit 1 }
             } else { Write-Log "ERROR" "分卷下载失败，更新中止"; exit 1 }
         }
-        Write-Log "INFO" "更新完成，请手动重启"
+        Write-Log "INFO" "更新完成，重启服务"
+        $stopScript = Join-Path $BinDir "restart.ps1"
+        if (Test-Path $stopScript) { & $stopScript }
     }
     "uninstall" {
         Write-Log "WARN" "确认卸载? 输入 y"
@@ -688,22 +690,9 @@ Write-Log "INFO" "清理临时文件..."
     if (Test-Path $_) { Remove-Item $_ -Force -ErrorAction SilentlyContinue }
 }
 
-# ==========================================
-# 完成
-# ==========================================
-
-# 执行 matrix restart 启动服务
-$matrixCmd = Join-Path $CliDir "matrix.ps1"
-if (Test-Path $matrixCmd) {
-    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$matrixCmd`" restart" -WindowStyle Hidden
-    Start-Sleep 3
-    Start-Process "http://localhost:10908"
-} else {
-    Write-Log "ERROR" "未找到 matrix CLI"
-}
-
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "  Matrix 安装完成！"
+Write-Log "INFO" "Matrix 安装完成，执行以下指令，启动服务："
+Write-Log "INFO" "matrix start"
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "前台页面:     http://localhost:10908"
-Write-Log "INFO" "后台服务:     http://localhost:10906"
+$stopScript = Join-Path $BinDir "restart.ps1"
+if (Test-Path $stopScript) { & $stopScript }

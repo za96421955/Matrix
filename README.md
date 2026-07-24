@@ -49,6 +49,27 @@ Invoke-WebRequest -Uri "https://gitee.com/za96421955/matrix/raw/latest/install/g
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
+#### 2.3. Python 3
+**若启动WebUI看到（请先安装 Python 3）提示，可通过以下指令安装：**
+```bash
+curl --location 'http://127.0.0.1:10906/v1/chat/completions' \
+--header "Authorization: Bearer $DEEPSEEK_API_KEY" \
+--header 'Content-Type: application/json' \
+--data '{
+    "model": "deepseek-v4-flash",
+    "pattern": "execute",
+    "authLevel": 3,
+    "messages": [{
+        "role": "user",
+        "content": "1. 检查当前用户是否安装了Python3。2. 若未安装则为当前用户安装最新稳定版本Python3，勾选 Add Python to PATH，勾选推荐组件。"
+    }],
+    "max_tokens": 8192,
+    "thinking": {
+        "type": "disabled"
+    }
+}'
+```
+
 安装过程：
 1. 检测 DEEPSEEK_API_KEY（未设置则交互输入）
 2. 下载 JDK21（内置包，自动解压至 ~/.jdks）

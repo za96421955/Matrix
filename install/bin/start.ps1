@@ -21,7 +21,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $MatrixHome = Join-Path $env:USERPROFILE ".matrix"
 $LocalDir = Join-Path $MatrixHome "local"
-$BinDir = Join-Path $LocalDir "bin"          # 固定 bin 目录，不再依赖脚本所在位置
+$BinDir = Join-Path $LocalDir "bin"          # 固定 bin 目录，不依赖脚本位置
 $JdksDir = Join-Path $MatrixHome "jdk21"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
@@ -255,42 +255,53 @@ function Start-WebuiProxyPython {
         $pythonCmd = Get-Command "python" -ErrorAction SilentlyContinue
     }
 
-    if ($pythonCmd) {
-        Write-Log "INFO" "使用 Python 启动 WebUI 代理 (端口 $WebuiPort -> 后端 $BackendPort)"
-
-        $logFile = Join-Path $LogsDir "webui.log"
-        $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
-        $startupInfo.FileName = $pythonCmd.Source
-        $startupInfo.Arguments = "-u `"$ProxyScript`""
-        $startupInfo.WorkingDirectory = $webuiDir
-        $startupInfo.RedirectStandardOutput = $true
-        $startupInfo.RedirectStandardError = $true
-        $startupInfo.UseShellExecute = $false
-        $startupInfo.CreateNoWindow = $true
-
-        # 环境变量：强制监听 127.0.0.1，避免防火墙拦截
-        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
-        $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
-        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
-        $startupInfo.EnvironmentVariables["MATRIX_WEBUI_HOST"] = "127.0.0.1"
-
-        $proc = New-Object System.Diagnostics.Process
-        $proc.StartInfo = $startupInfo
-        $proc.Start() | Out-Null
-
-        Start-Sleep -Seconds 2
-
-        if (-not $proc.HasExited) {
-            Write-Log "INFO" "WebUI 代理已启动 (监听 127.0.0.1:$WebuiPort)，PID=$($proc.Id)"
-            return $true
-        } else {
-            $stderr = $proc.StandardError.ReadToEnd()
-            Write-Log "WARN" "WebUI 代理启动失败: $stderr"
-            return $false
-        }
+    if (-not $pythonCmd) {
+        Write-Log "WARN" "未找到 Python 解释器"
+        return $false
     }
 
-    return $false
+    if (-not (Test-Path $ProxyScript)) {
+        Write-Log "WARN" "proxy_server.py 未找到: $ProxyScript"
+        return $false
+    }
+
+    Write-Log "INFO" "使用 Python 启动 WebUI 代理 (端口 $WebuiPort -> 后端 $BackendPort)"
+    Write-Log "INFO" "Python 路径: $($pythonCmd.Source)"
+    Write-Log "INFO" "代理脚本: $ProxyScript"
+
+    $logFile = Join-Path $LogsDir "webui.log"
+    $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startupInfo.FileName = $pythonCmd.Source
+    $startupInfo.Arguments = "-u `"$ProxyScript`""
+    $startupInfo.WorkingDirectory = $webuiDir
+    $startupInfo.RedirectStandardOutput = $true
+    $startupInfo.RedirectStandardError = $true
+    $startupInfo.UseShellExecute = $false
+    $startupInfo.CreateNoWindow = $true
+
+    # 环境变量：强制监听 127.0.0.1，避免防火墙拦截
+    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
+    $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
+    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
+    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_HOST"] = "127.0.0.1"
+
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $startupInfo
+    $proc.Start() | Out-Null
+
+    Start-Sleep -Seconds 2
+
+    if (-not $proc.HasExited) {
+        Write-Log "INFO" "WebUI 代理已启动 (监听 127.0.0.1:$WebuiPort)，PID=$($proc.Id)"
+        return $true
+    } else {
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        Write-Log "WARN" "WebUI 代理启动失败 (ExitCode: $($proc.ExitCode))"
+        if ($stdout) { Write-Log "WARN" "STDOUT: $stdout" }
+        if ($stderr) { Write-Log "WARN" "STDERR: $stderr" }
+        return $false
+    }
 }
 
 # ---- 启动 WebUI 代理（PowerShell 内置） ----
@@ -322,7 +333,7 @@ function Start-WebuiProxy {
     param([string]$ProxyScript)
 
     $webuiDir = Join-Path $LocalDir "webui"
-    $backendUrl = "http://localhost:10906"   # 后端依然用 localhost 无妨
+    $backendUrl = "http://localhost:10906"
 
     if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
         return $true
@@ -446,18 +457,32 @@ try {
 }
 
 # 9. 启动 WebUI
+# 优先从固定 bin 目录查找 proxy_server.py，若不存在则回退到脚本所在目录
 $proxyScript = Join-Path $BinDir "proxy_server.py"
+if (-not (Test-Path $proxyScript)) {
+    $fallbackScript = Join-Path $ScriptDir "proxy_server.py"
+    if (Test-Path $fallbackScript) {
+        Write-Log "INFO" "在 bin 目录未找到 proxy_server.py，使用脚本同目录下的文件"
+        $proxyScript = $fallbackScript
+    } else {
+        Write-Log "WARN" "proxy_server.py 未找到，WebUI 代理无法启动"
+        $proxyScript = $null
+    }
+}
+
 $webuiDir = Join-Path $LocalDir "webui"
-if (Test-Path $webuiDir) {
+if ($proxyScript -and (Test-Path $webuiDir)) {
     if (Test-Path (Join-Path $webuiDir "index.html")) {
         Write-Log "INFO" "WebUI 目录: $webuiDir"
         if (-not (Start-WebuiProxy -ProxyScript $proxyScript)) {
             Write-Log "WARN" "WebUI 代理启动失败，但后端服务已正常运行"
         }
     } else {
-        Write-Log "INFO" "WebUI 目录不存在或缺少 index.html，跳过 WebUI 启动"
+        Write-Log "INFO" "WebUI 目录存在但缺少 index.html，跳过 WebUI 启动"
         Write-Log "INFO" "如需 WebUI，请执行: matrix update"
     }
+} elseif (-not $proxyScript) {
+    Write-Log "WARN" "未找到代理脚本，跳过 WebUI 启动"
 } else {
     Write-Log "INFO" "WebUI 目录不存在，跳过 WebUI 启动"
     Write-Log "INFO" "如需 WebUI，请执行: matrix update"
@@ -470,3 +495,4 @@ Write-Log "INFO" "=========================================="
 Write-Log "INFO" "后端服务: http://localhost:$serverPort"
 Write-Log "INFO" "WebUI:    http://localhost:10908 (API 自动代理至 :10906/v1)"
 Write-Log "INFO" "日志目录: $LogsDir"
+Write-Log "INFO" "停止服务: $BinDir\stop.ps1"

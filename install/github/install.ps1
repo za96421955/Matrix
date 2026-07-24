@@ -459,16 +459,7 @@ function Get-LatestVersionInfo {
     } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }
 }
 
-function Compare-Versions($v1, $v2) {
-    $p1 = $v1.Split('.'); $p2 = $v2.Split('.')
-    for ($i=0; $i -lt 3; $i++) {
-        $a = if ($i -lt $p1.Length) { [int]$p1[$i] } else { 0 }
-        $b = if ($i -lt $p2.Length) { [int]$p2[$i] } else { 0 }
-        if ($a -gt $b) { return 1 }
-        if ($a -lt $b) { return -1 }
-    }
-    return 0
-}
+
 
 switch ($Command) {
     "start" {
@@ -512,12 +503,7 @@ switch ($Command) {
         $info = Get-LatestVersionInfo
         if (-not $info) { exit 1 }
         $rv = $info["MATRIX_VERSION"]
-        $localV = if (Test-Path (Join-Path $ConfigDir "version")) { (Get-Content (Join-Path $ConfigDir "version") -Raw).Trim() } else { "" }
-        if ($localV) {
-            $cmp = Compare-Versions $localV $rv
-            if ($cmp -eq 0) { Write-Log "INFO" "已是最新"; exit 0 }
-            if ($cmp -eq 1) { Write-Log "INFO" "本地版本更高"; exit 0 }
-        }
+        # 不再比较版本，直接更新
         Write-Log "INFO" "更新到 v$rv"
         $stopScript = Join-Path $BinDir "stop.ps1"
         if (Test-Path $stopScript) { & $stopScript }

@@ -398,23 +398,6 @@ get_latest_version_info() {
     return 0
 }
 
-compare_versions() {
-    # 语义化版本比较，返回: -1(本地<远程), 0(相等), 1(本地>远程)
-    local v1="$1" v2="$2"
-    local IFS=.
-    local a1 a2 a3 b1 b2 b3
-    read -r a1 a2 a3 <<< "$v1"
-    read -r b1 b2 b3 <<< "$v2"
-    a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
-    b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
-    if [ "$a1" -gt "$b1" ] 2>/dev/null; then return 1; fi
-    if [ "$a1" -lt "$b1" ] 2>/dev/null; then return 255; fi
-    if [ "$a2" -gt "$b2" ] 2>/dev/null; then return 1; fi
-    if [ "$a2" -lt "$b2" ] 2>/dev/null; then return 255; fi
-    if [ "$a3" -gt "$b3" ] 2>/dev/null; then return 1; fi
-    if [ "$a3" -lt "$b3" ] 2>/dev/null; then return 255; fi
-    return 0
-}
 
 case "$1" in
     status)
@@ -459,26 +442,8 @@ case "$1" in
         JAR_FINAL="$JAR_FILE_NAME"
         WEBUI_ZIP_FILE="$WEBUI_ZIP_NAME"
 
-        # 读取本地版本
-        LOCAL_VERSION=""
-        [ -f "$INSTALL_DIR/config/version" ] && LOCAL_VERSION=$(cat "$INSTALL_DIR/config/version")
 
-        # 比较版本
-        if [ -n "$LOCAL_VERSION" ]; then
-            compare_versions "$LOCAL_VERSION" "$REMOTE_VERSION"
-            case $? in
-                0)
-                    echo "✓ 已是最新版本 v${LOCAL_VERSION}"
-                    exit 0
-                    ;;
-                1)
-                    echo "本地版本 v${LOCAL_VERSION} 高于远程 v${REMOTE_VERSION}，无需更新"
-                    exit 0
-                    ;;
-            esac
-        fi
-
-        echo "发现新版本: v${REMOTE_VERSION} (当前: ${LOCAL_VERSION:-未知})"
+        echo "发现新版本: v${REMOTE_VERSION} (当前版本将直接更新)"
         echo "正在升级 matrix ..."
 
         # 停止服务

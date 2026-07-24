@@ -439,6 +439,11 @@ $BinDir = Join-Path $LocalDir "bin"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
 
+# 确保使用 TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$TmpDir = Join-Path $LocalDir "tmp"
+
 function Write-Log($Level="INFO", $Message) {
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message"
 }
@@ -459,6 +464,37 @@ function Get-LatestVersionInfo {
     } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }
 }
 
+function Download-File {
+    param(
+        [string]$Url,
+        [string]$Destination,
+        [int]$Retries = 3,
+        [string]$Label = ""
+    )
+    if ([string]::IsNullOrEmpty($Label)) {
+        $Label = [System.IO.Path]::GetFileName($Destination)
+    }
+    for ($i = 1; $i -le $Retries; $i++) {
+        try {
+            Write-Log "INFO" "正在下载 $Label ..."
+            Invoke-WebRequest -Uri $Url -OutFile $Destination -UserAgent "Matrix-Installer/1.0.3" -ErrorAction Stop
+            if (Test-Path $Destination) {
+                $size = (Get-Item $Destination).Length
+                Write-Log "INFO" "下载完成: $Label ($size bytes)"
+                return $true
+            }
+            Write-Log "WARN" "文件不存在，可能下载失败"
+        } catch {
+            Write-Log "WARN" "下载失败 (第 $i 次/$Retries): $_"
+        }
+        if ($i -lt $Retries) {
+            $wait = $i * 3
+            Write-Log "INFO" "等待 ${wait} 秒后重试..."
+            Start-Sleep -Seconds $wait
+        }
+    }
+    return $false
+}
 
 
 switch ($Command) {

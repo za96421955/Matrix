@@ -25,20 +25,22 @@
 https://platform.deepseek.com/api_keys
 
 ### 2. One-click Install
-### 2.1. Linux, MacOS
+#### 2.1. Linux, MacOS
+**github**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/za96421955/Matrix/latest/install/github/install.sh | bash
 ```
-### China
+**gitee**
 ```bash
 curl -fsSL https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.sh | bash
 ```
 
-### 2.2. Windows
+#### 2.2. Windows
+**github**
 ```bash
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/za96421955/Matrix/latest/install/github/install.ps1" -OutFile "install.ps1"; powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
-### China
+**gitee**
 ```bash
 Invoke-WebRequest -Uri "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.ps1" -OutFile "install.ps1"; powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```

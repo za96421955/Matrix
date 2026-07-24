@@ -60,10 +60,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 **若提示：请先安装 Python 3。可通过以下指令安装：**
 ```bash
-curl.exe --location "http://127.0.0.1:10906/v1/chat/completions" `
---header "Authorization: Bearer $env:DEEPSEEK_API_KEY" `
---header "Content-Type: application/json" `
---data "{`"model`":`"deepseek-v4-flash`",`"pattern`":`"execute`",`"authLevel`":3,`"messages`":[{`"role`":`"user`",`"content`":`"1. 检查当前用户是否安装了Python3。2. 若未安装则为当前用户安装最新稳定版本Python3，勾选 Add Python to PATH，勾选推荐组件。`"}],`"max_tokens`":8192,`"thinking`":{`"type`":`"disabled`"}}"
+Invoke-RestMethod -Uri 'http://127.0.0.1:10906/v1/chat/completions' -Method Post -Headers @{"Authorization"="Bearer $env:DEEPSEEK_API_KEY"; "Content-Type"="application/json"} -Body (@{model="deepseek-v4-flash"; pattern="execute"; authLevel=3; messages=@(@{role="user"; content="1. 检查当前用户是否安装了Python3。2. 若未安装则为当前用户安装最新稳定版本Python3，勾选 Add Python to PATH，勾选推荐组件。"}); max_tokens=8192; thinking=@{type="disabled"}} | ConvertTo-Json -Depth 10 -Compress)
 ```
 
 安装过程：

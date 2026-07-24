@@ -35,6 +35,26 @@ curl -fsSL https://raw.githubusercontent.com/za96421955/Matrix/latest/install/gi
 curl -fsSL https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.sh | bash
 ```
 
+**若提示：请先安装 Python 3。可通过以下指令安装：**
+```bash
+curl --location 'http://127.0.0.1:10906/v1/chat/completions' \
+--header "Authorization: Bearer $DEEPSEEK_API_KEY" \
+--header 'Content-Type: application/json' \
+--data '{
+    "model": "deepseek-v4-flash",
+    "pattern": "execute",
+    "authLevel": 3,
+    "messages": [{
+        "role": "user",
+        "content": "1. 检查当前用户是否安装了Python3。2. 若未安装则为当前用户安装最新稳定版本Python3，勾选 Add Python to PATH，勾选推荐组件。"
+    }],
+    "max_tokens": 8192,
+    "thinking": {
+        "type": "disabled"
+    }
+}'
+```
+
 #### 2.2. Windows
 **github**
 ```bash
@@ -44,17 +64,17 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/za96421955/Matrix/late
 ```bash
 Invoke-WebRequest -Uri "https://gitee.com/za96421955/matrix/raw/latest/install/gitee/install.ps1" -OutFile "install.ps1"; powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
+
 **若提示系统禁止运行脚本，请先执行：**
 ```bash
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-#### 2.3. Python 3
-**若启动WebUI看到（请先安装 Python 3）提示，可通过以下指令安装：**
+**若提示：请先安装 Python 3。可通过以下指令安装：**
 ```bash
-curl --location 'http://127.0.0.1:10906/v1/chat/completions' \
---header "Authorization: Bearer $DEEPSEEK_API_KEY" \
---header 'Content-Type: application/json' \
+curl.exe --location 'http://127.0.0.1:10906/v1/chat/completions' `
+--header "Authorization: Bearer $env:DEEPSEEK_API_KEY" `
+--header 'Content-Type: application/json' `
 --data '{
     "model": "deepseek-v4-flash",
     "pattern": "execute",

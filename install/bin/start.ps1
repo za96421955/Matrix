@@ -320,9 +320,15 @@ function Start-WebuiProxy {
         }
     }
 
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
     Write-Log "ERROR" "WebUI 启动失败，Python 3 安装失败。"
     Write-Log "ERROR" "请先安装 Python 3。"
     Write-Log "ERROR" "安装完成后执行：matrix restart"
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
+    Write-Log "ERROR" "------------------ !!!!!! ------------------"
     return $false
 }
 

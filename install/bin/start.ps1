@@ -184,15 +184,47 @@ function Stop-OldProcess {
     }
 }
 
+# 验证 Python 命令是否为真实有效的解释器
+function Test-PythonCommand {
+    param([string]$PythonPath)
+    try {
+        $result = & $PythonPath --version 2>&1
+        if ($LASTEXITCODE -eq 0 -and $result -match "Python \d+") {
+            return $true
+        }
+    } catch {
+        # 忽略错误
+    }
+    return $false
+}
+
 function Start-WebuiProxyPython {
     param([string]$ProxyScript, [string]$WebuiPort = "10908", [string]$BackendPort = "10906")
     $webuiDir = Join-Path $LocalDir "webui"
 
-    $pythonCmd = Get-Command "python3" -ErrorAction SilentlyContinue
-    if (-not $pythonCmd) { $pythonCmd = Get-Command "python" -ErrorAction SilentlyContinue }
+    # 按优先级查找真正的 Python
+    $pythonPath = $null
+    $candidates = @(
+        { Get-Command "python" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source },
+        { Get-Command "python3" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source },
+        { Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe" },
+        { Join-Path $env:LOCALAPPDATA "Programs\Python\Python311\python.exe" },
+        { Join-Path $env:ProgramFiles "Python312\python.exe" },
+        { Join-Path $env:ProgramFiles "Python311\python.exe" }
+    )
 
-    if (-not $pythonCmd) {
-        Write-Log "WARN" "Python interpreter not found"
+    foreach ($candidate in $candidates) {
+        $path = & $candidate
+        if ($path -and (Test-Path $path)) {
+            if (Test-PythonCommand -PythonPath $path) {
+                $pythonPath = $path
+                break
+            }
+        }
+    }
+
+    if (-not $pythonPath) {
+        Write-Log "WARN" "No working Python installation found (not the Store stub)."
         return $false
     }
 
@@ -202,13 +234,12 @@ function Start-WebuiProxyPython {
     }
 
     Write-Log "INFO" "Starting WebUI proxy with Python (port $WebuiPort -> backend $BackendPort)"
-    Write-Log "INFO" "Python: $($pythonCmd.Source)"
+    Write-Log "INFO" "Python: $pythonPath"
     Write-Log "INFO" "Script: $ProxyScript"
 
     $logFile = Join-Path $LogsDir "webui.log"
-    $pythonExe = $pythonCmd.Source
     $arguments = "-u `"$ProxyScript`""
-    $redirectCmd = "`"$pythonExe`" $arguments > `"$logFile`" 2>&1"
+    $redirectCmd = "`"$pythonPath`" $arguments > `"$logFile`" 2>&1"
 
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startupInfo.FileName = "cmd.exe"
@@ -290,10 +321,9 @@ function Start-WebuiProxy {
     }
 
     Write-Log "ERROR" "Failed to start WebUI proxy. Python 3 not available."
-    Write-Log "INFO" "Please install Python 3 manually:"
-    Write-Log "INFO" "  https://www.python.org/downloads/"
-    Write-Log "INFO" "  Or via winget: winget install --id=Python.Python.3.12 --exact"
-    Write-Log "INFO" "  After installation, re-run start.ps1"
+    Write-Log "INFO" "Please install Python 3 manually from https://www.python.org/downloads/"
+    Write-Log "INFO" "During installation, check 'Add Python to PATH'"
+    Write-Log "INFO" "After installation, re-run start.ps1"
     return $false
 }
 
@@ -367,7 +397,7 @@ $serviceLogFile = Join-Path $LogsDir "app.log"
 Write-Log "INFO" "Starting Matrix backend..."
 Write-Log "INFO" "Java command: $javaExe $javaArgs"
 
-# 8. 启动后端服务（使用 .NET Process 直接启动，异步重定向输出到日志文件）
+# 8. 启动后端服务（.NET Process + 异步日志）
 try {
     $procInfo = New-Object System.Diagnostics.ProcessStartInfo
     $procInfo.FileName = $javaExe
@@ -382,7 +412,6 @@ try {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $procInfo
 
-    # 异步事件处理，将输出写入日志
     $outEvent = Register-ObjectEvent -InputObject $proc -EventName 'OutputDataReceived' -Action {
         $data = $EventArgs.Data
         if ($data) {
@@ -400,7 +429,6 @@ try {
     $proc.BeginOutputReadLine()
     $proc.BeginErrorReadLine()
 
-    # 记录 PID
     $proc.Id | Out-File -FilePath $ServicePidFile -Encoding UTF8 -Force
     Write-Log "INFO" "Backend started, PID=$($proc.Id)"
     Write-Log "INFO" "Log file: $serviceLogFile"
@@ -409,7 +437,7 @@ try {
 
     if ($proc.HasExited) {
         Write-Log "ERROR" "Backend process exited immediately (ExitCode: $($proc.ExitCode))"
-        Start-Sleep -Seconds 1  # 等待异步事件完成
+        Start-Sleep -Seconds 1
         if (Test-Path $serviceLogFile) {
             Write-Log "ERROR" "Log content:"
             Get-Content $serviceLogFile -ErrorAction SilentlyContinue | ForEach-Object { Write-Log "ERROR" $_ }

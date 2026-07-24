@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 10906
 
 spring:

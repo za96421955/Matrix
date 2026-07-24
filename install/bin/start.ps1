@@ -5,7 +5,7 @@
     检测 JDK 21，启动 Matrix 后端 Java 服务，启动 WebUI 代理服务
 .NOTES
     对应 start.sh 的 PowerShell 实现
-    版本: 1.0.2
+    版本: 1.0.3
 #>
 
 # ==========================================
@@ -304,28 +304,46 @@ function Start-WebuiProxyPython {
     }
 }
 
-# ---- 启动 WebUI 代理（PowerShell 内置） ----
-function Start-WebuiProxyPowershell {
-    param(
-        [string]$WebuiDir,
-        [string]$BackendUrl
-    )
-
-    try {
-        Write-Log "INFO" "使用 PowerShell 内置代理 (后端: $BackendUrl)"
-
-        $http = [System.Net.HttpListener]::new()
-        # 也改为只监听 127.0.0.1
-        $http.Prefixes.Add("http://127.0.0.1:10908/")
-        $http.Start()
-
-        Write-Log "INFO" "PowerShell 代理已启动在 http://127.0.0.1:10908/"
-        Write-Log "WARN" "注意: PowerShell 内置代理功能有限，建议安装 Python 3 获得完整功能"
-        return $true
-    } catch {
-        Write-Log "ERROR" "PowerShell 代理启动失败: $_"
+# ---- 自动安装 Python 3 (Windows) ----
+function Install-Python3 {
+    # 仅在 Windows 上有包管理器时执行
+    if (-not $IsWindows) {
         return $false
     }
+
+    # 检测管理员权限
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if (-not $isAdmin) {
+        Write-Log "WARN" "当前非管理员权限，无法自动安装 Python 3"
+        return $false
+    }
+
+    # 按优先级检测包管理器并安装
+    $installers = @(
+        @{ Name = "winget"; Test = { Get-Command "winget" -ErrorAction SilentlyContinue }; Cmd = "winget install --id=Python.Python.3.12 --exact --silent --accept-package-agreements" },
+        @{ Name = "choco";  Test = { Get-Command "choco" -ErrorAction SilentlyContinue };  Cmd = "choco install python3 -y" },
+        @{ Name = "scoop";  Test = { Get-Command "scoop" -ErrorAction SilentlyContinue };  Cmd = "scoop install python" }
+    )
+
+    foreach ($installer in $installers) {
+        $available = & $installer.Test
+        if ($available) {
+            Write-Log "INFO" "通过 $($installer.Name) 安装 Python 3..."
+            $result = Invoke-Expression $installer.Cmd
+            if ($LASTEXITCODE -eq 0) {
+                Write-Log "INFO" "$($installer.Name) 安装成功，正在刷新 PATH 环境变量..."
+                # 从注册表刷新 PATH，使新安装的 Python 在当前进程中立即可用
+                $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+                $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+                $env:PATH = "$machinePath;$userPath"
+                return $true
+            } else {
+                Write-Log "WARN" "$($installer.Name) 安装失败（退出码: $LASTEXITCODE），尝试下一种方式..."
+            }
+        }
+    }
+
+    return $false
 }
 
 # ---- 启动 WebUI 代理（主入口） ----
@@ -335,19 +353,32 @@ function Start-WebuiProxy {
     $webuiDir = Join-Path $LocalDir "webui"
     $backendUrl = "http://localhost:10906"
 
+    # 优先尝试 Python 代理
     if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
         return $true
     }
 
-    Write-Log "WARN" "Python 不可用，尝试 PowerShell 内置代理..."
-    if (Start-WebuiProxyPowershell -WebuiDir $webuiDir -BackendUrl $backendUrl) {
-        return $true
+    # Python 不可用，尝试自动安装
+    Write-Log "WARN" "WebUI 代理需要 Python 3 才能启动"
+
+    if (Install-Python3) {
+        Write-Log "INFO" "Python 3 自动安装完成，正在启动 WebUI 代理..."
+        if (Start-WebuiProxyPython -ProxyScript $ProxyScript -WebuiPort 10908 -BackendPort 10906) {
+            return $true
+        }
     }
 
-    Write-Log "ERROR" "未能启动 WebUI 代理。"
-    Write-Log "ERROR" "请安装 Python 3 后重试。"
-    Write-Log "INFO" "可以从 https://www.python.org/downloads/ 下载安装"
-    Write-Log "INFO" "安装后重新运行 start.ps1 即可"
+    # 所有方式均失败，输出详细手动安装指引
+    Write-Log "ERROR" "未能启动 WebUI 代理，Python 3 不可用且自动安装失败"
+    Write-Log "INFO"  "请手动安装 Python 3："
+    Write-Log "INFO"  "  方案 1：从 https://www.python.org/downloads/ 下载安装包"
+    Write-Log "INFO"  "         安装时务必勾选 'Add Python to PATH'"
+    Write-Log "INFO"  "  方案 2：通过 winget 安装（管理员 PowerShell）："
+    Write-Log "INFO"  "         winget install --id=Python.Python.3.12 --exact"
+    Write-Log "INFO"  "  方案 3：通过 Chocolatey 安装（管理员 PowerShell）："
+    Write-Log "INFO"  "         choco install python3 -y"
+    Write-Log "INFO"  "  安装后重新运行 start.ps1 即可"
+    Write-Log "INFO"  "  或手动运行 Python 代理：python3 $(Resolve-Path $ProxyScript)"
     return $false
 }
 

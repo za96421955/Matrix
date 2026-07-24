@@ -438,48 +438,100 @@ $LocalDir = Join-Path $MatrixHome "local"
 $BinDir = Join-Path $LocalDir "bin"
 $LogsDir = Join-Path $LocalDir "logs"
 $ConfigDir = Join-Path $LocalDir "config"
-
-# 确保使用 TLS 1.2
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-# 临时目录
-$TmpDir = Join-Path $env:TEMP "matrix-update"
-if (-not (Test-Path $TmpDir)) { New-Item -ItemType Directory -Path $TmpDir -Force | Out-Null }
+$TmpDir = Join-Path $LocalDir "tmp"
 
 function Write-Log($Level="INFO", $Message) {
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message"
 }
 
 function Get-LatestVersionInfo {
-    $url = if (Test-Path (Join-Path $ConfigDir "server.url")) { (Get-Content (Join-Path $ConfigDir "server.url") -Raw).Trim() } else { "https://raw.githubusercontent.com/za96421955/Matrix/latest/install/github/latest-version.txt" }
+    # 使用与安装脚本一致的 URL
+    $url = "https://raw.githubusercontent.com/za96421955/Matrix/latest/install/github/latest-version.txt"
     try {
-        $content = (New-Object System.Net.WebClient).DownloadString($url)
-        $res = @{}
-        foreach ($line in $content -split "`n") {
-            if ($line -match '^([A-Z_]+)=(.+)$') {
-                $k = $matches[1]
-                $v = $matches[2] -replace '\$\{(\w+)\}', { param($m) $res[$m.Groups[1].Value] }
-                $res[$k] = $v
+        Write-Log "INFO" "正在获取版本信息..."
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("User-Agent", "Matrix-CLI/1.0.3")
+        # 使用 DownloadData + UTF-8 解码，避免 WebClient.DownloadString 的默认编码问题
+        # （中文 UTF-8 多字节序列在默认编码下会被误解析，导致换行符丢失）
+        $rawBytes = $wc.DownloadData($url)
+        $content = [System.Text.Encoding]::UTF8.GetString($rawBytes)
+    } catch {
+        Write-Log "ERROR" "无法下载版本信息文件: $_"
+        return $null
+    }
+
+    $res = @{}
+    $reader = [System.IO.StringReader]::new($content)
+    while (($line = $reader.ReadLine()) -ne $null) {
+        $trimmed = $line.Trim()
+        if ($trimmed -eq "" -or $trimmed.StartsWith("#")) { continue }
+        $eq = $trimmed.IndexOf("=")
+        if ($eq -gt 0) {
+            $key = $trimmed.Substring(0, $eq).Trim()
+            $value = $trimmed.Substring($eq + 1).Trim()
+            $res[$key] = $value
+        }
+    }
+    $reader.Dispose()
+
+    # 多轮变量引用替换
+    for ($i = 0; $i -lt 10; $i++) {
+        $changed = $false
+        foreach ($k in @($res.Keys)) {
+            $matches = [regex]::Matches($res[$k], '\$\{(\w+)\}')
+            if ($matches.Count -eq 0) { continue }
+            foreach ($m in $matches) {
+                $var = $m.Groups[1].Value
+                if ($res.ContainsKey($var)) {
+                    $res[$k] = $res[$k].Replace($m.Groups[0].Value, $res[$var])
+                    $changed = $true
+                }
             }
         }
-        return $res
-    } catch { Write-Log "ERROR" "无法获取版本信息: $_"; return $null }
+        if (-not $changed) { break }
+    }
+
+    # 必须包含 MATRIX_VERSION
+    if (-not $res.ContainsKey("MATRIX_VERSION") -or [string]::IsNullOrEmpty($res["MATRIX_VERSION"])) {
+        Write-Log "ERROR" "版本信息中缺少 MATRIX_VERSION，请检查网络或文件内容"
+        return $null
+    }
+
+    return $res
 }
 
 function Download-File {
-    param($Url, $OutFile, $MaxRetries = 3)
-    for ($i = 1; $i -le $MaxRetries; $i++) {
+    param(
+        [string]$Url,
+        [string]$Destination,
+        [int]$Retries = 3,
+        [string]$Label = ""
+    )
+
+    if ([string]::IsNullOrEmpty($Label)) {
+        $Label = [System.IO.Path]::GetFileName($Destination)
+    }
+
+    for ($i = 1; $i -le $Retries; $i++) {
         try {
-            Write-Log "INFO" "下载中... ($i/$MaxRetries)"
-            $wc = New-Object System.Net.WebClient
-            $wc.DownloadFile($Url, $OutFile)
-            return $true
+            Write-Log "INFO" "正在下载 $Label ..."
+            Invoke-WebRequest -Uri $Url -OutFile $Destination -UserAgent "Matrix-Installer/1.0.3" -ErrorAction Stop
+            if (Test-Path $Destination) {
+                $size = (Get-Item $Destination).Length
+                Write-Log "INFO" "下载完成: $Label ($size bytes)"
+                return $true
+            }
+            Write-Log "WARN" "文件不存在，可能下载失败"
         } catch {
-            Write-Log "WARN" "下载失败 ($i/$MaxRetries): $_"
-            if ($i -eq $MaxRetries) { return $false }
-            Start-Sleep 2
+            Write-Log "WARN" "下载失败 (第 $i 次/$Retries): $_"
+        }
+        if ($i -lt $Retries) {
+            $wait = $i * 3
+            Write-Log "INFO" "等待 ${wait} 秒后重试..."
+            Start-Sleep -Seconds $wait
         }
     }
+    return $false
 }
 
 switch ($Command) {
@@ -522,72 +574,73 @@ switch ($Command) {
     "update" {
         Write-Log "INFO" "检查更新..."
         $info = Get-LatestVersionInfo
-        if (-not $info) { exit 1 }
+        if (-not $info) {
+            Write-Log "ERROR" "获取版本信息失败，更新中止"
+            exit 1
+        }
         $rv = $info["MATRIX_VERSION"]
-        Write-Log "INFO" "更新到 v$rv"
+        Write-Log "INFO" "当前最新版本: v$rv"
         $stopScript = Join-Path $BinDir "stop.ps1"
         if (Test-Path $stopScript) { & $stopScript }
         Start-Sleep 2
         $releaseUrl = "$($info['RELEASE_BASE'])/$($info['RELEASE_TAG'])"
-        $jarFileName = $info['JAR_FILE_NAME']
-        $jarPath = Join-Path $LocalDir $jarFileName
-        if (Download-File -Url "$releaseUrl/$jarFileName" -OutFile $jarPath) {
-            Write-Log "INFO" "下载成功"
-        } else {
-            Write-Log "WARN" "单文件下载失败，尝试分卷合并..."
-            $parts = @()
-            $index = 1
-            while ($true) {
-                $partUrl = "$releaseUrl/$jarFileName.part$index"
-                $partFile = Join-Path $TmpDir "$jarFileName.part$index"
-                if (-not (Download-File -Url $partUrl -OutFile $partFile)) { break }
-                $parts += $partFile
-                $index++
-            }
-            if ($parts.Count -gt 0) {
-                Write-Log "INFO" "合并 $($parts.Count) 个分卷到 $jarPath"
-                $merged = $false
-                # fallback 1: 7z 解压
-                $7z = Get-Command "7z" -ErrorAction SilentlyContinue
-                if ($7z) {
-                    & 7z x "$($parts[0])" -o"$LocalDir" -y -bso0 -bsp0 | Out-Null
-                    if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
-                }
-                # fallback 2: copy /B 合并
-                if (-not $merged) {
-                    $partPaths = ($parts -join '+')
-                    cmd /c "copy /B $partPaths $jarPath >nul 2>&1" | Out-Null
-                    if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
-                }
-                # fallback 3: 二进制流合并
-                if (-not $merged) {
-                    Write-Log "INFO" "尝试二进制合并..."
-                    try {
-                        $fs = [System.IO.File]::OpenWrite($jarPath)
-                        foreach ($p in $parts) {
-                            $data = [System.IO.File]::ReadAllBytes($p)
-                            $fs.Write($data, 0, $data.Length)
-                        }
-                        $fs.Close()
-                        if ((Test-Path $jarPath) -and ((Get-Item $jarPath).Length -gt 0)) { $merged = $true }
-                    } catch {
-                        Write-Log "ERROR" "二进制合并失败: $_"
+        $jarPath = Join-Path $LocalDir $info['JAR_FILE_NAME']
+        $jarDownloaded = Download-File -Url "$releaseUrl/$($info['JAR_FILE_NAME'])" -Destination $jarPath -Label "matrix-local JAR"
+        if (-not $jarDownloaded) {
+            Write-Log "WARN" "完整 JAR 下载失败，尝试分卷下载..."
+            $partZ01Url = "$releaseUrl/$($info['JAR_PART_Z01'])"
+            $partZipUrl = "$releaseUrl/$($info['JAR_PART_ZIP'])"
+            $z01Path = Join-Path $TmpDir $info['JAR_PART_Z01']
+            $zipPath = Join-Path $TmpDir $info['JAR_PART_ZIP']
+            $z01Ok = Download-File -Url $partZ01Url -Destination $z01Path -Label "JAR 分卷 1/2"
+            $zipOk = Download-File -Url $partZipUrl -Destination $zipPath -Label "JAR 分卷 2/2"
+            if ($z01Ok -and $zipOk) {
+                Write-Log "INFO" "分卷下载完成，开始合并..."
+                $mergedOk = $false
+                # 7z
+                try {
+                    $7z = @( "${env:ProgramFiles}\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe" ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+                    if (-not $7z -and (Get-Command "7z" -ErrorAction SilentlyContinue)) { $7z = (Get-Command "7z").Source }
+                    if ($7z) {
+                        Write-Log "INFO" "使用 7z 解压..."
+                        & $7z x "$zipPath" -o"$TmpDir" -y | Out-Null
+                        $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
+                        if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "7z 成功" }
                     }
+                } catch { Write-Log "WARN" "7z 失败: $_" }
+                # copy /B
+                if (-not $mergedOk) {
+                    try {
+                        $combined = Join-Path $TmpDir "combined.zip"
+                        cmd /c "copy /B `"$z01Path`" + `"$zipPath`" `"$combined`" >nul 2>&1"
+                        if (Test-Path $combined) {
+                            Expand-Archive $combined -DestinationPath $TmpDir -Force
+                            $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
+                            if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "copy /B 成功" }
+                        }
+                    } catch { Write-Log "WARN" "copy /B 失败: $_" }
                 }
-                if ($merged) {
-                    Write-Log "INFO" "分卷合并成功"
-                } else {
-                    Write-Log "ERROR" "所有合并方式均失败，更新中止"
-                    exit 1
+                # 二进制合并
+                if (-not $mergedOk) {
+                    try {
+                        $combined = Join-Path $TmpDir "combined.zip"
+                        $b1 = [IO.File]::ReadAllBytes($z01Path)
+                        $b2 = [IO.File]::ReadAllBytes($zipPath)
+                        $all = New-Object byte[] ($b1.Length + $b2.Length)
+                        [Buffer]::BlockCopy($b1, 0, $all, 0, $b1.Length)
+                        [Buffer]::BlockCopy($b2, 0, $all, $b1.Length, $b2.Length)
+                        [IO.File]::WriteAllBytes($combined, $all)
+                        Expand-Archive $combined -DestinationPath $TmpDir -Force
+                        $extracted = Join-Path $TmpDir $info['JAR_FILE_NAME']
+                        if (Test-Path $extracted) { Copy-Item $extracted $jarPath -Force; $mergedOk = $true; Write-Log "INFO" "二进制合并成功" }
+                    } catch { Write-Log "WARN" "二进制合并失败: $_" }
                 }
-            } else {
-                Write-Log "ERROR" "下载失败，更新中止"
-                exit 1
-            }
+                if (-not $mergedOk) { Write-Log "ERROR" "JAR 合并失败，请手动下载并放置到 $jarPath"; exit 1 }
+            } else { Write-Log "ERROR" "分卷下载失败，更新中止"; exit 1 }
         }
-        # 清理临时文件
-        if (Test-Path $TmpDir) { Remove-Item $TmpDir -Recurse -Force -ErrorAction SilentlyContinue }
-        Write-Log "INFO" "更新完成，请手动重启"
+        Write-Log "INFO" "更新完成，重启服务"
+        $stopScript = Join-Path $BinDir "restart.ps1"
+        if (Test-Path $stopScript) { & $stopScript }
     }
     "uninstall" {
         Write-Log "WARN" "确认卸载? 输入 y"
@@ -605,7 +658,6 @@ switch ($Command) {
     }
 }
 '@ | Out-File -FilePath $matrixPs1 -Encoding UTF8 -Force
- | Out-File -FilePath $matrixPs1 -Encoding UTF8 -Force
 
 $matrixBat = Join-Path $CliDir "matrix.bat"
 @"
@@ -638,26 +690,8 @@ Write-Log "INFO" "清理临时文件..."
     if (Test-Path $_) { Remove-Item $_ -Force -ErrorAction SilentlyContinue }
 }
 
-# ==========================================
-# 完成
-# ==========================================
-
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "  Matrix 安装完成！"
+Write-Log "INFO" "Matrix 安装完成，启动服务"
 Write-Log "INFO" "=========================================="
-Write-Log "INFO" "WebUI: http://localhost:10908"
-Write-Log "INFO" "API:   http://localhost:10906"
-Write-Log "INFO" "使用 'matrix start' 启动服务（新终端生效）"
-# 自动启动服务
-$s = Join-Path $BinDir "start.ps1"
-if (Test-Path $s) {
-    & $s
-    if ($?) {
-        Start-Sleep 3
-        Start-Process "http://localhost:10908"
-        [Environment]::Exit(0)
-    }
-} else {
-    Write-Log "ERROR" "未找到 start.ps1"
-}
-pause
+$stopScript = Join-Path $BinDir "restart.ps1"
+if (Test-Path $stopScript) { & $stopScript }

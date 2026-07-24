@@ -326,54 +326,6 @@ Write-Log "INFO" "下载 bin/ 脚本..."
 }
 
 # ==========================================
-# 修补 start.ps1：避免管道重定向导致子进程随父进程退出
-# 根因：RedirectStandardOutput/Error=$true + BeginOutputReadLine 使用管道连接，
-# 当父 PowerShell 进程退出后管道断裂，子进程写入 stdout/stderr 时崩溃退出。
-# 修复：将 RedirectStandardOutput/Error 改为 $false，子进程继承父进程控制台句柄，
-# 控制台由子进程持有，父进程退出不影响子进程继续运行。
-# 日志由应用自身写入文件（Java 通过 -Dlogging.file.path，Python 通过 proxy 内置日志）。
-# ==========================================
-
-Write-Log "INFO" "修补 start.ps1（管道重定向 → 控制台继承模式）..."
-$startPs1Path = Join-Path $BinDir "start.ps1"
-if (Test-Path $startPs1Path) {
-    $startContent = [IO.File]::ReadAllText($startPs1Path, [Text.Encoding]::UTF8)
-
-    # ---- Java 后端启动：关闭管道重定向 ----
-    $startContent = $startContent -replace '(\$procInfo\.RedirectStandardOutput\s*=\s*)\$true', '$1$false'
-    $startContent = $startContent -replace '(\$procInfo\.RedirectStandardError\s*=\s*)\$true', '$1$false'
-    # 注释掉 BeginOutputReadLine / BeginErrorReadLine（Redirect*=false 时调用会报错）
-    $startContent = $startContent -replace '(\s+)(\$proc\.BeginOutputReadLine\(\))', '$1# $2'
-    $startContent = $startContent -replace '(\s+)(\$proc\.BeginErrorReadLine\(\))', '$1# $2'
-
-    # ---- Python WebUI 代理启动：关闭管道重定向 ----
-    $startContent = $startContent -replace '(\$startupInfo\.RedirectStandardOutput\s*=\s*)\$true', '$1$false'
-    $startContent = $startContent -replace '(\$startupInfo\.RedirectStandardError\s*=\s*)\$true', '$1$false'
-
-    # ---- 注释掉 Register-ObjectEvent 的整个 Action 块 ----
-    # 需要完整注释多行块，否则 Action 块内部的代码在脚本作用域中会报错
-    $objEventPattern = '(?m)(\s+)(\$(out|err)Event\s*=\s*Register-ObjectEvent\s+-InputObject\s+\$proc\s+-EventName\s+''(?:OutputDataReceived|ErrorDataReceived)''\s+-Action\s*\{\r?\n)((?:.*\r?\n)*?)(\s+\}\s+-MessageData\s+\$[\w]+)'
-    $objEventMatches = [regex]::Matches($startContent, $objEventPattern)
-    for ($mi = $objEventMatches.Count - 1; $mi -ge 0; $mi--) {
-        $m = $objEventMatches[$mi]
-        $block = $m.Value
-        $lines = $block -split "`r?`n"
-        $commented = $lines | ForEach-Object {
-            if ($_.Trim() -eq "" -or $_.Trim().StartsWith("#")) { $_ }
-            else { $_ -replace '^(\s+)', '$1# ' }
-        }
-        $replacement = $commented -join "`n"
-        $startContent = $startContent.Substring(0, $m.Index) + $replacement + $startContent.Substring($m.Index + $m.Length)
-    }
-
-    # ---- 写回文件 ----
-    [IO.File]::WriteAllText($startPs1Path, $startContent, [Text.UTF8Encoding]::new($false))
-    Write-Log "INFO" "start.ps1 修补完成"
-} else {
-    Write-Log "WARN" "未找到 start.ps1，跳过修补"
-}
-
-# ==========================================
 # 下载 config/ 配置
 # ==========================================
 

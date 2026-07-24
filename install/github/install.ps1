@@ -370,7 +370,7 @@ Ensure-Directory $skillDir
     $d = Join-Path $skillDir $_
     if (Test-Path $d) { Write-Log "INFO" "跳过 skill/$_ (已存在)"; return }
     Ensure-Directory $d
-    Download-File -Url "$RAW_BASE/$MATRIX_VERSION/install/settings/skill/$_" -Destination (Join-Path $d "SKILL.md") -Label "skill/$_/SKILL.md"
+    Download-File -Url "$RAW_BASE/$MATRIX_VERSION/install/settings/skill/$_" -Destination (Join-Path $d "SKILL.md") -Label "settings/skill/$_/SKILL.md"
 }
 
 # ==========================================

@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Matrix 本地服务启动脚本 (Windows)
 .DESCRIPTION
@@ -66,7 +66,7 @@ function Find-Jdk21 {
             $javaExe = Join-Path (Join-Path $jdkDir "bin") "java"
         }
         if (Test-Path $javaExe) {
-            Write-Log "INFO" "✓ JDK21已安装（跳过安装步骤）"
+            Write-Log "INFO" "JDK21已安装（跳过安装步骤）"
             return $jdkDir
         } else {
             Write-Log "WARN" "~/.jdks目录不完整，将重新安装"
@@ -83,7 +83,7 @@ function Find-Jdk21 {
         $versionOutput = & $javaExe -version 2>&1
         if ($versionOutput -match '"21"' -or $versionOutput -match '"21\.') {
             $javaHome = Split-Path -Parent (Split-Path -Parent $javaExe)
-            Write-Log "INFO" "✓系统JDK版本检查通过"
+            Write-Log "INFO" "系统JDK版本检查通过"
             return $javaHome
         }
         $jdkVersion = if ($versionOutput -match '([0-9]+\.[0-9]+\.[0-9]+)') { $Matches[1] } else { "未知" }
@@ -142,7 +142,7 @@ function Find-Jdk21 {
                 $javaExe = Join-Path (Join-Path $JdksDir "bin") "java"
             }
             if (Test-Path $javaExe) {
-                Write-Log "INFO" "✓ JDK21已安装到 $JdksDir"
+                Write-Log "INFO" "JDK21已安装到 $JdksDir"
                 return $JdksDir
             }
         }
@@ -270,12 +270,17 @@ function Start-WebuiProxyPython {
     Write-Log "INFO" "代理脚本: $ProxyScript"
 
     $logFile = Join-Path $LogsDir "webui.log"
+
+    # 通过 cmd.exe /c 启动 Python，将 stdout/stderr 重定向到 webui.log
+    # 这样日志可以正确写入文件，且 PowerShell 不会因为管道阻塞而丢失输出
+    $pythonExe = $pythonCmd.Source
+    $arguments = "-u `"$ProxyScript`""
+    $redirectCmd = "`"$pythonExe`" $arguments > `"$logFile`" 2>&1"
+
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startupInfo.FileName = $pythonCmd.Source
-    $startupInfo.Arguments = "-u `"$ProxyScript`""
+    $startupInfo.FileName = "cmd.exe"
+    $startupInfo.Arguments = "/c $redirectCmd"
     $startupInfo.WorkingDirectory = $webuiDir
-    $startupInfo.RedirectStandardOutput = $true
-    $startupInfo.RedirectStandardError = $true
     $startupInfo.UseShellExecute = $false
     $startupInfo.CreateNoWindow = $true
 
@@ -293,13 +298,18 @@ function Start-WebuiProxyPython {
 
     if (-not $proc.HasExited) {
         Write-Log "INFO" "WebUI 代理已启动 (监听 127.0.0.1:$WebuiPort)，PID=$($proc.Id)"
+        # 将 webui 进程的 PID 写入 webui.pid，与 start.sh 行为一致
+        $proc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
         return $true
     } else {
-        $stdout = $proc.StandardOutput.ReadToEnd()
-        $stderr = $proc.StandardError.ReadToEnd()
         Write-Log "WARN" "WebUI 代理启动失败 (ExitCode: $($proc.ExitCode))"
-        if ($stdout) { Write-Log "WARN" "STDOUT: $stdout" }
-        if ($stderr) { Write-Log "WARN" "STDERR: $stderr" }
+        # 此时 stdout/stderr 已通过重定向写入日志文件，读取日志文件内容显示给用户
+        if (Test-Path $logFile) {
+            $logContent = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
+            if ($logContent) {
+                Write-Log "WARN" "日志输出: $logContent"
+            }
+        }
         return $false
     }
 }
@@ -453,12 +463,16 @@ $serviceLogFile = Join-Path $LogsDir "app.log"
 Write-Log "INFO" "正在启动 Matrix 后端服务..."
 
 try {
+    # 通过 cmd.exe /c 启动 Java，将 stdout/stderr 重定向到 app.log
+    # 修复：使用 cmd.exe 的 > 重定向操作符，而非 PowerShell 的管道重定向
+    # 这样 app.log 才能正确写入，且不会因管道缓冲区阻塞导致进程卡死
+    $javaCmd = "`"$javaExe`" $($jvmArgs -join ' ') -jar `"$jarFile`""
+    $redirectCmd = "$javaCmd > `"$serviceLogFile`" 2>&1"
+
     $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startupInfo.FileName = $javaExe
-    $startupInfo.Arguments = "$($jvmArgs -join ' ') -jar `"$jarFile`""
+    $startupInfo.FileName = "cmd.exe"
+    $startupInfo.Arguments = "/c $redirectCmd"
     $startupInfo.WorkingDirectory = $LocalDir
-    $startupInfo.RedirectStandardOutput = $true
-    $startupInfo.RedirectStandardError = $true
     $startupInfo.UseShellExecute = $false
     $startupInfo.CreateNoWindow = $true
     $startupInfo.EnvironmentVariables["MATRIX_HOME"] = $LocalDir
@@ -476,9 +490,12 @@ try {
     $checkProc = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
     if (-not $checkProc) {
         Write-Log "ERROR" "后端服务启动失败，进程已退出"
-        $stderrOutput = $proc.StandardError.ReadToEnd()
-        if ($stderrOutput) {
-            Write-Log "ERROR" "错误输出: $stderrOutput"
+        # 从日志文件中读取错误信息
+        if (Test-Path $serviceLogFile) {
+            $logContent = Get-Content $serviceLogFile -Raw -ErrorAction SilentlyContinue
+            if ($logContent) {
+                Write-Log "ERROR" "日志输出: $logContent"
+            }
         }
         exit 1
     }

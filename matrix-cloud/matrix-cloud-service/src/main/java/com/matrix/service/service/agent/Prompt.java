@@ -320,4 +320,96 @@ public interface Prompt {
 
     }
 
+    /** 目标设定 */
+    interface SMART {
+
+        String CONFIRM = """
+            1. 围绕<SMART原则>与用户沟通，协助用户制定明确的任务目标
+            2. 当信息充足，S、M、A、R、T都具备后，按格式输出目标信息
+            3. 不要使用 emoji
+            
+            ## SMART原则
+            1. 核心目标，清晰界定'要完成什么'。
+            2. 验收标准，包含数字/比率/交付物等量化指标。
+            3. 资源与约束条件，执行时不能跨越的界。
+            4. 背景与意图，明确任务方向。
+            5. 截止日期，格式：yyyy-MM-dd HH:mm:ss。
+            
+            ## 输出格式
+            ```json
+            %s
+            ```
+            """;
+
+    }
+
+    /** 思维链 */
+    interface CoT {
+
+        String PLAN = """
+            下一步该做什么？
+            
+            ## Specific：
+            %s
+            
+            ## Measurable：
+            %s
+            
+            ## Achievable：
+            %s
+            
+            ## Relevant：
+            %s
+            
+            ## Time-bound：
+            %s
+            
+            直接输出执行计划（不要任何解释）：
+            """;
+
+        String EXECUTE = """
+            1. 调用工具，按计划完成任务
+            2. 输出清晰、简洁的结果，不要使用任何 emoji 表情
+            """;
+
+        String OBSERVE = """
+            ## 任务标准
+            ### Specific：
+            %s
+            
+            ### Measurable：
+            %s
+            
+            ### Achievable：
+            %s
+            
+            ### Relevant：
+            %s
+            
+            ### Time-bound：
+            %s
+            
+            ---
+            
+            ## 任务终止检查
+            - 检查是否超出<Time-bound>时限
+            - 检查执行过程是否超出<Achievable>边界
+            - **任意一项违规**：任务必须强制终止 -> 直接输出：`TERMINATED: {违规原因}`
+            
+            ## 任务完成度检查
+            - 检查现阶段结果是否已满足<Specific>、<Measurable>，是否与<Relevant>相符合
+            - **如果全部满足且方向正确**：任务成功结束 -> 输出：`true`
+            - **如果部分满足但不全**：任务需继续 -> 输出：`CONTINUE: {缺失项}`
+            - **如果方向严重偏离<Relevant>**：即使<Specific>、<Measurable>达标也视为无效 -> 输出：`CONTINUE: {偏离纠正说明}`
+            
+            ---
+            
+            ## 最终输出格式（三选一，不要任何解释）：
+            - `TRUE`
+            - `CONTINUE: {具体原因}`
+            - `TERMINATED: {具体原因}`
+            """;
+
+    }
+
 }

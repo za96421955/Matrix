@@ -119,42 +119,6 @@ public abstract class AbstractTaskPatternService<T> extends AbstractPatternServi
     protected abstract Class<T> taskType();
 
     /**
-     * @description 移除 markdown 标记
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private String removeCodeBlockMarkers(String input) {
-        if (input == null || input.isEmpty()) {
-            return input;
-        }
-
-        // 定义开始标记和结束标记
-        String startMarker = "```json";
-        String endMarker = "```";
-
-        // 检查是否以开始标记开头
-        if (!input.contains(startMarker)) {
-            return input;
-        }
-
-        // 找到结束标记的位置（从末尾找）
-        int startIndex = input.indexOf(startMarker);
-        int endIndex = input.lastIndexOf(endMarker);
-        if (endIndex == -1 || endIndex <= startIndex) {
-            return input;
-        }
-
-        // 截取开始标记之后、结束标记之前的内容
-        int startContentIndex = startIndex + startMarker.length();
-        String content = input.substring(startContentIndex, endIndex);
-
-        // 可选：去除内容首尾的空白字符（如换行符）
-        content = content.trim();
-        return content;
-    }
-
-    /**
      * @description 观察任务执行结果
      * <p> <功能详细描述> </p>
      *

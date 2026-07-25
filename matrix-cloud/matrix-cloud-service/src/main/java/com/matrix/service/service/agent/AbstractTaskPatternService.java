@@ -43,7 +43,7 @@ public abstract class AbstractTaskPatternService<T> extends AbstractPatternServi
         // 消息
         request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
-        return this.call(request, true, sink -> this.executor(sink, request));
+        return this.call(request, sink -> this.executor(sink, request));
     }
 
     /**

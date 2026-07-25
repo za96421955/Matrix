@@ -77,7 +77,7 @@ public class AutoPatternService extends AbstractPatternService<PatternRequest> {
         executorRequest.setMessages(this.buildMessages(executorRequest, null, Prompt.Common.EXECUTE));
         // 根据意图获取 agent 模式
         AtomicReference<PatternService> patternService = new AtomicReference<>();
-        this.call(executorRequest, true, sink -> {
+        this.call(executorRequest, sink -> {
             String pattern = this.callResultByClone(sink, executorRequest, Prompt.Common.AUTO_PATTERN);
             patternService.set(this.getPatternService(pattern));
         }).blockLast();

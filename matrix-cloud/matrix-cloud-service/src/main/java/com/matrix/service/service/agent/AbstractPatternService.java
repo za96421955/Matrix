@@ -71,15 +71,13 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected Flux<Response> call(PatternRequest request,
-                                  boolean isInclude,
-                                  @Nullable Consumer<FluxSink<Response>> customCall) {
+    protected Flux<Response> call(PatternRequest request, @Nullable Consumer<FluxSink<Response>> customCall) {
         return Flux.create(sink -> {
             try {
                 if (customCall != null) {
                     customCall.accept(sink);
                 } else {
-                    this.call(sink, request, isInclude);
+                    this.call(sink, request);
                 }
                 sink.complete();
             } catch (Exception e) {
@@ -95,7 +93,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * @author 陈晨
      */
     protected Flux<Response> call(PatternRequest request, boolean isInclude) {
-        return this.call(request, isInclude, null);
+        return this.call(request, null);
     }
 
     /**
@@ -105,8 +103,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * @author 陈晨
      */
     protected Response call(FluxSink<Response> sink,
-                            PatternRequest request,
-                            boolean isInclude) {
+                            PatternRequest request) {
         // 获取参数
         long userId = request.getUserId();
         long sessionId = request.getSessionId();
@@ -142,7 +139,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 throw new RuntimeException(error.getMessage());
             }
             // 记录 Assistant 消息
-            this.saveMessage(userId, sessionId, Role.ASSISTANT, response, isInclude);
+            this.saveMessage(userId, sessionId, Role.ASSISTANT, response);
 
             // 【STOP】停止对话
             if (!TimerTool.getName().equals(request.getToolName())
@@ -161,36 +158,27 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                         .tool_calls(response.getToolCalls())
                         .build());
                 // 添加工具调用结果
-                request.getMessages().addAll(this.toolCall(sink, request, response.getToolCalls(), isInclude));
+                request.getMessages().addAll(this.toolCall(sink, request, response.getToolCalls()));
                 isContinue.set(true);
             }
         } while (isContinue.get());
         return response;
     }
 
-    protected String callResultByClone(FluxSink<Response> sink,
-                                       PatternRequest request,
-                                       boolean isInclude,
-                                       String prompt) {
+    protected String callResultByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         if (StringUtils.isNotBlank(prompt)) {
             localRequest.getMessages().add(Message.user(prompt));
         }
-        Response response = this.call(sink, localRequest, isInclude);
+        Response response = this.call(sink, localRequest);
         Message message = null != response ? response.getMessage() : null;
         return null != message ? message.getContent() : "";
-    }
-
-    protected String callResultByClone(FluxSink<Response> sink,
-                                       PatternRequest request,
-                                       String prompt) {
-        return this.callResultByClone(sink, request, true, prompt);
     }
 
     protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         localRequest.getTools().clear();
-        return this.callResultByClone(sink, request, false, prompt);
+        return this.callResultByClone(sink, request, prompt);
     }
 
 
@@ -202,8 +190,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      */
     protected List<Message> toolCall(FluxSink<Response> sink,
                                      PatternRequest request,
-                                     List<Response.ToolCall> toolCalls,
-                                     boolean isInclude) {
+                                     List<Response.ToolCall> toolCalls) {
         long userId = request.getUserId();
         long sessionId = request.getSessionId();
         List<Message> messages = new ArrayList<>();
@@ -257,7 +244,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             // SSE 响应
             sink.next(toolResult);
             // 记录工具结果消息
-            this.saveMessage(userId, sessionId, Role.TOOL, toolResult, isInclude);
+            this.saveMessage(userId, sessionId, Role.TOOL, toolResult);
         }
         // 追加系统消息
         if (!systemMessage.isEmpty()) {
@@ -403,10 +390,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected void saveMessage(Long userId, Long sessionId, String role, Response response, boolean isInclude) {
-        if (!isInclude) {
-            return;
-        }
+    protected void saveMessage(Long userId, Long sessionId, String role, Response response) {
         Message message = response.getMessage();
         if (null == message) {
             log.info("[记录消息] userId={}, sessionId={}, message is null", userId, sessionId);

@@ -39,7 +39,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         // 消息
         request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
-        return this.call(request, true, sink -> {
+        return this.call(request, sink -> {
             log.info("[执行模式] userId={}, 执行【开始】", request.getUserId());
             this.executor(sink, request);
             log.info("[执行模式] userId={}, 执行【结束】", request.getUserId());
@@ -65,12 +65,16 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         }
 
         // 2. CoT
+        int count = 0;
         while (true) {
             // 【STOP】停止对话
             if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                log.warn("\n\n======================\n\n\tS T O P: 执行模式 CoT【结束】\n\n======================\n\n");
+                log.warn("\n\n======================\n\n\tS T O P: 执行模式 CoT【结束】\n\n======================");
+                log.warn("执行轮次: {}", count);
+                log.warn("======================\n\n\tS T O P: 执行模式 CoT【结束】\n\n======================\n\n");
                 return;
             }
+            count++;
             PatternRequest executorRequest = request.clone();
 
             // 1. 规划

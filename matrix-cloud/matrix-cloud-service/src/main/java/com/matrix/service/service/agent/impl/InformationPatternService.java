@@ -50,7 +50,7 @@ public class InformationPatternService extends AbstractPatternService<PatternReq
         // 消息
         request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
-        return this.call(request, true, sink -> {
+        return this.call(request, sink -> {
             log.info("[资料模式] userId={}, 执行【开始】", request.getUserId());
             this.executor(sink, request);
             log.info("[资料模式] userId={}, 执行【结束】", request.getUserId());

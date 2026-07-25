@@ -326,7 +326,6 @@ public interface Prompt {
         String CONFIRM = """
             1. 围绕<SMART原则>与用户沟通，协助用户制定明确的任务目标
             2. 当信息充足，S、M、A、R、T都具备后，按格式输出目标信息
-            3. 不要使用 emoji
             
             ## SMART原则
             1. 核心目标，清晰界定'要完成什么'。
@@ -334,6 +333,10 @@ public interface Prompt {
             3. 资源与约束条件，执行时不能跨越的界。
             4. 背景与意图，明确任务方向。
             5. 截止日期，格式：yyyy-MM-dd HH:mm:ss。
+            
+            ## 约束
+            1. 你仅负责协助用户制定任务目标，禁止执行任何写操作
+            2. 不要使用 emoji
             
             ## 输出格式
             ```json

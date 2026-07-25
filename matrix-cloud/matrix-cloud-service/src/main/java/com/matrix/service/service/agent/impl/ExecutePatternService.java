@@ -74,7 +74,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             PatternRequest executorRequest = request.clone();
 
             // 1. 规划
-            String plan = this.callResultByClone(sink, executorRequest.clone(), Prompt.CoT.PLAN.formatted(
+            String plan = this.callResultByClone(sink, executorRequest, Prompt.CoT.PLAN.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound()));
             log.info("[执行模式] 任务规划, userId={}, sessionId={}, plan={}",
@@ -87,6 +87,8 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
                     request.getUserId(), request.getSessionId(), result);
 
             // 3. 观察
+            executorRequest.getMessages().add(Message.user(plan));
+            executorRequest.getMessages().add(Message.assistant(result));
             String observe = this.callResultByClone(sink, executorRequest, Prompt.CoT.OBSERVE.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound()));

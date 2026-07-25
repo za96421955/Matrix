@@ -234,54 +234,45 @@ function Start-WebuiProxyPython {
         return $false
     }
 
+    # 尝试使用 pythonw.exe（无控制台窗口）
+    $pythonwPath = Join-Path (Split-Path -Parent $pythonPath) "pythonw.exe"
+    if (-not (Test-Path $pythonwPath)) {
+        $pythonwPath = $pythonPath   # 降级用 python.exe
+    }
+
     Write-Log "INFO" "Starting WebUI proxy with Python (port $WebuiPort -> backend $BackendPort)"
-    Write-Log "INFO" "Python: $pythonPath"
+    Write-Log "INFO" "Executable: $pythonwPath"
     Write-Log "INFO" "Script: $ProxyScript"
 
     $logFile = Join-Path $LogsDir "webui.log"
 
-    $startupInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startupInfo.FileName = $pythonPath
-    $startupInfo.Arguments = "-u `"$ProxyScript`""
-    $startupInfo.WorkingDirectory = $webuiDir
-    $startupInfo.UseShellExecute = $false
-    $startupInfo.CreateNoWindow = $true
-    $startupInfo.RedirectStandardOutput = $true
-    $startupInfo.RedirectStandardError = $true
-    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_DIR"] = $webuiDir
-    $startupInfo.EnvironmentVariables["MATRIX_BACKEND_PORT"] = $BackendPort
-    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_PORT"] = $WebuiPort
-    $startupInfo.EnvironmentVariables["MATRIX_WEBUI_HOST"] = "127.0.0.1"
+    # 构建参数：使用 -u 强制无缓冲输出，脚本路径加引号
+    $scriptArgs = "-u `"$ProxyScript`""
+    # 使用 cmd /c start 后台启动，并重定向输出到日志文件
+    $cmdArgs = "/c start `"`" /b `"$pythonwPath`" $scriptArgs >> `"$logFile`" 2>&1"
 
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $startupInfo
-
-    # 异步重定向输出到日志文件
-    $outEvent = Register-ObjectEvent -InputObject $proc -EventName 'OutputDataReceived' -Action {
-        $data = $EventArgs.Data
-        if ($data) {
-            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
-        }
-    } -MessageData $logFile
-    $errEvent = Register-ObjectEvent -InputObject $proc -EventName 'ErrorDataReceived' -Action {
-        $data = $EventArgs.Data
-        if ($data) {
-            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
-        }
-    } -MessageData $logFile
-
-    $proc.Start() | Out-Null
-    $proc.BeginOutputReadLine()
-    $proc.BeginErrorReadLine()
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -WindowStyle Hidden -PassThru
 
     Start-Sleep -Seconds 2
 
-    if (-not $proc.HasExited) {
-        Write-Log "INFO" "WebUI proxy started (127.0.0.1:$WebuiPort), PID=$($proc.Id)"
-        $proc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
+    # 通过进程名查找包含脚本名的进程，获取 PID
+    $proxyProc = $null
+    # pythonw.exe 可能很短时间内就结束了，我们等一会儿
+    for ($i = 0; $i -lt 5; $i++) {
+        $proxyProc = Get-Process -Name "pythonw", "python" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -match [regex]::Escape($ProxyScript) } |
+            Select-Object -First 1
+        if ($proxyProc) { break }
+        Start-Sleep -Seconds 1
+    }
+
+    if ($proxyProc) {
+        Write-Log "INFO" "WebUI proxy started (127.0.0.1:$WebuiPort), PID=$($proxyProc.Id)"
+        $proxyProc.Id | Out-File -FilePath $WebuiPidFile -Encoding UTF8 -Force
         return $true
     } else {
-        Write-Log "WARN" "WebUI proxy failed (ExitCode: $($proc.ExitCode))"
+        Write-Log "WARN" "WebUI proxy failed to start (could not find running process)"
+        # 读取日志可能的信息
         if (Test-Path $logFile) {
             $logContent = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
             if ($logContent) { Write-Log "WARN" "Log: $logContent" }
@@ -367,6 +358,11 @@ if (-not $jdkHome) {
 }
 Write-Log "INFO" "Using JDK: $jdkHome"
 $javaExe = Join-Path (Join-Path $jdkHome "bin") "java.exe"
+$javawExe = Join-Path (Join-Path $jdkHome "bin") "javaw.exe"
+if (-not (Test-Path $javawExe)) {
+    # 如果 javaw 不存在（比如某些精简 JDK），则降级使用 java.exe
+    $javawExe = $javaExe
+}
 
 # 2. 查找 JAR 文件
 $jarFile = Find-MatrixJar
@@ -417,49 +413,27 @@ $javaArgs = @(
 )
 
 $serviceLogFile = Join-Path $LogsDir "app.log"
-Write-Log "INFO" "Starting Matrix backend..."
-Write-Log "INFO" "Java command: $javaExe $javaArgs"
+Write-Log "INFO" "Starting Matrix backend (independent mode)..."
+Write-Log "INFO" "Java command: $javawExe $javaArgs"
 
-# 8. 启动后端服务（.NET Process + 异步日志）
+# 8. 启动后端服务（使用 Start-Process 脱离终端）
 try {
-    $procInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $procInfo.FileName = $javaExe
-    $procInfo.Arguments = $javaArgs -join ' '
-    $procInfo.WorkingDirectory = $LocalDir
-    $procInfo.UseShellExecute = $false
-    $procInfo.RedirectStandardOutput = $true
-    $procInfo.RedirectStandardError = $true
-    $procInfo.CreateNoWindow = $true
-    $procInfo.EnvironmentVariables["MATRIX_HOME"] = $LocalDir
+    $backendProc = Start-Process -FilePath $javawExe `
+        -ArgumentList $javaArgs `
+        -WorkingDirectory $LocalDir `
+        -WindowStyle Hidden `
+        -PassThru
 
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $procInfo
-
-    $outEvent = Register-ObjectEvent -InputObject $proc -EventName 'OutputDataReceived' -Action {
-        $data = $EventArgs.Data
-        if ($data) {
-            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
-        }
-    } -MessageData $serviceLogFile
-    $errEvent = Register-ObjectEvent -InputObject $proc -EventName 'ErrorDataReceived' -Action {
-        $data = $EventArgs.Data
-        if ($data) {
-            Add-Content -Path $Event.MessageData -Value $data -Encoding UTF8
-        }
-    } -MessageData $serviceLogFile
-
-    $proc.Start() | Out-Null
-    $proc.BeginOutputReadLine()
-    $proc.BeginErrorReadLine()
-
-    $proc.Id | Out-File -FilePath $ServicePidFile -Encoding UTF8 -Force
-    Write-Log "INFO" "Backend started, PID=$($proc.Id)"
+    $backendProc.Id | Out-File -FilePath $ServicePidFile -Encoding UTF8 -Force
+    Write-Log "INFO" "Backend started, PID=$($backendProc.Id)"
     Write-Log "INFO" "Log file: $serviceLogFile"
 
     Start-Sleep -Seconds 3
 
-    if ($proc.HasExited) {
-        Write-Log "ERROR" "Backend process exited immediately (ExitCode: $($proc.ExitCode))"
+    # 检查进程是否仍在运行
+    $backendStillAlive = Get-Process -Id $backendProc.Id -ErrorAction SilentlyContinue
+    if (-not $backendStillAlive) {
+        Write-Log "ERROR" "Backend process exited immediately (ExitCode: $($backendProc.ExitCode))"
         Start-Sleep -Seconds 1
         if (Test-Path $serviceLogFile) {
             Write-Log "ERROR" "Log content:"

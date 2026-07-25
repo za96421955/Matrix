@@ -101,9 +101,10 @@ if (-not $WebuiPid -and (Test-Path $InstallWebuiPidFile)) {
 }
 
 # 第三层：通过进程名查找（匹配 proxy_server.py）
+# ---- 修改点 1/2：进程名过滤增加 pythonw.exe ----
 if (-not $WebuiPid) {
     try {
-        $pyProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='python3.exe'" -ErrorAction SilentlyContinue
+        $pyProcs = Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='python3.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue
         foreach ($proc in $pyProcs) {
             if ($proc.CommandLine -match "proxy_server") {
                 $WebuiPid = $proc.ProcessId
@@ -111,7 +112,7 @@ if (-not $WebuiPid) {
                 break
             }
         }
-        # 也检查 PowerShell 代理进程
+        # 也检查 PowerShell 代理进程（保留兼容）
         if (-not $WebuiPid) {
             $psProcs = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue
             foreach ($proc in $psProcs) {
@@ -124,7 +125,8 @@ if (-not $WebuiPid) {
         }
     } catch {
         try {
-            $pyProcs = Get-WmiObject Win32_Process -Filter "Name='python.exe' OR Name='python3.exe'" -ErrorAction SilentlyContinue
+            # ---- 修改点 2/2：WMI 回退也增加 pythonw.exe ----
+            $pyProcs = Get-WmiObject Win32_Process -Filter "Name='python.exe' OR Name='python3.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue
             foreach ($proc in $pyProcs) {
                 if ($proc.CommandLine -match "proxy_server") {
                     $WebuiPid = $proc.ProcessId

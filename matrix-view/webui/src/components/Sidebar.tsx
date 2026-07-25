@@ -705,7 +705,7 @@ export default function Sidebar() {
                 </label>
 
                 <p className="text-xs text-gray-400 text-center">
-                    Matrix v1.0.2
+                    Matrix v1.0.3.alpha
                 </p>
             </div>
         </div>

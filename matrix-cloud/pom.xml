@@ -13,7 +13,7 @@
 
     <groupId>com.matrix</groupId>
     <artifactId>matrix-cloud</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3.alpha</version>
     <packaging>pom</packaging>
 
     <name>Matrix Cloud</name>

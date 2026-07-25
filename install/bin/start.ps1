@@ -5,7 +5,7 @@
     检测 JDK 21，启动 Matrix 后端 Java 服务，启动 WebUI 代理服务
 .NOTES
     对应 start.sh 的 PowerShell 实现
-    版本: 1.0.2
+    版本: 1.0.3.alpha
 #>
 
 $OutputEncoding = [Text.Encoding]::UTF8

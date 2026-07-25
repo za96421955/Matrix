@@ -7,15 +7,15 @@
     <parent>
         <groupId>com.matrix</groupId>
         <artifactId>matrix</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3.alpha</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>matrix-local</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3.alpha</version>
     <packaging>jar</packaging>
 
-    <name>matrix-local</name>
+    <name>matrix-local-1.0.3.alpha</name>
     <description>Matrix Local - 本地化服务，合并 cloud 与 client，零外部依赖</description>
 
     <properties>

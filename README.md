@@ -66,7 +66,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:10906/v1/chat/completions' -Method Post
 安装过程：
 1. 检测 DEEPSEEK_API_KEY（未设置则交互输入）
 2. 下载 JDK21（内置包，自动解压至 ~/.jdks）
-3. 下载 JAR 分卷并合并（matrix-local-1.0.2.jar）
+3. 下载 JAR 分卷并合并（matrix-local-1.0.3.alpha.jar）
 4. 下载 WebUI 静态资源
 5. 自动启动服务
 
@@ -212,7 +212,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:10906/v1/chat/completions' -Method Post
 matrix start
 
 # 方式二：直接运行 JAR
-java -jar matrix-local-1.0.2.jar
+java -jar matrix-local-1.0.3.alpha.jar
 
 # 方式三：IDEA 开发
 # 运行 LocalApplication.java 主类

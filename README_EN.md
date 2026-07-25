@@ -52,7 +52,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 Installation process:
 1. Detect DEEPSEEK_API_KEY (if not set, prompt for interactive input)
 2. Download JDK21 (bundled package, auto-extract to ~/.jdks)
-3. Download and merge JAR split volumes (matrix-local-1.0.2.jar)
+3. Download and merge JAR split volumes (matrix-local-1.0.3.alpha.jar)
 4. Download WebUI static resources
 5. Auto-start the service
 
@@ -198,7 +198,7 @@ Installation directory: `~/.matrix/local/`
 matrix start
 
 # Method 2: Run JAR directly
-java -jar matrix-local-1.0.2.jar
+java -jar matrix-local-1.0.3.alpha.jar
 
 # Method 3: IDEA development
 # Run the LocalApplication.java main class

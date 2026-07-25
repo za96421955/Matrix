@@ -13,7 +13,7 @@
 
     <groupId>com.matrix</groupId>
     <artifactId>matrix-client</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3.alpha</version>
 
     <name>matrix-client</name>
     <description>Matrix Client</description>

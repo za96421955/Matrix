@@ -5,7 +5,7 @@
     停止 WebUI 代理和 Matrix 后端 Java 服务
 .NOTES
     对应 stop.sh 的 PowerShell 实现
-    版本: 1.0.2
+    版本: 1.0.3.alpha
 #>
 
 # ==========================================

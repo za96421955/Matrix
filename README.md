@@ -2,11 +2,10 @@
 
 # Matrix
 
-**Only supports Deepseek** — 基于 Deepseek API 的 AI 对话 + 指令执行系统。
+**Only supports Deepseek**
 
 ---
 
-## 主页面
 ![index.png](index.png)
 ### 模式
 - **规划：** 构建任务计划

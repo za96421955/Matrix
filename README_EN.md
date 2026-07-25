@@ -2,11 +2,10 @@
 
 # Matrix
 
-**Only supports Deepseek** — An AI conversation + command execution system based on the Deepseek API.
+**Only supports Deepseek**
 
 ---
 
-## Homepage
 ![index.png](index.png)
 ### Modes
 - **Plan:** Build task plans

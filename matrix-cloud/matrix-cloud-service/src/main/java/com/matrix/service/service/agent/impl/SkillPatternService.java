@@ -37,7 +37,7 @@ public class SkillPatternService extends AbstractPatternService<AgentRequest> {
         // 消息
         request.setMessages(this.buildMessages(request, null, skill.getPrompt()));
         // ReAct Agent Call
-        return this.call(request, true);
+        return this.call(request, null);
     }
 
 }

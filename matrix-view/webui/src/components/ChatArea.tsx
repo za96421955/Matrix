@@ -1013,9 +1013,9 @@ export default function ChatArea() {
                     <div
                         className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                         {patternOptions.map((opt) => {
-                            const disabledPatterns = ['agent', 'coding', 'information'];
+                            const disabledPatterns = ['task-chain', 'task-graph', 'agent', 'coding', 'information'];
                             const isDisabled = disabledPatterns.includes(opt.value);
-                            const isHidden = ['agent', 'coding', 'information'].includes(opt.value);
+                            const isHidden = ['task-chain', 'task-graph', 'agent', 'coding', 'information'].includes(opt.value);
                             return (
                                 <button
                                     key={opt.value}

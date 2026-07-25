@@ -8,7 +8,7 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.service.agent.PatternService;
-import com.matrix.service.service.agent.impl.AutoPatternService;
+import com.matrix.service.service.agent.impl.DefaultPatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -36,7 +36,7 @@ public class ChatService {
     @Resource
     private MessageService messageService;
     @Resource
-    private AutoPatternService autoPatternService;
+    private DefaultPatternService defaultPatternService;
 
     /**
      * @description 对话入口（SSE 流式）
@@ -49,7 +49,7 @@ public class ChatService {
             return Flux.just(Response.error(ErrorCode.IN_THE_CONVERSATION.getMessage()));
         }
         // 获取模式服务
-        PatternService patternService = autoPatternService.getPatternService(request.getPattern());
+        PatternService patternService = defaultPatternService.getPatternService(request.getPattern());
         // 流式响应
         return Mono.fromCallable(() -> sessionService.getOrCreateSession(request, request.getMessages().getFirst().getContent()))
                 .subscribeOn(Schedulers.boundedElastic())

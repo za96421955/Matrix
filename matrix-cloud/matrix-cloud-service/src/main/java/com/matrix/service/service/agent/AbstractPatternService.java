@@ -92,18 +92,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected Flux<Response> call(PatternRequest request, boolean isInclude) {
-        return this.call(request, null);
-    }
-
-    /**
-     * @description ReAct Agent Call
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    protected Response call(FluxSink<Response> sink,
-                            PatternRequest request) {
+    protected Response call(FluxSink<Response> sink, PatternRequest request) {
         // 获取参数
         long userId = request.getUserId();
         long sessionId = request.getSessionId();
@@ -175,11 +164,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return null != message ? message.getContent() : "";
     }
 
-    protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
-        PatternRequest localRequest = request.clone();
-        localRequest.getTools().clear();
-        return this.callResultByClone(sink, request, prompt);
-    }
+//    protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
+//        PatternRequest localRequest = request.clone();
+//        localRequest.getTools().clear();
+//        return this.callResultByClone(sink, request, prompt);
+//    }
 
 
     /**

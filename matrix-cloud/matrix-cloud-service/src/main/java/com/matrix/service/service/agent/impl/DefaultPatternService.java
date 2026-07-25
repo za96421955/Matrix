@@ -16,31 +16,31 @@ import reactor.core.publisher.Flux;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * @description 执行模式
+ * @description 默认模式
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
  */
 @Slf4j
 @Service
-public class AutoPatternService extends AbstractPatternService<PatternRequest> {
+public class DefaultPatternService extends AbstractPatternService<PatternRequest> {
 
-    @Resource
-    private ChatPatternService chatPatternService;
-    @Resource
-    private SkillPatternService skillPatternService;
+//    @Resource
+//    private ChatPatternService chatPatternService;
+//    @Resource
+//    private SkillPatternService skillPatternService;
     @Resource
     private PlanPatternService planPatternService;
     @Resource
     private ExecutePatternService executePatternService;
-    @Resource
-    private TaskChainPatternService taskChainPatternService;
-    @Resource
-    private TaskGraphPatternService taskGraphPatternService;
-    @Resource
-    private CodingPatternService codingPatternService;
-    @Resource
-    private InformationPatternService informationPatternService;
+//    @Resource
+//    private TaskChainPatternService taskChainPatternService;
+//    @Resource
+//    private TaskGraphPatternService taskGraphPatternService;
+//    @Resource
+//    private CodingPatternService codingPatternService;
+//    @Resource
+//    private InformationPatternService informationPatternService;
 
     /**
      * @description 获取模式服务
@@ -54,15 +54,15 @@ public class AutoPatternService extends AbstractPatternService<PatternRequest> {
         }
         PatternService patternService;
         switch (pattern) {
-            case Constant.Pattern.AUTO -> patternService = this;
-            case Constant.Pattern.AGENT -> patternService = skillPatternService;
+//            case Constant.Pattern.AUTO -> patternService = this;
+//            case Constant.Pattern.AGENT -> patternService = skillPatternService;
             case Constant.Pattern.PLAN -> patternService = planPatternService;
             case Constant.Pattern.EXECUTE -> patternService = executePatternService;
-            case Constant.Pattern.TASK_CHAIN -> patternService = taskChainPatternService;
-            case Constant.Pattern.TASK_GRAPH -> patternService = taskGraphPatternService;
-            case Constant.Pattern.CODING -> patternService = codingPatternService;
-            case Constant.Pattern.INFORMATION -> patternService = informationPatternService;
-            default -> patternService = chatPatternService;
+//            case Constant.Pattern.TASK_CHAIN -> patternService = taskChainPatternService;
+//            case Constant.Pattern.TASK_GRAPH -> patternService = taskGraphPatternService;
+//            case Constant.Pattern.CODING -> patternService = codingPatternService;
+//            case Constant.Pattern.INFORMATION -> patternService = informationPatternService;
+            default -> patternService = this;
         }
         return patternService;
     }
@@ -72,15 +72,21 @@ public class AutoPatternService extends AbstractPatternService<PatternRequest> {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
         }
-        // 消息
-        PatternRequest executorRequest = request.clone();
-        executorRequest.setMessages(this.buildMessages(executorRequest, null, Prompt.Common.EXECUTE));
-        // 根据意图获取 agent 模式
+        // 识别模式
         AtomicReference<PatternService> patternService = new AtomicReference<>();
-        this.call(executorRequest, sink -> {
-            String pattern = this.callResultByClone(sink, executorRequest, Prompt.Common.AUTO_PATTERN);
-            patternService.set(this.getPatternService(pattern));
+        this.call(request, sink -> {
+            int retry = 0;
+            while (++retry <= 3) {
+                String pattern = this.callResultByClone(sink, request, Prompt.Common.AUTO_PATTERN);
+                patternService.set(this.getPatternService(pattern));
+                if (null != patternService.get()) {
+                    break;
+                }
+            }
         }).blockLast();
+        if (null == patternService.get()) {
+            return Flux.just(Response.error(ErrorCode.SYSTEM_ERROR.getMessage()));
+        }
         // 调用模式
         return patternService.get().call(request);
     }

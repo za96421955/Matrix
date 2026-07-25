@@ -13,14 +13,14 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 
 /**
- * @description 计划模式
+ * @description 定时任务模式（直接执行任务）
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
  */
 @Slf4j
 @Service
-public class PlanPatternService extends AbstractPatternService<PatternRequest> {
+public class TimerPatternService extends AbstractPatternService<PatternRequest> {
 
     @Override
     public Flux<Response> call(PatternRequest request) {
@@ -32,7 +32,7 @@ public class PlanPatternService extends AbstractPatternService<PatternRequest> {
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request, clients, Prompt.Common.PLAN));
+        request.setMessages(this.buildMessages(request, clients, Prompt.Common.EXECUTE));
         // ReAct Agent Call
         return this.call(request, null);
     }

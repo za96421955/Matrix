@@ -57,7 +57,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             return;
         }
         // 1. 规划任务目标
-        Smart smart = this.generateSmart(sink, request.clone());
+        Smart smart = this.generateSmart(sink, request.clone(), 0);
         log.info("[执行模式] 规划任务目标, userId={}, sessionId={}, smart={}",
                 request.getUserId(), request.getSessionId(), smart);
         if (null == smart) {
@@ -118,7 +118,10 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      *
      * @author 陈晨
      */
-    private Smart generateSmart(FluxSink<Response> sink, PatternRequest request) {
+    private Smart generateSmart(FluxSink<Response> sink, PatternRequest request, int retry) {
+        if (retry >= 3) {
+            return null;
+        }
         String result = this.callResultByClone(sink, request, Prompt.SMART.CONFIRM.formatted(
                 JSONSchemaUtil.generate(Smart.class)));
         // 检查
@@ -130,8 +133,9 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         try {
             return JSON.parseObject(this.removeCodeBlockMarkers(result), Smart.class);
         } catch (Exception e) {
-            // 若格式错误，则说明仍在与用户沟通中
-            return null;
+            // 格式错误，重试
+            request.getMessages().add(Message.user("按格式输出"));
+            return this.generateSmart(sink, request, ++retry);
         }
     }
 

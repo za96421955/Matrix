@@ -121,6 +121,12 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
     private Smart generateSmart(FluxSink<Response> sink, PatternRequest request) {
         String result = this.callResultByClone(sink, request, Prompt.SMART.CONFIRM.formatted(
                 JSONSchemaUtil.generate(Smart.class)));
+        // 检查
+        request.getMessages().add(Message.assistant(result));
+        String check = this.callResultByClone(sink, request, Prompt.SMART.CONFIRM_CHECK);
+        if (check.contains("TODO")) {
+            return null;
+        }
         try {
             return JSON.parseObject(this.removeCodeBlockMarkers(result), Smart.class);
         } catch (Exception e) {

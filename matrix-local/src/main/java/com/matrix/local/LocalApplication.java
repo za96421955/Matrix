@@ -3,8 +3,7 @@ package com.matrix.local;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration;
-import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = {
         "com.matrix.local",
@@ -15,6 +14,7 @@ import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSec
         "com.matrix.service.dal.mapper",
         "com.matrix.local.dal.mapper"
 })
+@EnableScheduling
 public class LocalApplication {
 
     public static void main(String[] args) {

@@ -2,6 +2,8 @@ package com.matrix.local.primary;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.matrix.local.dal.entity.LocalCache;
+import com.matrix.local.dal.mapper.LocalCacheMapper;
 import com.matrix.local.service.LocalCacheService;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
@@ -25,6 +27,9 @@ public class SqlServiceCache implements ServiceCache {
 
     @Resource
     private LocalCacheService localCacheService;
+
+    @Resource
+    private LocalCacheMapper localCacheMapper;
 
     @Getter
     public final Hash hash = new Hash();
@@ -76,18 +81,25 @@ public class SqlServiceCache implements ServiceCache {
         return localCacheService.get(key);
     }
 
+    /**
+     * 原子分布式锁
+     * <p> 使用 INSERT OR IGNORE + UNIQUE(cache_key) 约束，单条 SQL 原子完成锁获取，避免 check-then-set 竞态条件 </p>
+     */
     @Override
     public boolean lock(String key, long ttl) {
         if (StringUtils.isBlank(key)) {
             return false;
         }
-        String existing = localCacheService.get(key);
-        if (existing != null) {
-            // key 已存在且未过期，锁获取失败
-            return false;
+        LocalCache cache = new LocalCache();
+        cache.setCacheKey(key);
+        cache.setCacheValue("1");
+        if (ttl > 0) {
+            cache.setExpireAt(System.currentTimeMillis() / 1000 + ttl);
+        } else {
+            cache.setExpireAt(-1L);
         }
-        localCacheService.put(key, "1", ttl);
-        return true;
+        int rows = localCacheMapper.insertIfAbsent(cache);
+        return rows > 0;
     }
 
     /**

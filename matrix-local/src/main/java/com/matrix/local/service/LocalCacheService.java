@@ -6,6 +6,7 @@ import com.matrix.local.dal.mapper.LocalCacheMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -44,7 +45,8 @@ public class LocalCacheService {
     }
 
     /**
-     * @description 获取 KV，过期自动删除返回 null
+     * @description 获取 KV，过期返回 null
+     * <p> 延迟清理：过期数据交由定时任务批量删除，避免读操作触发写锁争抢 </p>
      */
     public String get(String key) {
         if (StringUtils.isBlank(key)) {
@@ -56,7 +58,6 @@ public class LocalCacheService {
             return null;
         }
         if (cache.isExpired()) {
-            localCacheMapper.deleteById(cache.getId());
             return null;
         }
         return cache.getCacheValue();
@@ -83,8 +84,6 @@ public class LocalCacheService {
         String likePattern = pattern.replace("*", "%");
         List<LocalCache> list = localCacheMapper.selectList(
                 Wrappers.<LocalCache>lambdaQuery()
-                        .like(LocalCache::getCacheKey, likePattern.replace("%", "\\%").replace("_", "\\_"))
-                        .or()
                         .apply("cache_key LIKE {0}", likePattern));
         if (CollectionUtils.isEmpty(list)) {
             return Collections.emptyList();
@@ -97,7 +96,8 @@ public class LocalCacheService {
 
     /**
      * @description 获取剩余 TTL（秒）
-     * <p> -1 永不过期，-2 不存在 </p>
+     * <p> -1 永不过期，-2 不存在或已过期 </p>
+     * <p> 延迟清理：过期数据交由定时任务批量删除，避免读操作触发写锁争抢 </p>
      */
     public long getExpire(String key) {
         if (StringUtils.isBlank(key)) {
@@ -113,10 +113,22 @@ public class LocalCacheService {
         }
         long remaining = cache.getExpireAt() - (System.currentTimeMillis() / 1000);
         if (remaining <= 0) {
-            localCacheMapper.deleteById(cache.getId());
             return -2L;
         }
         return remaining;
+    }
+
+    /**
+     * @description 定时清理过期缓存
+     * <p> 每 5 分钟执行一次，批量删除 expire_at > 0 且 < 当前时间戳的记录 </p>
+     * <p> 将过期删除从读路径剥离到后台任务，避免读操作争抢写锁 </p>
+     */
+    @Scheduled(fixedRate = 300_000)
+    public void cleanExpired() {
+        int deleted = localCacheMapper.deleteExpired();
+        if (deleted > 0) {
+            log.debug("[缓存清理] 清理过期缓存 {} 条", deleted);
+        }
     }
 
 }

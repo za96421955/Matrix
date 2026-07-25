@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @description PC 指令执行器
@@ -27,6 +29,8 @@ public class PCCommandExecutor implements CommandExecutor {
 
     @Resource
     private MatrixClientProperties properties;
+    @Resource
+    private ExecutorService threadPoolExecutor;
 
     private final SystemService systemService;
     public PCCommandExecutor(@Lazy SystemService systemService) {
@@ -93,24 +97,42 @@ public class PCCommandExecutor implements CommandExecutor {
      */
     private String execute(ProcessBuilder processBuilder, String taskId, String command)
             throws IOException, InterruptedException {
-        // 执行
         Process process = processBuilder.start();
         StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.info(line);
-                sb.append(line).append("\n");
+
+        // 用一个子线程读取标准输出
+        Thread readerThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info(line);
+                    sb.append(line).append("\n");
+                }
+            } catch (IOException e) {
+                // 进程被销毁或流关闭时可能抛出异常，属于正常情况
+                log.debug("读取输出流时被中断或关闭", e);
             }
+        });
+        readerThread.start();
+
+        // 主线程等待进程结束，最多等 3 分钟
+        boolean finished = process.waitFor(3, TimeUnit.MINUTES);
+        if (!finished) {
+            // 超时：强制终止进程，并中断读取线程
+            process.destroyForcibly();
+            readerThread.interrupt();  // 让读取线程尽快退出
+            log.error("[{}] command={}, 命令执行超时 (3分钟), 已强制终止", taskId, command);
+            throw new RuntimeException("命令执行超时: " + command);
         }
+        // 等待读取线程结束，确保输出收集完整
+        readerThread.join();
+
+        int exitCode = process.exitValue();  // 此时进程已结束，直接取值不会阻塞
         log.debug("[{}] command={}, 命令执行结果: {}", taskId, command, sb);
-        // 终止
-        int exitCode = process.waitFor();
         if (exitCode != 0) {
             log.error("[{}] command={}, 命令执行失败, 退出码: {}", taskId, command, exitCode);
             throw new RuntimeException(sb.toString());
         }
-        // 执行成功
         return sb.toString();
     }
 

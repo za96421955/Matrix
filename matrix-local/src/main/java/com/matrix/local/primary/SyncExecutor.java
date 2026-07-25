@@ -63,7 +63,7 @@ public class SyncExecutor implements Executor {
                 .build());
         log.info("[本地等待授权] userId={}, command={}", userId, command);
         // 等待结果
-        return completableContext.dispatch(taskCommand.getTaskId(), TASK_TIMEOUT * 5)
+        return completableContext.dispatch(taskCommand.getTaskId(), TASK_TIMEOUT * 10)
                 .onErrorResume(e -> {
                     taskService.updateStatusAndResult(
                             userId, taskCommand.getTaskId(), TaskStatus.TIMEOUT, e.getMessage()

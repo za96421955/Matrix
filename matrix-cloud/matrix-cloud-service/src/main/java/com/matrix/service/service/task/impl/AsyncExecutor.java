@@ -42,7 +42,7 @@ public class AsyncExecutor implements Executor {
                 .build());
         log.info("[等待授权] userId={}, command={}", userId, command);
         // 等待授权
-        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 5);
+        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 10);
     }
 
     @Override

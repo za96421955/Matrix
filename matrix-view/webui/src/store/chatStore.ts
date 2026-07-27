@@ -15,6 +15,39 @@ export function isBackendSessionId(id: string | null): boolean {
     return id !== null && /^\d+$/.test(id)
 }
 
+/**
+ * 从文本中精确提取有效的 @会话引用段（@标题 格式，以空格结尾）
+ * 使用完整精确匹配，支持标题含 @、换行、括号等特殊字符
+ * 标题中的换行/制表符在匹配前会被标准化为空格，以兼容前端输入框的规范化处理
+ * @param text 输入文本
+ * @param sessions 可用会话列表
+ * @returns 匹配成功的引用段数组，如 ['@标题A ', '@标题B ']
+ */
+export function extractValidReferenceStrings(text: string, sessions: BackendSessionSummary[]): string[] {
+    const result: string[] = [];
+    // 按标题长度降序排序，优先匹配长标题（避免短标题误匹配长标题的一部分）
+    const sorted = [...sessions].sort((a, b) => b.title.length - a.title.length);
+    const seen = new Set<string>();
+    for (const session of sorted) {
+        // 标准化标题：将换行/制表符替换为空格，与前端输入框插入时的处理一致
+        const normalizedTitle = session.title.replace(/[\r\n\t]+/g, ' ').trim();
+        const refStr = '@' + normalizedTitle + ' ';
+        if (!seen.has(refStr) && text.includes(refStr)) {
+            result.push(refStr);
+            seen.add(refStr);
+        }
+        // 同时尝试匹配原始标题（兼容历史消息中的非标准化引用）
+        if (normalizedTitle !== session.title) {
+            const originalRefStr = '@' + session.title + ' ';
+            if (!seen.has(originalRefStr) && text.includes(originalRefStr)) {
+                result.push(originalRefStr);
+                seen.add(originalRefStr);
+            }
+        }
+    }
+    return result;
+}
+
 function mergeToolCallsDelta(existing: ToolCall[] | undefined, delta: any[]): ToolCall[] {
     const merged = existing ? [...existing] : [];
     for (const tc of delta) {

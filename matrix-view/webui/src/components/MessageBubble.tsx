@@ -5,6 +5,7 @@ import MarkdownRenderer from './MarkdownRenderer'
 import { useToastStore } from '../store/toastStore'
 import type { Message, ToolCall } from '../types'
 import { useChatStore } from '../store/chatStore'
+import { extractValidReferenceStrings } from '../store/chatStore'
 import MatrixLogo from "./MatrixLogo";
 
 interface MessageBubbleProps {
@@ -434,6 +435,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
     const [copied, setCopied] = useState(false)
     const [errorExpanded, setErrorExpanded] = useState(false)
     const markdownEnabled = useChatStore((s) => s.markdownEnabled)
+    const backendSessionList = useChatStore((s) => s.backendSessionList)
 
     const showToast = useCallback((msg: string) => {
         useToastStore.getState().addToast({type: 'success', message: msg})
@@ -499,9 +501,16 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
         if (!message.content || !message.content.trim()) return null
         // 渲染带有@提及高亮的用户消息内容
         const renderUserContent = (text: string) => {
-            const parts = text.split(/(@[\u4e00-\u9fa5a-zA-Z0-9_\-]+)/g);
-            return parts.map(function(part, idx) {
-                if (part.startsWith("@")) {
+            const validRefStrings = extractValidReferenceStrings(text, backendSessionList);
+            if (validRefStrings.length === 0) {
+                return text;
+            }
+            // 对引用字符串中的特殊字符进行转义，构建正则
+            const escaped = validRefStrings.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\$&'));
+            const regex = new RegExp('(' + escaped.join('|') + ')', 'g');
+            const parts = text.split(regex);
+            return parts.map((part, idx) => {
+                if (validRefStrings.includes(part)) {
                     return <span key={idx} className="mention-highlight-on-blue">{part}</span>;
                 }
                 return part;

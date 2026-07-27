@@ -1,6 +1,6 @@
 import {useState, useRef, useCallback, useEffect, useMemo} from 'react'
 import {Send, Square, Brain} from 'lucide-react'
-import {useChatStore} from '../store/chatStore'
+import {useChatStore, extractValidReferenceStrings} from '../store/chatStore'
 import type {BackendSessionSummary} from '../types'
 
 interface InputBarProps {
@@ -9,17 +9,12 @@ interface InputBarProps {
     hideTopBorder?: boolean
 }
 
-/** 从文本中提取所有 @会话标题 的引用信息 */
-function parseReferencedTitles(text: string): string[] {
-    const regex = /@([^\s@]+)/g
-    const matches: string[] = []
-    let match
-    while ((match = regex.exec(text)) !== null) {
-        if (match[1].trim()) {
-            matches.push(match[1].trim())
-        }
-    }
-    return matches
+/**
+ * 标准化标题：将换行/制表符替换为空格并去除首尾空白
+ * 保证输入框中不会因特殊空白字符导致显示或匹配问题
+ */
+function normalizeTitle(title: string): string {
+    return title.replace(/[\r\n\t]+/g, ' ').trim();
 }
 
 export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps) {
@@ -62,11 +57,17 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
 
     // 同步文本中的 @引用 到 store
     useEffect(() => {
-        const titlesInText = parseReferencedTitles(text)
-        // 找到当前 backendSessionList 中匹配的会话
-        const matched = backendSessionList.filter((s) =>
-            titlesInText.includes(s.title)
-        )
+        const refStrings = extractValidReferenceStrings(text, backendSessionList)
+        // 从引用字符串中提取标题
+        const matchedTitles = refStrings.map(s => {
+            // 去掉开头的@和结尾的空格，得到标准化后的标题
+            const raw = s.slice(1, -1);
+            return raw;
+        })
+        const matched = backendSessionList.filter((s) => {
+            const normalized = normalizeTitle(s.title);
+            return matchedTitles.includes(normalized) || matchedTitles.includes(s.title);
+        })
         const matchedIds = new Set(matched.map((s) => s.id))
         // 添加新的引用
         for (const session of matched) {
@@ -102,29 +103,52 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
         }
     }, [text])
 
+    /**
+     * 从文本末尾往前查找位于单词边界的 @ 符号
+     * 单词边界：@ 前面是空格、换行、制表符，或是文本开头
+     * 这避免了标题中的 @ 被误识别为新的触发符
+     */
+    function findTriggerAt(text: string): number {
+        for (let i = text.length - 1; i >= 0; i--) {
+            if (text[i] === '@') {
+                const prev = i === 0 ? ' ' : text[i - 1];
+                if (prev === ' ' || prev === '\n' || prev === '\t') {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
     // 处理输入变化 - 检测 @ 触发下拉
     const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value
         setText(value)
 
-        // 检测最后一个 @ 符号
-        const lastAtIndex = value.lastIndexOf('@')
-        if (lastAtIndex >= 0) {
-            // 检查 @ 后面是否有空格（有空格则不触发）
-            const afterAt = value.slice(lastAtIndex + 1)
-            // 如果 @ 后面有空格，关闭下拉
+        const triggerAtPos = findTriggerAt(value);
+
+        if (triggerAtPos >= 0) {
+            // 检查 @ 后面是否有空格（有空格则不触发/关闭）
+            const afterAt = value.slice(triggerAtPos + 1);
             if (afterAt.includes(' ')) {
-                setShowDropdown(false)
-                return
+                setShowDropdown(false);
+                return;
             }
-            // 提取 @ 后的文本用于过滤
-            const filterText = afterAt
-            setDropdownFilter(filterText)
-            lastAtPosRef.current = lastAtIndex
-            setShowDropdown(true)
-            setSelectedIndex(0)
+            setDropdownFilter(afterAt);
+            lastAtPosRef.current = triggerAtPos;
+            setShowDropdown(true);
+            setSelectedIndex(0);
+        } else if (showDropdown && lastAtPosRef.current >= 0) {
+            // 下拉菜单已打开，检查用户是否输入了空格（关闭下拉）
+            const afterAt = value.slice(lastAtPosRef.current + 1);
+            if (afterAt.includes(' ')) {
+                setShowDropdown(false);
+            } else {
+                // 更新过滤文本
+                setDropdownFilter(afterAt);
+            }
         } else {
-            setShowDropdown(false)
+            setShowDropdown(false);
         }
     }, [])
 
@@ -136,23 +160,25 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
         const pos = lastAtPosRef.current
         if (pos < 0) return
 
-        // 替换 @ 及之后的文本为 @会话标题
+        // 标准化标题：将换行/制表符替换为空格，保证输入框中正确显示且能被精确匹配
+        const normalizedTitle = normalizeTitle(session.title);
+
+        // 替换 @ 及之后的文本为 @标准化标题
         const beforeAt = text.slice(0, pos)
-        // 找到 @ 后到当前光标或结尾的文本
+        // 找到 @ 后到下一个空格或结尾的文本
         const afterAt = text.slice(pos)
-        // 计算需要替换的长度（从 @ 到下一个空格或结尾）
         const spaceIdx = afterAt.indexOf(' ')
         const replaceLen = spaceIdx >= 0 ? spaceIdx : afterAt.length
         const afterReplace = text.slice(pos + replaceLen)
 
-        const newText = beforeAt + '@' + session.title + ' ' + afterReplace
+        const newText = beforeAt + '@' + normalizedTitle + ' ' + afterReplace
         setText(newText)
         setShowDropdown(false)
         addReferencedSession(session)
 
         // 聚焦 textarea 并定位光标到末尾
         ta.focus()
-        const newCursorPos = beforeAt.length + session.title.length + 2
+        const newCursorPos = beforeAt.length + normalizedTitle.length + 2
         setTimeout(() => {
             ta.setSelectionRange(newCursorPos, newCursorPos)
         }, 0)
@@ -207,9 +233,13 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
 
     // 引用会话 badges
     const referencedBadges = useMemo(() => {
-        const titlesInText = parseReferencedTitles(text)
-        return referencedSessions.filter((rs) => titlesInText.includes(rs.title))
-    }, [referencedSessions, text])
+        const refStrings = extractValidReferenceStrings(text, backendSessionList)
+        const matchedNormalizedTitles = refStrings.map(s => s.slice(1, -1))
+        return referencedSessions.filter((rs) => {
+            const normalized = normalizeTitle(rs.title);
+            return matchedNormalizedTitles.includes(normalized) || matchedNormalizedTitles.includes(rs.title);
+        })
+    }, [referencedSessions, text, backendSessionList])
 
     return (
         <div className={`${hideTopBorder ? '' : 'border-t border-gray-200 dark:border-white/[0.04]'} bg-white dark:bg-[#18181B]`}>
@@ -234,7 +264,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                     }
                                 >
                                     <span className="overflow-hidden text-ellipsis whitespace-nowrap flex-1 mr-2">
-                                        @{session.title}
+                                        @{normalizeTitle(session.title)}
                                     </span>
                                     <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
                                         #{session.id}
@@ -261,14 +291,17 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                     {/* 引用会话 badges */}
                     {referencedBadges.length > 0 && (
                         <div className="flex items-center gap-1.5 px-3 pb-0 flex-wrap">
-                            {referencedBadges.map((session) => (
-                                <span
-                                    key={session.id}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
-                                >
-                                    引用: @{session.title.length > 20 ? session.title.slice(0, 20) + '...' : session.title}
-                                </span>
-                            ))}
+                            {referencedBadges.map((session) => {
+                                const displayTitle = normalizeTitle(session.title);
+                                return (
+                                    <span
+                                        key={session.id}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                                    >
+                                        引用: @{displayTitle.length > 20 ? displayTitle.slice(0, 20) + '...' : displayTitle}
+                                    </span>
+                                );
+                            })}
                         </div>
                     )}
 

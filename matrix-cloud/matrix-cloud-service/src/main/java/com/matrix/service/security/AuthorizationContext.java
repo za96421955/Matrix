@@ -3,6 +3,7 @@ package com.matrix.service.security;
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.service.cache.ServiceCache;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
  * - 缓存键：auth:token:<Authorization 值>
  * - TTL：5 分钟
  */
+@Slf4j
 public class AuthorizationContext implements ServerSecurityContextRepository {
 
     private final ServiceCache serviceCache;
@@ -40,6 +42,7 @@ public class AuthorizationContext implements ServerSecurityContextRepository {
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         String token = extractToken(exchange);
         if (token == null) {
+            log.warn("请求缺少 Authorization header，拒绝访问");
             return Mono.empty();
         }
         String key = RedisKey.AUTHORIZATION.generateKey(token);
@@ -47,7 +50,12 @@ public class AuthorizationContext implements ServerSecurityContextRepository {
         try {
             String value = serviceCache.get(key);
             context = JSON.parseObject(value, SecurityContext.class);
-        } catch (Exception ignore) {}
+        } catch (Exception e) {
+            log.warn("Token 认证缓存解析失败: token={}", token);
+        }
+        if (context == null) {
+            log.warn("Token 认证未通过，缓存中不存在: token={}", token);
+        }
         return context == null ? Mono.empty() : Mono.just(context);
     }
 

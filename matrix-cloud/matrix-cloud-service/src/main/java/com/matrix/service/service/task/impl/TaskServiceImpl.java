@@ -33,6 +33,7 @@ public class TaskServiceImpl implements TaskService {
     /** 获取TaskInfo属性值 */
     public TaskInfo getTaskInfo(Long userId, String taskId) {
         if (null == userId || StringUtils.isBlank(taskId)) {
+            log.warn("[TaskService] getTaskInfo 参数异常: userId={}, taskId={}", userId, taskId);
             return null;
         }
         return taskContext.getTaskInfo(taskId);
@@ -42,6 +43,7 @@ public class TaskServiceImpl implements TaskService {
     /** 获取WaitingAuthList属性值 */
     public List<TaskInfo> getWaitingAuthList(Long userId) {
         if (null == userId) {
+            log.warn("[TaskService] getWaitingAuthList userId 为空");
             return Collections.emptyList();
         }
         return taskContext.getWaitingAuthList(userId);
@@ -51,6 +53,7 @@ public class TaskServiceImpl implements TaskService {
     /** 插入数据 */
     public boolean insert(TaskInfo taskInfo) {
         if (null == taskInfo) {
+            log.warn("[TaskService] insert taskInfo 为空");
             return false;
         }
         try {
@@ -66,6 +69,8 @@ public class TaskServiceImpl implements TaskService {
     /** updateStatusAndResult操作 */
     public boolean updateStatusAndResult(Long userId, String taskId, String status, String result) {
         if (null == userId || StringUtils.isBlank(taskId) || StringUtils.isBlank(status)) {
+            log.warn("[TaskService] updateStatusAndResult 参数异常: userId={}, taskId={}, status={}",
+                    userId, taskId, status);
             return false;
         }
         try {
@@ -87,6 +92,10 @@ public class TaskServiceImpl implements TaskService {
     /** callback操作 */
     public void callback(Long userId, String taskId, String result) throws Exception {
         log.info("[终端ACK] userId={}, taskId={}, result={}", userId, taskId, result);
+        if (StringUtils.isBlank(taskId)) {
+            log.warn("[终端ACK] taskId 为空，忽略回调");
+            return;
+        }
         taskComplete.completeTask(userId, taskId, result);
     }
 
@@ -94,6 +103,10 @@ public class TaskServiceImpl implements TaskService {
     /** 权限认证 */
     public void auth(Long userId, String taskId, String reject) throws Exception {
         log.info("[用户授权] userId={}, taskId={}, reject={}", userId, taskId, reject);
+        if (StringUtils.isBlank(taskId)) {
+            log.warn("[用户授权] taskId 为空，忽略授权操作");
+            return;
+        }
         if (StringUtils.isBlank(reject)) {
             reject = Constant.PASS;
         }

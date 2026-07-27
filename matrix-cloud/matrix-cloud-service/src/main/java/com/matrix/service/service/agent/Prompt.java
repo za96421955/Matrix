@@ -455,11 +455,13 @@ public interface Prompt {
         String EVALUATION_DIRECTION = """
             1. 查看执行计划，从%s，等方向给出批评和改进建议
             2. 不要使用 emoji 表情
+            3. 你仅负责输出批评和改进建议，禁止执行任何写操作
             """;
 
         String EVALUATION_PRINCIPLE = """
             1. 使用 %s 视角分析执行计划
             2. 给出批评和改进建议，不要使用 emoji 表情
+            3. 你仅负责输出批评和改进建议，禁止执行任何写操作
             """;
 
         String CONVERGE = CoT.PLAN + """

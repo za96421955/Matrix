@@ -34,7 +34,7 @@ public class Application implements Serializable {
     private Integer riskLevel;
     private Map<String, Object> input;
 
-    /** 解析数据 */
+    /** 解析 YAML 字符串构建 Application 对象，自动处理路径转换为绝对路径 */
     public static Application parse(String clientId, String rootPath, String yamlString) {
         Map<String, Object> yamlMap = new Yaml().load(yamlString);
         return Application.builder()
@@ -48,12 +48,7 @@ public class Application implements Serializable {
                 .build();
     }
 
-    /**
-     * 解析路径字符串，返回绝对路径
-     * - ./xxx 或 xxx 等相对路径 → 基于当前工作目录拼接
-     * - ~/xxx → 展开为用户家目录
-     * - 其他绝对路径 → 原样返回（经规范化）
-     */
+    /** 将原始路径字符串解析为绝对路径，支持 ~/ 展开和相对路径拼接 */
     public static String resolveToAbsolute(String rootPath, String rawPath) {
         if (StringUtils.isBlank(rawPath)) {
             return rawPath;

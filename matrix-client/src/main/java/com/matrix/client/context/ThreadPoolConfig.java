@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnProperty(name = "matrix.thread-pool.enabled", havingValue = "true")
 public class ThreadPoolConfig {
 
+    /** 创建线程池 bean，用于处理 MQTT 消息等异步任务，支持背压的 CallerRunsPolicy */
     @Bean
-    /** threadPoolExecutor操作 */
     public ExecutorService threadPoolExecutor() {
         return new ThreadPoolExecutor(
                 10,

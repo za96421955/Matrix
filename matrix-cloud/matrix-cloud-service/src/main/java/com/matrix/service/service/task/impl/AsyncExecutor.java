@@ -62,7 +62,9 @@ public class AsyncExecutor implements Executor {
                         .toString())
                 .build());
         // 等待执行结果
-        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 3);
+        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 3)
+                .doOnError(e -> log.warn("[任务执行超时] userId={}, taskId={}, clientId={}", 
+                        userId, taskCommand.getTaskId(), clientId));
     }
 
     @Override
@@ -73,7 +75,8 @@ public class AsyncExecutor implements Executor {
                 .clientId(clientId)
                 .command(command)
                 .build());
-        return taskPublish.waitForResult(null, taskId, COMMAND_TIMEOUT);
+        return taskPublish.waitForResult(null, taskId, COMMAND_TIMEOUT)
+                .doOnError(e -> log.warn("[指令执行超时] taskId={}, clientId={}", taskId, clientId));
     }
 
 }

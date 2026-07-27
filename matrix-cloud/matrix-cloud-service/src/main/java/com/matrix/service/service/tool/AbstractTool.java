@@ -48,6 +48,7 @@ public abstract class AbstractTool<R> implements Tool<R> {
         String reject = authService.commandAuth(userId, sessionId,
                 Command.Type.TOOL, this.name(), "Tool: " + this.name() + "\n\n" + request.toString());
         if (StringUtils.isNotBlank(reject)) {
+            log.warn("[工具授权拒绝] userId={}, tool={}, reason={}", userId, this.name(), reject);
             return Flux.just(reject);
         }
         // 工具执行
@@ -76,9 +77,11 @@ public abstract class AbstractTool<R> implements Tool<R> {
         // ClientId 检查
         ClientInfo client = clientService.getById(userId, clientId);
         if (null == client) {
+            log.warn("[终端检查] userId={}, clientId={} 不存在", userId, clientId);
             message.append("clientId " + clientId + " 不存在");
         }
         if (!clientService.checkOnline(userId, clientId)) {
+            log.warn("[终端检查] userId={}, clientId={} 不在线", userId, clientId);
             message.append("clientId " + clientId + " 不在线");
         }
         if (StringUtils.isBlank(message.toString())) {

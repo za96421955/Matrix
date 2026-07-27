@@ -179,8 +179,8 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      * @author 陈晨
      */
     private String getPlan(FluxSink<Response> sink, PatternRequest request, Smart smart, int steps) {
-        // 1 步: 直接 Plan
-        if (steps <= 1) {
+        // 1 - 5 步: 直接 Plan
+        if (steps <= 5) {
             String plan = this.callResultByClone(sink, request, Prompt.CoT.PLAN.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound()));
@@ -190,24 +190,24 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         }
         // 多计划综合评估
         List<String> plans;
-        // 2-6 步: 素朴切面 (MoA)
-        if (steps <= 6) {
+        // 6 - 15 步: 素朴切面 (MoA)
+        if (steps <= 15) {
             plans = this.getPlansByAspect(sink, request, smart);
             log.info("[执行模式] 任务规划: 素朴切面, userId={}, sessionId={}, steps={}, plans={}",
                     request.getUserId(), request.getSessionId(), steps, plans);
         }
-        // 7-10 步: 素朴切面 + 评论修正 (MoA)
-        else if (steps <= 10) {
+        // 大于 15 步: 素朴切面 + 评论修正 (MoA)
+        else {
             plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
             log.info("[执行模式] 任务规划: 素朴切面 + 评论修正, userId={}, sessionId={}, steps={}, plans={}",
                     request.getUserId(), request.getSessionId(), steps, plans);
         }
         // 大于 10 步: 素朴切面 + 思考帽/SWOT修正 (MoA)
-        else {
-            plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
-            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
-                    request.getUserId(), request.getSessionId(), steps, plans);
-        }
+//        else {
+//            plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
+//            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
+//                    request.getUserId(), request.getSessionId(), steps, plans);
+//        }
         // 融合
         for (int i = 0; i < plans.size(); i++) {
             request.getMessages().add(Message.assistant(

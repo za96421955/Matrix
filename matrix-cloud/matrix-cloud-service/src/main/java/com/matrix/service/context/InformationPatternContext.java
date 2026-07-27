@@ -21,6 +21,7 @@ public class InformationPatternContext {
     @Resource
     private ServiceCache serviceCache;
 
+    /** 清空数据或缓存 */
     public void clear(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.INFORMATION_PATTERN_NO;
         String key = redisKey.generateKey(userId, sessionId);

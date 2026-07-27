@@ -25,6 +25,7 @@ public class SessionController {
     private ChatContext chatContext;
 
     @GetMapping("/page/{pageNum}/{pageSize}")
+    /** 获取Page属性值 */
     public ResponseEntity<CommonResponse<Page<SessionInfo>>> getPage(@AuthenticationPrincipal UserResponse userInfo,
                                                                      @PathVariable("pageNum") Integer pageNum,
                                                                      @PathVariable("pageSize") Integer pageSize) {
@@ -33,6 +34,7 @@ public class SessionController {
     }
 
     @GetMapping("/{sessionId}")
+    /** 获取ById属性值 */
     public ResponseEntity<CommonResponse<SessionInfo>> getById(@AuthenticationPrincipal UserResponse userInfo,
                                                                @PathVariable("sessionId") Long sessionId) {
         SessionInfo response = sessionService.getById(userInfo.getUserId(), sessionId);
@@ -40,6 +42,7 @@ public class SessionController {
     }
 
     @GetMapping(value = "/isCompletions/{sessionId}")
+    /** 判断是否为Conversation */
     public ResponseEntity<CommonResponse<Boolean>> isConversation(@AuthenticationPrincipal UserResponse userInfo,
                                                                   @PathVariable("sessionId") Long sessionId) {
         return ResponseEntity.ok(CommonResponse.success(
@@ -47,6 +50,7 @@ public class SessionController {
     }
 
     @GetMapping(value = "/stop/{sessionId}")
+    /** stopConversation操作 */
     public ResponseEntity<CommonResponse<Void>> stopConversation(@AuthenticationPrincipal UserResponse userInfo,
                                                                  @PathVariable("sessionId") Long sessionId) {
         chatContext.stopConversation(userInfo.getUserId(), sessionId);
@@ -54,6 +58,7 @@ public class SessionController {
     }
 
     @PutMapping("/updateTitle/{sessionId}")
+    /** updateTitle操作 */
     public ResponseEntity<CommonResponse<Void>> updateTitle(@AuthenticationPrincipal UserResponse userInfo,
                                                             @PathVariable("sessionId") Long sessionId,
                                                             @RequestBody String title) {
@@ -62,6 +67,7 @@ public class SessionController {
     }
 
     @PutMapping("/updateAgent/{sessionId}")
+    /** updateAuthLevel操作 */
     public ResponseEntity<CommonResponse<Void>> updateAuthLevel(@AuthenticationPrincipal UserResponse userInfo,
                                                                 @PathVariable("sessionId") Long sessionId,
                                                                 @RequestBody String agent) {
@@ -70,6 +76,7 @@ public class SessionController {
     }
 
     @PutMapping("/updateAuthLevel/{sessionId}")
+    /** updateAuthLevel操作 */
     public ResponseEntity<CommonResponse<Void>> updateAuthLevel(@AuthenticationPrincipal UserResponse userInfo,
                                                                 @PathVariable("sessionId") Long sessionId,
                                                                 @RequestBody Integer authLevel) {
@@ -78,6 +85,7 @@ public class SessionController {
     }
 
     @DeleteMapping("/{sessionId}")
+    /** 递归删除目录或文件 */
     public ResponseEntity<CommonResponse<Void>> delete(@AuthenticationPrincipal UserResponse userInfo,
                                                        @PathVariable("sessionId") Long sessionId) {
         sessionService.delete(userInfo.getUserId(), sessionId);

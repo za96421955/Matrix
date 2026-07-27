@@ -30,6 +30,7 @@ public class TaskServiceImpl implements TaskService {
     private TaskComplete taskComplete;
 
     @Override
+    /** 获取TaskInfo属性值 */
     public TaskInfo getTaskInfo(Long userId, String taskId) {
         if (null == userId || StringUtils.isBlank(taskId)) {
             return null;
@@ -38,6 +39,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    /** 获取WaitingAuthList属性值 */
     public List<TaskInfo> getWaitingAuthList(Long userId) {
         if (null == userId) {
             return Collections.emptyList();
@@ -46,6 +48,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    /** 插入数据 */
     public boolean insert(TaskInfo taskInfo) {
         if (null == taskInfo) {
             return false;
@@ -60,6 +63,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    /** updateStatusAndResult操作 */
     public boolean updateStatusAndResult(Long userId, String taskId, String status, String result) {
         if (null == userId || StringUtils.isBlank(taskId) || StringUtils.isBlank(status)) {
             return false;
@@ -74,17 +78,20 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    /** updateStatus操作 */
     public boolean updateStatus(Long userId, String taskId, String status) {
         return this.updateStatusAndResult(userId, taskId, status, null);
     }
 
     @Override
+    /** callback操作 */
     public void callback(Long userId, String taskId, String result) throws Exception {
         log.info("[终端ACK] userId={}, taskId={}, result={}", userId, taskId, result);
         taskComplete.completeTask(userId, taskId, result);
     }
 
     @Override
+    /** 权限认证 */
     public void auth(Long userId, String taskId, String reject) throws Exception {
         log.info("[用户授权] userId={}, taskId={}, reject={}", userId, taskId, reject);
         if (StringUtils.isBlank(reject)) {

@@ -35,6 +35,7 @@ public class RiskLevelManagerService {
     private MatrixClientProperties properties;
 
     private final RegisterHeartbeatService registerHeartbeatService;
+    /** RiskLevelManagerService操作 */
     public RiskLevelManagerService(@Lazy RegisterHeartbeatService registerHeartbeatService) {
         this.registerHeartbeatService = registerHeartbeatService;
     }

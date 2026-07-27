@@ -38,24 +38,29 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
     private ServiceCache serviceCache;
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "timer";
     }
+    /** 获取Name属性值 */
     public static String getName() {
         return new TimerTool().name();
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "可创建定时执行的自动化任务。支持设置启动时间、执行次数、执行间隔。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

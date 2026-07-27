@@ -27,11 +27,13 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
     private ModelService modelService;
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "memory";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "在任务执行过程中遇到问题并解决时，精简记录问题和解决方案。记忆格式：短期、长期、谏言。";
     }
@@ -42,6 +44,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
     }
 
     @Override
+    /** 获取系统提示信息 */
     public String systemPrompt(Long userId, Long sessionId, String clientId) {
         try {
             String memory = this.readMemory(clientId).block();
@@ -52,6 +55,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

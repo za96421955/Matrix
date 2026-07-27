@@ -42,6 +42,7 @@ public class RegisterCommand implements Serializable {
 
     @Getter
     private static RegisterCommand registerCommand;
+    /** 加载数据或配置 */
     public synchronized static RegisterCommand load(CommandExecutor executor,
                                                     Fingerprint fingerprint,
                                                     MatrixClientProperties properties) throws Exception {

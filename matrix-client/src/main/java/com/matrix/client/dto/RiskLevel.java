@@ -32,6 +32,7 @@ public class RiskLevel implements Serializable {
     private Map<String, Integer> skill;
     private Map<String, Integer> app;
 
+    /** 解析数据 */
     public static RiskLevel parse(String yamlString) throws IOException {
         Map<String, Object> yamlMap = new Yaml().load(yamlString);
         List<?> bashList = (List<?>) yamlMap.get("bash");
@@ -46,6 +47,7 @@ public class RiskLevel implements Serializable {
                 .build();
     }
 
+    /** parseMap操作 */
     public static Map<String, Integer> parseMap(List list) throws IOException {
         Map<String, Integer> map = new HashMap<>();
         for (Object item : (List<?>) list) {

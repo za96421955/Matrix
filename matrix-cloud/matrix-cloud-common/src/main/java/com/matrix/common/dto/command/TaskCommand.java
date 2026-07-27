@@ -34,6 +34,7 @@ public class TaskCommand implements Serializable {
         return JSONObject.toJSONString(this);
     }
 
+    /** 转换数据类型 */
     public static TaskCommand convert(String json) {
         try {
             return JSONObject.parseObject(json, TaskCommand.class);

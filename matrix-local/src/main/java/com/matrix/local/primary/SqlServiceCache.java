@@ -52,6 +52,7 @@ public class SqlServiceCache implements ServiceCache {
     }
 
     @Override
+    /** expire操作 */
     public void expire(String key, long ttl) {
         if (StringUtils.isBlank(key)) {
             return;
@@ -64,6 +65,7 @@ public class SqlServiceCache implements ServiceCache {
     }
 
     @Override
+    /** 递归删除目录或文件 */
     public void delete(String key) {
         localCacheService.delete(key);
     }
@@ -77,6 +79,7 @@ public class SqlServiceCache implements ServiceCache {
     }
 
     @Override
+    /** 获取指定数据 */
     public String get(String key) {
         return localCacheService.get(key);
     }
@@ -113,6 +116,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** put操作 */
         public void put(String key, String hashKey, String value, long ttl) {
             String sk = this.storageKey(key);
             String json = localCacheService.get(sk);
@@ -128,6 +132,7 @@ public class SqlServiceCache implements ServiceCache {
 
         @Override
         @SuppressWarnings("unchecked")
+        /** putAll操作 */
         public void putAll(String key, Map map, long ttl) {
             if (map == null || map.isEmpty()) {
                 return;
@@ -148,6 +153,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** 获取指定数据 */
         public String get(String key, String hashKey) {
             String sk = this.storageKey(key);
             String json = localCacheService.get(sk);
@@ -166,6 +172,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** 获取All属性值 */
         public Map<String, String> getAll(String key) {
             String sk = this.storageKey(key);
             String json = localCacheService.get(sk);
@@ -194,6 +201,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** 移除数据条目 */
         public void remove(String key, String hashKey) {
             String sk = this.storageKey(key);
             String json = localCacheService.get(sk);
@@ -219,6 +227,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** size操作 */
         public Long size(String key) {
             return (long) this.getAll(key).size();
         }
@@ -236,6 +245,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** 添加数据条目 */
         public void add(String key, String value, long ttl) {
             String sk = this.storageKey(key);
             String json = localCacheService.get(sk);
@@ -268,6 +278,7 @@ public class SqlServiceCache implements ServiceCache {
         }
 
         @Override
+        /** 移除数据条目 */
         public void remove(String key, String value) {
             String sk = storageKey(key);
             String json = localCacheService.get(sk);

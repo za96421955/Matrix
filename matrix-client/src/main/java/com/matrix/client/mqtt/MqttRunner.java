@@ -15,6 +15,7 @@ public class MqttRunner implements CommandLineRunner {
     private MqttConnection mqttConnection;
 
     @Override
+    /** 启动执行流程 */
     public void run(String... args) {
         mqttConnection.connect();
     }

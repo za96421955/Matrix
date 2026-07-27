@@ -20,6 +20,7 @@ import reactor.core.publisher.Flux;
 public class SkillPatternService extends AbstractPatternService<AgentRequest> {
 
     @Override
+    /** call操作 */
     public Flux<Response> call(AgentRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.SKILL_REQUEST_INVALID.getMessage()));

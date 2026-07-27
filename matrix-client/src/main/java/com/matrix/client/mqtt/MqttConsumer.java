@@ -22,6 +22,7 @@ public class MqttConsumer {
     @Resource
     private AckService ackService;
 
+    /** 处理请求或事件 */
     public void handle(String topic, String payload) {
         String taskId = null;
         try {

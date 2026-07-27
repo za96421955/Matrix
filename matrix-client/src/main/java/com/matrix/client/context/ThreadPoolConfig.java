@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPoolConfig {
 
     @Bean
+    /** threadPoolExecutor操作 */
     public ExecutorService threadPoolExecutor() {
         return new ThreadPoolExecutor(
                 10,

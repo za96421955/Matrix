@@ -39,12 +39,14 @@ public class SessionServiceImpl implements SessionService {
     @Resource
     private UserService userService;
 
+    /** SessionServiceImpl操作 */
     public SessionServiceImpl(@Lazy MessageService messageService) {
         this.messageService = messageService;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 获取OrCreateSession属性值 */
     public SessionInfo getOrCreateSession(ChatRequest request, String input) {
         SessionInfo sessionInfo = null;
         if (request.getSessionId() != null) {
@@ -76,6 +78,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    /** 获取Page属性值 */
     public Page<SessionInfo> getPage(Long userId, Integer pageNum, Integer pageSize) {
         if (null == userId ) {
             return Page.of(0, 0, 0);
@@ -94,6 +97,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    /** 获取ById属性值 */
     public SessionInfo getById(Long userId, Long sessionId) {
         if (null == userId || null == sessionId) {
             return null;
@@ -137,6 +141,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** updateTitle操作 */
     public boolean updateTitle(Long userId, Long sessionId, String title) {
         SessionInfo session = this.getById(userId, sessionId);
         if (session == null) {
@@ -158,6 +163,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** updateAgent操作 */
     public boolean updateAgent(Long userId, Long sessionId, String agent) {
         SessionInfo session = this.getById(userId, sessionId);
         if (session == null) {
@@ -179,6 +185,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** updateAuthLevel操作 */
     public boolean updateAuthLevel(Long userId, Long sessionId, Integer authLevel) {
         SessionInfo session = this.getById(userId, sessionId);
         if (session == null) {
@@ -200,6 +207,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 递归删除目录或文件 */
     public void delete(Long userId, Long sessionId) {
         SessionInfo session = this.getById(userId, sessionId);
         if (session == null) {
@@ -218,6 +226,7 @@ public class SessionServiceImpl implements SessionService {
         log.info("session delete, id={}, rows={}", session.getId(), rows);
     }
 
+    /** 获取MessageService属性值 */
     public MessageService getMessageService() {
         return messageService;
     }

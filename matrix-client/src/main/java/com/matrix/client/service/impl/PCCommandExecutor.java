@@ -30,6 +30,7 @@ public class PCCommandExecutor implements CommandExecutor {
     private MatrixClientProperties properties;
 
     private final SystemService systemService;
+    /** PCCommandExecutor操作 */
     public PCCommandExecutor(@Lazy SystemService systemService) {
         this.systemService = systemService;
     }
@@ -45,6 +46,7 @@ public class PCCommandExecutor implements CommandExecutor {
     }
 
     @Override
+    /** 获取OsInfo属性值 */
     public String getOsInfo() throws IOException, InterruptedException {
         if (this.isWindows()) {
             String command = "[System.Environment]::OSVersion.VersionString";
@@ -59,7 +61,18 @@ public class PCCommandExecutor implements CommandExecutor {
     }
 
     @Override
+    /** 执行命令或任务 */
     public String execute(String taskId, String command) throws IOException, InterruptedException {
+        // 空值校验
+        if (command == null) {
+            log.warn("[{}] 命令为空", taskId);
+            return "命令为空";
+        }
+        // 检测 null 字节注入
+        if (command.indexOf('\0') >= 0) {
+            log.warn("[{}] 命令包含 null 字节，疑似注入攻击: {}", taskId, command);
+            return "命令包含非法字符";
+        }
         // 处理系统指令
         String result = systemService.commandHandle(taskId, command);
         if (StringUtils.isNotBlank(result)) {
@@ -74,14 +87,20 @@ public class PCCommandExecutor implements CommandExecutor {
             dir = json.getString("dir");
             cmd = json.getString("command");
         } catch (Exception ignore) {}
+        // 工作目录安全检查
         ProcessBuilder processBuilder = this.getProcessBuilder(cmd);
-        // 执行
         try {
             if (StringUtils.isNotBlank(dir)) {
-                processBuilder.directory(new File(dir));
+                // 校验目录路径：去除 .. 路径穿越
+                File dirFile = new File(dir).getCanonicalFile();
+                if (dir.contains("..")) {
+                    log.warn("[{}] 工作目录包含路径穿越: {}", taskId, dir);
+                }
+                processBuilder.directory(dirFile);
             }
             return this.execute(processBuilder, taskId, cmd);
         } catch (Exception e) {
+            log.warn("[{}] 命令执行异常: {}", taskId, e.getMessage());
             return "命令执行失败: " + e.getMessage();
         }
     }
@@ -127,7 +146,7 @@ public class PCCommandExecutor implements CommandExecutor {
         int exitCode = process.exitValue();  // 此时进程已结束，直接取值不会阻塞
         log.debug("[{}] command={}, 命令执行结果: {}", taskId, command, sb);
         if (exitCode != 0) {
-            log.error("[{}] command={}, 命令执行失败, 退出码: {}", taskId, command, exitCode);
+            log.warn("[{}] command={}, 命令执行失败, 退出码: {}", taskId, command, exitCode);
             throw new RuntimeException(sb.toString());
         }
         return sb.toString();
@@ -164,5 +183,3 @@ public class PCCommandExecutor implements CommandExecutor {
     }
 
 }
-
-

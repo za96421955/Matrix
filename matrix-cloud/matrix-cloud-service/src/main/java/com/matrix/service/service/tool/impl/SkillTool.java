@@ -32,21 +32,25 @@ public class SkillTool extends AbstractTool<SkillTool.Request> {
     private SkillPatternService skillPatternService;
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "skill";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "可用 skill 调度工具，文件需要提供绝对路径。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         log.info("[技能执行开始] userId={}, sessionId={}, request={}",
                 userId, sessionId, request);

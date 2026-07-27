@@ -37,6 +37,7 @@ public class LocalMybatisPlusConfig {
     private String location;
 
     @Bean
+    /** sqlSessionFactory操作 */
     public SqlSessionFactory sqlSessionFactory() throws Exception {
         MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
@@ -49,6 +50,7 @@ public class LocalMybatisPlusConfig {
     }
 
     @Bean
+    /** localMybatisPlusInterceptor操作 */
     public MybatisPlusInterceptor localMybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 1. 分页插件 - SQLite 方言

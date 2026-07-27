@@ -23,6 +23,7 @@ public class AckService {
     @Resource
     private Fingerprint fingerprint;
 
+    /** 发送消息或数据 */
     public boolean send(String taskId, String result) throws IOException, InterruptedException {
         String url = properties.getService().getAck() + "/" + taskId;
         String response = HttpClient.post(url)

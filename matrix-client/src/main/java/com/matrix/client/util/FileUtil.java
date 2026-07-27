@@ -326,6 +326,7 @@ public final class FileUtil {
 	 *
 	 * @param filePath 原始文件的绝对路径
 	 */
+	/** backupFile操作 */
 	public static void backupFile(String filePath) {
 		if (filePath == null || filePath.trim().isEmpty()) {
 			log.warn("备份文件失败: 文件路径为空");
@@ -407,6 +408,7 @@ public final class FileUtil {
 
 				Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
 					@Override
+					/** visitFile操作 */
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 						String entryName = sourceDir.relativize(file).toString();
 						entryName = entryName.replace('\\', '/');
@@ -419,6 +421,7 @@ public final class FileUtil {
 					}
 
 					@Override
+					/** preVisitDirectory操作 */
 					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 						if (!dir.equals(sourceDir)) {
 							String entryName = sourceDir.relativize(dir).toString();

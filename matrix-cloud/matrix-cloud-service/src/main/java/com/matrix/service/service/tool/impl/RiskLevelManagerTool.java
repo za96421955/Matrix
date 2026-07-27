@@ -29,22 +29,26 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
     private static final List<String> HIGHS = List.of("rm");
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "risk-level-manager";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "管理 risk-level.yml 风险等级配置。" +
                 "支持 list(查询全貌/指定分类/指定指令的风险等级)、set(设置/修改风险等级)、delete、add。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 校验终端
         String checkResult = this.checkClient(userId, request.getClientId());

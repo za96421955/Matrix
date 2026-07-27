@@ -23,26 +23,31 @@ import java.nio.charset.StandardCharsets;
 public class QRCodeTool extends AbstractTool<QRCodeTool.Request> {
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "qrcode";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "将内容生成二维码，当需要扫一扫、扫码等功能时可以使用。微信扫码拒绝展示纯文字内容。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return QRCodeTool.Request.class;
     }
 
     @Override
+    /** 判断是否为应答模式 */
     public boolean isAnswer() {
         return true;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 1. ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

@@ -12,6 +12,7 @@ public class LocalCache {
     private Long expireAt;
     private String createTime;
 
+    /** 判断是否为Expired */
     public boolean isExpired() {
         if (expireAt == null || expireAt <= 0) {
             return false;

@@ -34,17 +34,20 @@ public class LimitGlobalFilter implements GlobalFilter, Ordered {
     private final LimitProperties limitProperties;
     private final ObjectMapper objectMapper;
 
+    /** LimitGlobalFilter操作 */
     public LimitGlobalFilter(LimitProperties limitProperties, ObjectMapper objectMapper) {
         this.limitProperties = limitProperties;
         this.objectMapper = objectMapper;
     }
 
     @Override
+    /** 获取排序值 */
     public int getOrder() {
         return -25;
     }
 
     @Override
+    /** 过滤请求 */
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String ip = exchange.getRequest().getRemoteAddress() != null
                 ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()

@@ -28,6 +28,7 @@ public class ChatRequest extends AgentRequest {
     }
 
     @Override
+    /** 克隆对象副本 */
     public ChatRequest clone() {
         return JSON.parseObject(JSON.toJSONString(this), ChatRequest.class);
     }

@@ -34,6 +34,7 @@ public class Application implements Serializable {
     private Integer riskLevel;
     private Map<String, Object> input;
 
+    /** 解析数据 */
     public static Application parse(String clientId, String rootPath, String yamlString) {
         Map<String, Object> yamlMap = new Yaml().load(yamlString);
         return Application.builder()

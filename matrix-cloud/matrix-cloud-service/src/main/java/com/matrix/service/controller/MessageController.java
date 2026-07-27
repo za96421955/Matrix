@@ -22,6 +22,7 @@ public class MessageController {
     private MessageService messageService;
 
     @GetMapping("/page/{sessionId}/{pageNum}/{pageSize}")
+    /** 获取Page属性值 */
     public ResponseEntity<CommonResponse<Page<MessageInfo>>> getPage(@AuthenticationPrincipal UserResponse userInfo,
                                                                      @PathVariable("sessionId") Long sessionId,
                                                                      @PathVariable("pageNum") Integer pageNum,
@@ -31,6 +32,7 @@ public class MessageController {
     }
 
     @GetMapping("/page/chat/{sessionId}/{pageNum}/{pageSize}")
+    /** 获取ChatPage属性值 */
     public ResponseEntity<CommonResponse<Page<MessageInfo>>> getChatPage(@AuthenticationPrincipal UserResponse userInfo,
                                                                          @PathVariable("sessionId") Long sessionId,
                                                                          @PathVariable("pageNum") Integer pageNum,
@@ -40,6 +42,7 @@ public class MessageController {
     }
 
     @GetMapping("/{sessionId}/{messageId}")
+    /** 获取ById属性值 */
     public ResponseEntity<CommonResponse<MessageInfo>> getById(@AuthenticationPrincipal UserResponse userInfo,
                                                                @PathVariable("sessionId") Long sessionId,
                                                                @PathVariable("messageId") Long messageId) {
@@ -48,6 +51,7 @@ public class MessageController {
     }
 
     @DeleteMapping("/{sessionId}/{messageId}")
+    /** 递归删除目录或文件 */
     public ResponseEntity<CommonResponse<Void>> delete(@AuthenticationPrincipal UserResponse userInfo,
                                                        @PathVariable("sessionId") Long sessionId,
                                                        @PathVariable("messageId") Long messageId) {

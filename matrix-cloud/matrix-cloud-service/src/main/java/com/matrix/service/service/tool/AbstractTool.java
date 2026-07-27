@@ -30,16 +30,19 @@ public abstract class AbstractTool<R> implements Tool<R> {
     protected ClientService clientService;
 
     @Override
+    /** 获取系统提示信息 */
     public String systemPrompt(Long userId, Long sessionId, String clientId) {
         return "";
     }
 
     @Override
+    /** 判断是否为应答模式 */
     public boolean isAnswer() {
         return false;
     }
 
     @Override
+    /** 执行命令或任务 */
     public Flux<String> execute(Long userId, Long sessionId, String toolCallId, R request) {
         // 工具授权
         String reject = authService.commandAuth(userId, sessionId,

@@ -10,11 +10,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * @description skill 管理服务
@@ -54,14 +58,13 @@ public class SkillManagerService {
             String sourceFilePath;
 
             if (source.startsWith("http://") || source.startsWith("https://")) {
-                // 从 URL 下载，source 为用户可控，需 shell 转义
+                // 从 URL 下载
                 String fileName = FileUtil.getFileName(source);
                 if (StringUtils.isBlank(fileName)) {
                     fileName = "skill.zip";
                 }
                 Path downloadPath = tmpDir.resolve(fileName);
-                String curlCmd = "curl -sL -o " + shellEscape(downloadPath.toAbsolutePath().toString())
-                        + " " + shellEscape(source);
+                String curlCmd = "curl -sL -o " + downloadPath.toAbsolutePath() + " " + source;
                 commandExecutor.execute(null, curlCmd);
                 if (!Files.exists(downloadPath) || Files.size(downloadPath) == 0) {
                     return "安装失败: 下载文件为空或失败 - " + source;
@@ -69,7 +72,7 @@ public class SkillManagerService {
                 sourceFilePath = downloadPath.toAbsolutePath().toString();
                 log.info("下载 skill 成功: {} -> {}", source, sourceFilePath);
             } else {
-                // 本地文件，source 为用户可控路径，需 shell 转义
+                // 本地文件
                 File localFile = new File(source);
                 if (!localFile.exists() || !localFile.isFile()) {
                     return "安装失败: 本地文件不存在 - " + source;
@@ -85,43 +88,25 @@ public class SkillManagerService {
 
             switch (ext) {
                 case "zip":
-                    commandExecutor.execute(null, "unzip -o " + shellEscape(sourceFilePath)
-                            + " -d " + shellEscape(extractDir.toAbsolutePath().toString()));
+                    // 使用 ZipInputStream 安全解压，解压前校验每个条目防止路径穿越
+                    safeExtractZip(Paths.get(sourceFilePath), extractDir);
                     break;
                 case "gz":
                 case "tgz":
-                    commandExecutor.execute(null, "tar xzf " + shellEscape(sourceFilePath)
-                            + " -C " + shellEscape(extractDir.toAbsolutePath().toString()));
+                    commandExecutor.execute(null, "tar xzf " + sourceFilePath + " -C " + extractDir.toAbsolutePath());
+                    validateNoPathTraversal(extractDir);
                     break;
                 case "bz2":
-                    commandExecutor.execute(null, "tar xjf " + shellEscape(sourceFilePath)
-                            + " -C " + shellEscape(extractDir.toAbsolutePath().toString()));
+                    commandExecutor.execute(null, "tar xjf " + sourceFilePath + " -C " + extractDir.toAbsolutePath());
+                    validateNoPathTraversal(extractDir);
                     break;
                 case "tar":
-                    commandExecutor.execute(null, "tar xf " + shellEscape(sourceFilePath)
-                            + " -C " + shellEscape(extractDir.toAbsolutePath().toString()));
+                    commandExecutor.execute(null, "tar xf " + sourceFilePath + " -C " + extractDir.toAbsolutePath());
+                    validateNoPathTraversal(extractDir);
                     break;
                 default:
                     return "安装失败: 不支持的压缩格式 - " + ext + " (支持: zip, tar.gz, tgz, tar.bz2, tar)";
             }
-
-            // zip slip 安全检查：解压后校验所有文件是否仍在目标目录内
-            Path extractDirNormalized = extractDir.toAbsolutePath().normalize();
-            Files.walk(extractDir)
-                    .filter(p -> p.toFile().isFile())
-                    .forEach(p -> {
-                        Path resolvedPath = p.toAbsolutePath().normalize();
-                        if (!resolvedPath.startsWith(extractDirNormalized)) {
-                            log.warn("[SkillManager] 解压文件路径穿越风险, 已拒绝: {}", resolvedPath);
-                            try {
-                                FileUtil.delete(extractDir.toAbsolutePath().toString());
-                            } catch (IOException cleanupException) {
-                                log.warn("[SkillManager] 清理被拒绝的提取目录失败: {}",
-                                        extractDir.toAbsolutePath(), cleanupException);
-                            }
-                            throw new RuntimeException("压缩包包含路径穿越风险: " + p);
-                        }
-                    });
 
             // === 步骤3: 推断 skill 名称 ===
             File[] extractedFiles = extractDir.toFile().listFiles();
@@ -214,9 +199,7 @@ public class SkillManagerService {
             // === 步骤6: 设置 bin 目录脚本可执行权限 ===
             File binDir = new File(targetDir.toFile(), "bin");
             if (binDir.exists() && binDir.isDirectory()) {
-                commandExecutor.execute(null, "chmod +x " + shellEscape(binDir.getAbsolutePath())
-                        + "/*.sh 2>/dev/null; chmod +x " + shellEscape(binDir.getAbsolutePath())
-                        + "/*.py 2>/dev/null; true");
+                commandExecutor.execute(null, "chmod +x " + binDir.getAbsolutePath() + "/*.sh 2>/dev/null; chmod +x " + binDir.getAbsolutePath() + "/*.py 2>/dev/null; true");
             }
 
             // === 步骤7: 列出已安装的文件 ===
@@ -243,20 +226,63 @@ public class SkillManagerService {
                 try {
                     FileUtil.delete(tmpDir.toAbsolutePath().toString());
                 } catch (IOException e) {
-                    log.warn("[SkillManager] 清理临时目录失败: {}", tmpDir.toAbsolutePath(), e);
+                    log.warn("清理临时目录失败: {}", tmpDir.toAbsolutePath(), e);
                 }
             }
         }
     }
 
     /**
-     * 使用单引号包裹实现 shell 安全转义，防止空格、特殊字符破坏命令结构
+     * 使用 ZipInputStream 安全解压 zip 文件，解压前校验每个条目防止路径穿越。
+     * 对于路径穿越条目（如 ../../../etc/passwd）直接拒绝解压。
      */
-    private String shellEscape(String value) {
-        if (value == null) {
-            return "''";
+    private void safeExtractZip(Path zipFile, Path targetDir) throws IOException {
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile.toFile()))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                String entryName = entry.getName();
+                // 跳过目录条目
+                if (entry.isDirectory()) {
+                    Path dirPath = targetDir.resolve(entryName).normalize();
+                    if (!dirPath.startsWith(targetDir.normalize())) {
+                        throw new IOException("压缩包包含路径穿越风险: " + entryName);
+                    }
+                    Files.createDirectories(dirPath);
+                    continue;
+                }
+                // 解析目标路径并校验是否在 targetDir 范围内
+                Path resolvedPath = targetDir.resolve(entryName).normalize();
+                if (!resolvedPath.startsWith(targetDir.normalize())) {
+                    throw new IOException("压缩包包含路径穿越风险: " + entryName);
+                }
+                // 确保父目录存在
+                Files.createDirectories(resolvedPath.getParent());
+                // 写入文件
+                try (OutputStream out = Files.newOutputStream(resolvedPath)) {
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = zis.read(buffer)) != -1) {
+                        out.write(buffer, 0, len);
+                    }
+                }
+            }
         }
-        return "'" + value.replace("'", "'\\''") + "'";
+    }
+
+    /**
+     * 解压后校验解压目录中是否存在路径穿越文件，防止 tar 命令的 Zip Slip 攻击。
+     */
+    private void validateNoPathTraversal(Path extractDir) throws IOException {
+        if (!Files.exists(extractDir)) {
+            return;
+        }
+        Path normalizedBase = extractDir.normalize();
+        Files.walk(extractDir).forEach(p -> {
+            Path normalized = p.normalize();
+            if (!normalized.startsWith(normalizedBase)) {
+                throw new RuntimeException("解压文件包含路径穿越风险: " + p);
+            }
+        });
     }
 
     /**

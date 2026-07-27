@@ -32,6 +32,7 @@ public class ClientCommand implements Serializable {
         return JSONObject.toJSONString(this);
     }
 
+    /** 转换数据类型 */
     public static ClientCommand convert(String json) {
         try {
             return JSONObject.parseObject(json, ClientCommand.class);

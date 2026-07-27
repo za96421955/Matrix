@@ -29,6 +29,7 @@ public class MqttTaskComplete implements TaskComplete {
     private MqttPublisher mqttPublisher;
 
     private final TaskService taskService;
+    /** MqttTaskComplete操作 */
     public MqttTaskComplete(@Lazy TaskService taskService) {
         this.taskService = taskService;
     }

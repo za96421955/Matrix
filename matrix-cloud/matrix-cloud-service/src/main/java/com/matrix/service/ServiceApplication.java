@@ -10,6 +10,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @MapperScan(basePackages = { "com.matrix.service.dal.mapper" })
 public class ServiceApplication {
 
+    /** 程序入口点 */
     public static void main(String[] args) {
         SpringApplication.run(ServiceApplication.class, args);
     }

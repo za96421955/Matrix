@@ -37,6 +37,7 @@ public class ChatResponse implements Serializable {
     private String system_fingerprint;
     private Response.Error error;
 
+    /** ChatResponse操作 */
     public ChatResponse(Response response) {
         this.sessionId = response.getSessionId();
         this.id = response.getId();

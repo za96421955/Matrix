@@ -20,21 +20,25 @@ import reactor.core.publisher.Mono;
 public class WeatherTool extends AbstractTool<WeatherTool.Request> {
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "weather";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "查询天气、温度、风速信息。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return WeatherTool.Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 1. ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

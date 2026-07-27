@@ -154,6 +154,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return response;
     }
 
+    /** callResultByClone操作 */
     protected String callResultByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         if (StringUtils.isNotBlank(prompt)) {
@@ -164,6 +165,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return null != message ? message.getContent() : "";
     }
 
+    /** callNoToolByClone操作 */
     protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         localRequest.getTools().clear();

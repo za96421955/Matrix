@@ -232,6 +232,7 @@ public class Response implements Serializable {
         private Function function;
 
         @Override
+        /** 克隆对象副本 */
         public ToolCall clone() {
             return JSONObject.parseObject(JSONObject.toJSONString(this), ToolCall.class);
         }

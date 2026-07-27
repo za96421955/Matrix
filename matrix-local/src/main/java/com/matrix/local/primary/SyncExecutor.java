@@ -41,6 +41,7 @@ public class SyncExecutor implements Executor {
     private TaskService taskService;
 
     @Override
+    /** executeAuth操作 */
     public Mono<String> executeAuth(Long userId, String command) {
         // 创建授权任务
         TaskCommand taskCommand = TaskCommand.builder()
@@ -73,6 +74,7 @@ public class SyncExecutor implements Executor {
     }
 
     @Override
+    /** executeTask操作 */
     public Mono<String> executeTask(Long userId, String taskId, String command)
             throws IOException, InterruptedException {
         // 直接调用本地执行器
@@ -84,6 +86,7 @@ public class SyncExecutor implements Executor {
     }
 
     @Override
+    /** executeCommand操作 */
     public Mono<String> executeCommand(String taskId, String command)
             throws IOException, InterruptedException {
         // 直接调用本地执行器

@@ -31,6 +31,7 @@ public class TaskPatternContext {
     @Resource
     private ServiceCache serviceCache;
 
+    /** 清空数据或缓存 */
     public void clear(long userId, long sessionId) {
         // task chain
         RedisKey redisKey = RedisKey.TASK_PATTERN_CHAIN;

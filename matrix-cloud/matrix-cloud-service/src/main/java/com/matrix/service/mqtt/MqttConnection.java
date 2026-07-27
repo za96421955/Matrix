@@ -33,6 +33,7 @@ public class MqttConnection {
     private MqttAsyncClient mqttClient;
 
     @Autowired
+    /** MqttConnection操作 */
     public MqttConnection(@Lazy MqttSubscriber mqttSubscriber,
                           @Lazy MqttConsumer mqttConsumer) {
         this.mqttSubscriber = mqttSubscriber;
@@ -40,6 +41,7 @@ public class MqttConnection {
     }
 
     @PostConstruct
+    /** 初始化资源或配置 */
     public void init() throws MqttException {
         String brokerUrl = properties.getMqtt().getBrokerUrl();
         String clientId = "service-" + UUID.randomUUID();
@@ -47,23 +49,27 @@ public class MqttConnection {
         mqttClient = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
         mqttClient.setCallback(new MqttCallback() {
             @Override
+            /** connectComplete操作 */
             public void connectComplete(boolean reconnect, String serverURI) {
                 log.info("MQTT connect complete: reconnect={}, serverURI={}", reconnect, serverURI);
                 mqttSubscriber.subscribe();
             }
 
             @Override
+            /** disconnected操作 */
             public void disconnected(MqttDisconnectResponse disconnectResponse) {
                 log.warn("MQTT disconnected: returnCode={}, reason={}",
                         disconnectResponse.getReturnCode(), disconnectResponse.getReasonString());
             }
 
             @Override
+            /** mqttErrorOccurred操作 */
             public void mqttErrorOccurred(MqttException exception) {
                 log.error("MQTT error occurred", exception);
             }
 
             @Override
+            /** messageArrived操作 */
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 String payload = new String(message.getPayload());
                 log.info("Message received: topic={}, payload={}", topic, payload);
@@ -71,17 +77,20 @@ public class MqttConnection {
             }
 
             @Override
+            /** deliveryComplete操作 */
             public void deliveryComplete(IMqttToken token) {
                 log.debug("Message delivery complete: {}", token.getMessageId());
             }
 
             @Override
+            /** authPacketArrived操作 */
             public void authPacketArrived(int reasonCode, MqttProperties properties) {
                 log.debug("Auth packet arrived: reasonCode={}", reasonCode);
             }
         });
     }
 
+    /** 建立连接 */
     public void connect() {
         if (mqttClient == null) {
             log.error("MQTT client not initialized");
@@ -116,6 +125,7 @@ public class MqttConnection {
     }
 
     @PreDestroy
+    /** 断开连接 */
     public void disconnect() {
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
@@ -127,6 +137,7 @@ public class MqttConnection {
         }
     }
 
+    /** 获取Client属性值 */
     public MqttAsyncClient getClient() {
         return mqttClient;
     }

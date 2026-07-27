@@ -32,6 +32,7 @@ public class ChatController {
     private SessionService sessionService;
 
     @PostMapping(value = "/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    /** completions操作 */
     public Flux<ChatResponse> completions(@AuthenticationPrincipal UserResponse userInfo,
                                           @RequestBody ChatRequest request) {
         request.setUserId(userInfo.getUserId());
@@ -39,6 +40,7 @@ public class ChatController {
     }
 
     @PostMapping(value = "/submit")
+    /** submit操作 */
     public ResponseEntity<CommonResponse<Long>> submit(@AuthenticationPrincipal UserResponse userInfo,
                                                        @RequestBody ChatRequest request) {
         request.setUserId(userInfo.getUserId());

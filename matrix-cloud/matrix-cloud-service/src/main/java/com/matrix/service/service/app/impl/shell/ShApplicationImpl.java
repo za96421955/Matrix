@@ -17,11 +17,13 @@ import org.springframework.stereotype.Service;
 public class ShApplicationImpl extends AbstractApplication {
 
     @Override
+    /** fileType操作 */
     public String fileType() {
         return "sh";
     }
 
     @Override
+    /** call操作 */
     public String call(Long userId, String clientId,
                        RegisterCommand.Application app, String input)
             throws Exception {

@@ -17,6 +17,7 @@ public class GovernanceController {
 
     @Description("健康检查")
     @RequestMapping("/health/check")
+    /** 检查条件是否满足 */
     public Object check() {
         return "success";
     }

@@ -30,11 +30,13 @@ import java.util.Map;
 public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "skill-manager";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "运行过程中，自动发现、管理 skill。" +
                 "支持查看 skill 列表(名称+描述)、查看 SKILL.md 完整内容、创建/更新 skill、启用/禁用 skill。" +
@@ -43,11 +45,13 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 校验终端
         String checkResult = this.checkClient(userId, request.getClientId());

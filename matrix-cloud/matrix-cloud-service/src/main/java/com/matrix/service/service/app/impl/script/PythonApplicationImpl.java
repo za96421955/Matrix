@@ -17,11 +17,13 @@ import org.springframework.stereotype.Service;
 public class PythonApplicationImpl extends AbstractApplication {
 
     @Override
+    /** fileType操作 */
     public String fileType() {
         return "py";
     }
 
     @Override
+    /** call操作 */
     public String call(Long userId, String clientId,
                        RegisterCommand.Application app, String input)
             throws Exception {

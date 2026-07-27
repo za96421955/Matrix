@@ -18,6 +18,7 @@ public class LimitProperties {
     private int ipQps = 100;
 
     @Bean
+    /** objectMapper操作 */
     public ObjectMapper objectMapper() {
         return new ObjectMapper();
         // 或使用 Jackson2ObjectMapperBuilder.json().build();

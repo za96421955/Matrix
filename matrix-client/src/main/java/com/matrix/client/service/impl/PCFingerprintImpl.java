@@ -35,6 +35,7 @@ public class PCFingerprintImpl implements Fingerprint {
     private CommandExecutor commandExecutor;
 
     @Override
+    /** 获取指定数据 */
     public String get() throws IOException, InterruptedException {
         String os = System.getProperty("os.name").toLowerCase();
         String uuidCmd, macCmd;

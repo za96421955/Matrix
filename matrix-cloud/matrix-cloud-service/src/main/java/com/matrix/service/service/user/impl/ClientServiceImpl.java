@@ -40,11 +40,13 @@ public class ClientServiceImpl implements ClientService {
     private static final long HEARTBEAT_RATE_LIMIT_MS = 10000; // 10 秒
 
     @Override
+    /** 获取ByUserId属性值 */
     public List<ClientInfo> getByUserId(Long userId) {
         return clientInfoMapper.selectByUserId(userId);
     }
 
     @Override
+    /** 获取ById属性值 */
     public ClientInfo getById(Long userId, String clientId) {
         LambdaQueryWrapper<ClientInfo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ClientInfo::getClientId, clientId)
@@ -58,6 +60,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 获取ByUserIdAndOnline属性值 */
     public List<ClientInfo> getByUserIdAndOnline(Long userId) {
         List<ClientInfo> list = this.getByUserId(userId);
         List<ClientInfo> onlineList = new ArrayList<>();
@@ -74,6 +77,7 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    /** 保存数据 */
     public void save(Long userId, String clientId, String clientType, String osInfo) {
         ClientInfo newClientInfo = ClientInfo.builder()
                 .userId(userId)
@@ -91,6 +95,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 注册客户端或服务 */
     public void register(Long userId, String clientId, RegisterCommand registerCommand) {
 //        log.info("client register start, userId={}, clientId={}", userId, clientId);
         // 查询设备是否已存在
@@ -111,6 +116,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** heartbeat操作 */
     public void heartbeat(Long userId, String clientId, RegisterCommand registerCommand) {
 //        log.info("heartbeat received, userId={}, clientId={}", userId, clientId);
         // 验证设备是否存在
@@ -148,6 +154,7 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** checkOnline操作 */
     public boolean checkOnline(Long userId, String clientId) {
         ClientInfo client = clientInfoMapper.selectByClientId(userId, clientId);
         if (client == null) {

@@ -46,6 +46,7 @@ public class UserServiceImpl implements UserService {
     private ClientService clientService;
 
     @Override
+    /** extractApiKey操作 */
     public String extractApiKey(String authHeader) {
         if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
             throw new BusinessException(ErrorCode.AUTH_HEADER_INVALID);
@@ -54,12 +55,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    /** 获取UserInfo属性值 */
     public UserInfo getUserInfo(Long userId) {
         return userInfoMapper.selectById(userId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** validateApiKey操作 */
     public UserResponse validateApiKey(String deviceId, String apiKey) {
         if (StringUtils.isBlank(apiKey)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "apiKey 不可为空");
@@ -166,6 +169,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** deleteApiKey操作 */
     public boolean deleteApiKey(String apiKey) {
         UserApiKey userApiKey = userApiKeyMapper.selectByApiKey(apiKey);
         if (null == userApiKey) {
@@ -185,6 +189,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** enableApiKey操作 */
     public boolean enableApiKey(String apiKey) {
         UserApiKey userApiKey = userApiKeyMapper.selectByApiKey(apiKey);
         if (null == userApiKey) {
@@ -204,6 +209,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** disableApiKey操作 */
     public boolean disableApiKey(String apiKey) {
         UserApiKey userApiKey = userApiKeyMapper.selectByApiKey(apiKey);
         if (null == userApiKey) {

@@ -17,11 +17,13 @@ import org.springframework.stereotype.Service;
 public class NodeApplicationImpl extends AbstractApplication {
 
     @Override
+    /** fileType操作 */
     public String fileType() {
         return "js";
     }
 
     @Override
+    /** call操作 */
     public String call(Long userId, String clientId,
                        RegisterCommand.Application app, String input)
             throws Exception {

@@ -48,21 +48,25 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
     }
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "query-typhoon";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "查询全球热带气旋（台风/飓风/气旋）最新预警报文，数据源为 NOAA/JTWC/JMA 等官方机构原始报文。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return TyphoonTool.Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 1. 终端校验
         String checkResult = this.checkClient(userId, request.getClientId());

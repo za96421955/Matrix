@@ -48,14 +48,17 @@ public class MatrixClientProperties {
         private String heartbeat;
         private String ack;
 
+        /** 获取Register属性值 */
         public String getRegister() {
             return base + register;
         }
 
+        /** 获取Heartbeat属性值 */
         public String getHeartbeat() {
             return base + heartbeat;
         }
 
+        /** 获取Ack属性值 */
         public String getAck() {
             return base + ack;
         }

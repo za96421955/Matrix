@@ -38,6 +38,7 @@ public class TaskPublish {
 
     private final TaskService taskService;
 
+    /** TaskPublish操作 */
     public TaskPublish(@Lazy TaskService taskService) {
         this.taskService = taskService;
     }

@@ -18,11 +18,13 @@ public class AuthorizationContext implements ServerSecurityContextRepository {
 
     private final ServiceCache serviceCache;
 
+    /** AuthorizationContext操作 */
     public AuthorizationContext(ServiceCache serviceCache) {
         this.serviceCache = serviceCache;
     }
 
     @Override
+    /** 保存数据 */
     public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
         String token = extractToken(exchange);
         if (token != null && context.getAuthentication() != null) {
@@ -34,6 +36,7 @@ public class AuthorizationContext implements ServerSecurityContextRepository {
     }
 
     @Override
+    /** 加载数据或配置 */
     public Mono<SecurityContext> load(ServerWebExchange exchange) {
         String token = extractToken(exchange);
         if (token == null) {

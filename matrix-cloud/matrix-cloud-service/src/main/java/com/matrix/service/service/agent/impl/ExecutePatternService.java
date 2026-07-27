@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 public class ExecutePatternService extends AbstractPatternService<PatternRequest> {
 
     @Override
+    /** call操作 */
     public Flux<Response> call(PatternRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));

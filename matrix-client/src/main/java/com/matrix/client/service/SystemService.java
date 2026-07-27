@@ -34,6 +34,7 @@ public class SystemService {
     private RiskLevelManagerService riskLevelManagerService;
 
     private final RegisterHeartbeatService registerHeartbeatService;
+    /** SystemService操作 */
     public SystemService(@Lazy RegisterHeartbeatService registerHeartbeatService) {
         this.registerHeartbeatService = registerHeartbeatService;
     }

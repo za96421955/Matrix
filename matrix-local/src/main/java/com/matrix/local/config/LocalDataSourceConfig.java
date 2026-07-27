@@ -37,6 +37,7 @@ public class LocalDataSourceConfig {
     private long maxLifetime;
 
     @Bean
+    /** dataSource操作 */
     public DataSource dataSource() {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(url);

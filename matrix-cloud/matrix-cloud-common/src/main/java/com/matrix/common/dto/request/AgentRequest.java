@@ -26,6 +26,7 @@ public class AgentRequest extends PatternRequest {
     }
 
     @Override
+    /** 克隆对象副本 */
     public AgentRequest clone() {
         return JSON.parseObject(JSON.toJSONString(this), AgentRequest.class);
     }

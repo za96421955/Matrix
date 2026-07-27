@@ -54,6 +54,7 @@ public class SecurityConfig {
     };
 
     @Bean
+    /** springSecurityFilterChain操作 */
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         ServerSecurityContextRepository repo = this.tokenCachingSecurityContextRepository();
         return http
@@ -81,6 +82,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    /** 转换为kenCachingSecurityContextRepository格式 */
     public ServerSecurityContextRepository tokenCachingSecurityContextRepository() {
         return new AuthorizationContext(serviceCache);
     }
@@ -116,6 +118,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    /** customAuthenticationManager操作 */
     public ReactiveAuthenticationManager customAuthenticationManager() {
         return authentication -> {
             // 从 authentication 的 credentials 中取出原始 token

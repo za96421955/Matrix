@@ -33,6 +33,7 @@ public class Skill implements Serializable {
     private Boolean enabled;
     private String prompt;
 
+    /** 解析数据 */
     public static Skill parse(String yamlString) {
         // 1. 用正则分割（多行模式，匹配独立的 --- 行）
         String[] parts = yamlString.split("(?m)^---\\s*$", 3);

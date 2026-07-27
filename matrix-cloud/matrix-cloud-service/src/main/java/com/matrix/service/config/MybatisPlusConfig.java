@@ -28,6 +28,7 @@ public class MybatisPlusConfig {
     private String location;
 
     @Bean
+    /** sqlSessionFactory操作 */
     public SqlSessionFactory sqlSessionFactory() throws Exception {
         MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
@@ -38,6 +39,7 @@ public class MybatisPlusConfig {
     }
 
     @Bean
+    /** mybatisPlusInterceptor操作 */
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         // 1. 添加乐观锁插件

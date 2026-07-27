@@ -32,6 +32,7 @@ public class Message implements Serializable {
     private String tool_call_id;
 
     // 关键：使用 Object 类型接收，同时兼容 String 和 Array
+    /** 设置Content属性值 */
     public void setContent(Object contentObj) {
         if (contentObj == null) {
             this.content = null;
@@ -52,6 +53,7 @@ public class Message implements Serializable {
         }
     }
 
+    /** 清空数据或缓存 */
     public void clear() {
         this.role = null;
         this.content = null;
@@ -65,6 +67,7 @@ public class Message implements Serializable {
         return JSONObject.toJSONString(this);
     }
 
+    /** system操作 */
     public static Message system(String content) {
         return Message.builder()
                 .role(Role.SYSTEM)
@@ -72,6 +75,7 @@ public class Message implements Serializable {
                 .build();
     }
 
+    /** user操作 */
     public static Message user(String content) {
         return Message.builder()
                 .role(Role.USER)
@@ -79,6 +83,7 @@ public class Message implements Serializable {
                 .build();
     }
 
+    /** assistant操作 */
     public static Message assistant(String content) {
         return Message.builder()
                 .role(Role.ASSISTANT)
@@ -86,6 +91,7 @@ public class Message implements Serializable {
                 .build();
     }
 
+    /** 转换为olCall格式 */
     public static Message toolCall(Response.ToolCall... toolCalls) {
         return Message.builder()
                 .role(Role.ASSISTANT)
@@ -93,6 +99,7 @@ public class Message implements Serializable {
                 .build();
     }
 
+    /** 转换为ol格式 */
     public static Message tool(String toolCallId, String content) {
         return Message.builder()
                 .role(Role.TOOL)
@@ -101,6 +108,7 @@ public class Message implements Serializable {
                 .build();
     }
 
+    /** done操作 */
     public static Message done() {
         return Message.builder()
                 .role(Role.DONE)

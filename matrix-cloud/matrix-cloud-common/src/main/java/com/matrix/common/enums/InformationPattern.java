@@ -29,6 +29,7 @@ public enum InformationPattern {
         this.desc = desc;
     }
 
+    /** eq操作 */
     public boolean eq(int no) {
         return this.getNo() == no;
     }

@@ -12,6 +12,7 @@ public abstract class Base64Util {
 
     private Base64Util() {}
 
+    /** formatHex操作 */
     public static String formatHex(String input) {
         if (input == null || input.isEmpty()) {
             throw new IllegalArgumentException("Input cannot be null or empty");

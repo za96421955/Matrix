@@ -17,6 +17,7 @@ import java.util.Set;
 public class HashAlgorithm implements ComplexKeysShardingAlgorithm<Long> {
 
     @Override
+    /** doSharding操作 */
     public Collection<String> doSharding(Collection<String> availableTargetNames, ComplexKeysShardingValue<Long> shardingValue) {
         Map<String, Collection<Long>> columnShardingValues = shardingValue.getColumnNameAndShardingValuesMap();
         Set<String> tables = new HashSet<>();

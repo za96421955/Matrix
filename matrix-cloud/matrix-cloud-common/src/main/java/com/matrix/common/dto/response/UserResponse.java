@@ -51,6 +51,7 @@ public class UserResponse implements Serializable {
      */
     private List<ApiKey> apiKeys;
 
+    /** 获取ApiKey属性值 */
     public String getApiKey() {
         if (CollectionUtils.isEmpty(apiKeys) || null == apiKeys.get(0)) {
             return null;

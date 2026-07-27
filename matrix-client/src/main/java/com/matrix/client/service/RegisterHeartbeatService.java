@@ -34,11 +34,13 @@ public class RegisterHeartbeatService {
     private Fingerprint fingerprint;
 
     private final MqttConnection mqttConnection;
+    /** RegisterHeartbeatService操作 */
     public RegisterHeartbeatService(@Autowired(required = false) MqttConnection mqttConnection) {
         this.mqttConnection = mqttConnection;
     }
 
     @PostConstruct
+    /** 注册客户端或服务 */
     public void register() {
         new Thread(() -> {
             try {

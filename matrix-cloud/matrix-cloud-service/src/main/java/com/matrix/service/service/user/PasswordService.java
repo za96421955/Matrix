@@ -48,6 +48,7 @@ public class PasswordService {
      * @return 64 位十六进制 SHA-256 哈希值
      * @throws RuntimeException 如果 SHA-256 算法不可用（理论上不会发生）
      */
+    /** generateStableHash操作 */
     public String generateStableHash(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

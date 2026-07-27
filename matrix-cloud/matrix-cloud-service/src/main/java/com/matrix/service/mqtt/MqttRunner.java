@@ -16,6 +16,7 @@ public class MqttRunner implements ApplicationRunner {
     private MqttConnection mqttConnection;
 
     @Override
+    /** 启动执行流程 */
     public void run(ApplicationArguments args) {
         mqttConnection.connect();
     }

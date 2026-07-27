@@ -16,10 +16,12 @@ public class AppContext {
     @Resource
     private ApplicationContext applicationContext;
 
+    /** 获取Apps属性值 */
     public List<Application> getApps() {
         return new ArrayList<>(applicationContext.getBeansOfType(Application.class).values());
     }
 
+    /** 获取App属性值 */
     public Application getApp(String fileType) {
         for (Application application : this.getApps()) {
             if (application.fileType().equals(fileType)) {

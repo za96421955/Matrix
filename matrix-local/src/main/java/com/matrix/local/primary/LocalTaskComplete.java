@@ -26,6 +26,7 @@ public class LocalTaskComplete implements TaskComplete {
     private CompletableContext completableContext;
 
     private final TaskService taskService;
+    /** LocalTaskComplete操作 */
     public LocalTaskComplete(@Lazy TaskService taskService) {
         this.taskService = taskService;
     }

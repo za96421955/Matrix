@@ -20,6 +20,7 @@ public class MqttSubscriber {
     @Resource
     private CompletableContext completableContext;
 
+    /** 订阅消息或话题 */
     public void subscribe(String topic) throws MqttException {
         if (StringUtils.isBlank(topic)) {
             return;
@@ -31,6 +32,7 @@ public class MqttSubscriber {
         client.subscribe(topic, 1).waitForCompletion();
     }
 
+    /** unsubscribe操作 */
     public void unsubscribe(String topic) throws MqttException {
         if (StringUtils.isBlank(topic)) {
             return;
@@ -42,6 +44,7 @@ public class MqttSubscriber {
         client.unsubscribe(topic).waitForCompletion();
     }
 
+    /** 订阅消息或话题 */
     public void subscribe() {
         try {
             for (String topic : MqttTopics.SUBSCRIBE_TOPICS) {
@@ -57,6 +60,7 @@ public class MqttSubscriber {
         }
     }
 
+    /** subscribeWaitResult操作 */
     public Mono<String> subscribeWaitResult(String topic, long timeoutSeconds) throws MqttException {
         // 订阅结果
         this.subscribe(topic);

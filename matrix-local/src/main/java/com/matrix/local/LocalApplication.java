@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class LocalApplication {
 
+    /** 程序入口点 */
     public static void main(String[] args) {
         SpringApplication.run(LocalApplication.class, args);
     }

@@ -22,10 +22,12 @@ public class MqttConsumer {
     private final TaskConsumer taskConsumer;
 
     @Autowired
+    /** MqttConsumer操作 */
     public MqttConsumer(@Lazy TaskConsumer taskConsumer) {
         this.taskConsumer = taskConsumer;
     }
 
+    /** 处理请求或事件 */
     public void handle(String topic, String payload) {
         log.info("Handling MQTT message: topic={}, payload={}", topic, payload);
         // 完成等待

@@ -28,6 +28,7 @@ public class AgentController {
     private RegisterContext registerContext;
 
     @PostMapping(value = "/call", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    /** call操作 */
     public Flux<Response> call(@AuthenticationPrincipal UserResponse userInfo,
                                @RequestBody AgentRequest request) {
         log.info("Agent call request: {}", request);
@@ -36,6 +37,7 @@ public class AgentController {
     }
 
     @GetMapping("/list")
+    /** 获取List属性值 */
     public ResponseEntity<CommonResponse<List<String>>> getList(@AuthenticationPrincipal UserResponse userInfo) {
         List<String> response = registerContext.getSkills(userInfo.getUserId()).stream()
                 .filter(skill -> Boolean.TRUE.equals(skill.getEnabled()))

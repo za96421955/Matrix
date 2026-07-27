@@ -127,6 +127,7 @@ public class TaskContext {
      * @param status 新状态
      * @param result 执行结果（可选）
      */
+    /** updateStatusAndResult操作 */
     public void updateStatusAndResult(Long userId, String taskId, String status, String result) {
         if (null == userId || StringUtils.isBlank(taskId) || StringUtils.isBlank(status)) {
             log.warn("[TaskContext] updateStatusAndResult 参数不完整, userId={}, taskId={}, status={}", userId, taskId, status);

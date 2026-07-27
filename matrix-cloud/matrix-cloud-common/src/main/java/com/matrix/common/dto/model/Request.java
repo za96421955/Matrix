@@ -39,6 +39,7 @@ public class Request implements Serializable {
     /** 流式输出 */
     private Boolean stream;
 
+    /** 构建对象或命令 */
     public static Request build(String model, List<Message> messages, List<Tool> tools) {
         return Request.builder()
                 .model(model)
@@ -51,6 +52,7 @@ public class Request implements Serializable {
                 .build();
     }
 
+    /** 构建对象或命令 */
     public static Request build(String model, List<Message> messages) {
         return build(model, messages, null);
     }
@@ -96,6 +98,7 @@ public class Request implements Serializable {
     }
 
     @Override
+    /** 克隆对象副本 */
     public Request clone() {
         return JSON.parseObject(JSON.toJSONString(this), Request.class);
     }
@@ -116,6 +119,7 @@ public class Request implements Serializable {
         private String type;
         private Function function;
 
+        /** 初始化资源或配置 */
         public static Tool init(String name, String description, JSONObject parameters) {
             return Tool.builder()
                     .type("function")
@@ -127,10 +131,12 @@ public class Request implements Serializable {
                     .build();
         }
 
+        /** 初始化资源或配置 */
         public static Tool init(String name, String description, String parameters) {
             return init(name, description, JSONObject.parseObject(parameters));
         }
 
+        /** 初始化资源或配置 */
         public static Tool init(String name, String description, Class<?> parameters) {
             return init(name, description, JSONSchemaUtil.generate(parameters));
         }
@@ -169,16 +175,19 @@ public class Request implements Serializable {
 
         private String type;
 
+        /** 判断是否为Enabled */
         public boolean isEnabled() {
             return "enabled".equalsIgnoreCase(type);
         }
 
+        /** enabled操作 */
         public static Thinking enabled() {
             return Thinking.builder()
                     .type("enabled")
                     .build();
         }
 
+        /** disabled操作 */
         public static Thinking disabled() {
             return Thinking.builder()
                     .type("disabled")

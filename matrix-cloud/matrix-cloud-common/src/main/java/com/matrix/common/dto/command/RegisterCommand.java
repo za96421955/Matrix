@@ -91,10 +91,12 @@ public class RegisterCommand implements Serializable {
         private Boolean enabled;
         private String prompt;
 
+        /** disabled操作 */
         public boolean disabled() {
             return null != enabled && !enabled;
         }
 
+        /** 获取Prompt属性值 */
         public String getPrompt() {
             if (StringUtils.isBlank(prompt)) {
                 return "";
@@ -107,6 +109,7 @@ public class RegisterCommand implements Serializable {
             """.formatted(clientId, rootPath, prompt);
         }
 
+        /** 转换为Prompt格式 */
         public String toPrompt(String description) {
             if (StringUtils.isBlank(description)) {
                 description = this.description;

@@ -26,11 +26,13 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
     private ModelService modelService;
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "assistant";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "文件梳理或代码开发时使用，切换目录时读取目录的使用说明，或当使用说明需要更新时调用。";
     }
@@ -41,6 +43,7 @@ public class AssistantTool extends AbstractTool<AssistantTool.Request> {
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

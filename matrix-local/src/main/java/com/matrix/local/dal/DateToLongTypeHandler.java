@@ -24,6 +24,7 @@ import java.util.Date;
 public class DateToLongTypeHandler extends BaseTypeHandler<Date> {
 
     @Override
+    /** 设置NonNullParameter属性值 */
     public void setNonNullParameter(PreparedStatement ps, int i, Date parameter, JdbcType jdbcType)
             throws SQLException {
         // Date -> Long (毫秒时间戳)
@@ -31,6 +32,7 @@ public class DateToLongTypeHandler extends BaseTypeHandler<Date> {
     }
 
     @Override
+    /** 获取NullableResult属性值 */
     public Date getNullableResult(ResultSet rs, String columnName) throws SQLException {
         long value = rs.getLong(columnName);
         if (rs.wasNull()) {
@@ -40,6 +42,7 @@ public class DateToLongTypeHandler extends BaseTypeHandler<Date> {
     }
 
     @Override
+    /** 获取NullableResult属性值 */
     public Date getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         long value = rs.getLong(columnIndex);
         if (rs.wasNull()) {
@@ -49,6 +52,7 @@ public class DateToLongTypeHandler extends BaseTypeHandler<Date> {
     }
 
     @Override
+    /** 获取NullableResult属性值 */
     public Date getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         long value = cs.getLong(columnIndex);
         if (cs.wasNull()) {

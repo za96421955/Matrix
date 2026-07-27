@@ -24,21 +24,25 @@ public class GithubTool extends AbstractTool<GithubTool.Request> {
     private String githubToken;
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "github";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "curl api.github.com, 检索开源项目信息时优先使用。searchToken: " + githubToken + "。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 1. ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());

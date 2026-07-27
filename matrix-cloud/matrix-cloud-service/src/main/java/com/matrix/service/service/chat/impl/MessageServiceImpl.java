@@ -40,6 +40,7 @@ public class MessageServiceImpl implements MessageService {
     private SessionService sessionService;
 
     @Override
+    /** 获取Page属性值 */
     public Page<MessageInfo> getPage(Long userId, Long sessionId, Integer pageNum, Integer pageSize) {
         SessionInfo session = sessionService.getById(userId, sessionId);
         if (null == session) {
@@ -57,6 +58,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 获取ChatPage属性值 */
     public Page<MessageInfo> getChatPage(Long userId, Long sessionId, Integer pageNum, Integer pageSize) {
         SessionInfo session = sessionService.getById(userId, sessionId);
         if (null == session) {
@@ -81,6 +83,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 获取ChatList属性值 */
     public List<MessageInfo> getChatList(Long userId, Long sessionId) {
         SessionInfo session = sessionService.getById(userId, sessionId);
         if (null == session) {
@@ -96,6 +99,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 获取Last属性值 */
     public MessageInfo getLast(Long userId, Long sessionId) {
         if (null == userId || null == sessionId) {
             return null;
@@ -115,6 +119,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 获取ById属性值 */
     public MessageInfo getById(Long userId, Long sessionId, Long messageId) {
         if (null == userId || null == sessionId || null == messageId) {
             return null;
@@ -132,6 +137,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 获取ByToolCallId属性值 */
     public MessageInfo getByToolCallId(Long userId, Long sessionId, String toolCallId) {
         if (null == userId || null == sessionId || StringUtils.isBlank(toolCallId)) {
             return null;
@@ -150,6 +156,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 保存数据 */
     public MessageInfo save(MessageInfo message) {
         if (null == message) {
             return null;
@@ -164,6 +171,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /** 递归删除目录或文件 */
     public void delete(Long userId, Long sessionId, Long messageId) {
         MessageInfo message = this.getById(userId, sessionId, messageId);
         if (message == null) {
@@ -184,6 +192,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 转换数据类型 */
     public Message convert(MessageInfo messageInfo) {
         return Message.builder()
                 .role(messageInfo.getRole())
@@ -218,6 +227,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    /** 转换数据类型 */
     public MessageInfo convert(Message message) {
         MessageInfo messageInfo = MessageInfo.builder()
                 .role(message.getRole())

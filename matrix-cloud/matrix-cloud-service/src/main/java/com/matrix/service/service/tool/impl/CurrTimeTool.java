@@ -19,11 +19,13 @@ public class CurrTimeTool extends AbstractTool<CurrTimeTool.Request> {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return "time";
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "获取系统当前时间、星期几、今年的第几天、是否闰年。";
     }
@@ -34,11 +36,13 @@ public class CurrTimeTool extends AbstractTool<CurrTimeTool.Request> {
     }
 
     @Override
+    /** 获取系统提示信息 */
     public String systemPrompt(Long userId, Long sessionId, String clientId) {
         return this.getCurrentTime();
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         return Flux.just(this.getCurrentTime());
     }

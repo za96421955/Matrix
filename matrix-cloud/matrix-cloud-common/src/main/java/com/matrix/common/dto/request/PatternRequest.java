@@ -34,6 +34,7 @@ public class PatternRequest extends Request {
     }
 
     @Override
+    /** 克隆对象副本 */
     public PatternRequest clone() {
         return JSON.parseObject(JSON.toJSONString(this), PatternRequest.class);
     }

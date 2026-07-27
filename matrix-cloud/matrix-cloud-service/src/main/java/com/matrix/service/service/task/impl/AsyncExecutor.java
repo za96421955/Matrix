@@ -31,6 +31,7 @@ public class AsyncExecutor implements Executor {
     private TaskPublish taskPublish;
 
     @Override
+    /** executeAuth操作 */
     public Mono<String> executeAuth(Long userId, String command)
             throws Exception {
         // 创建授权任务
@@ -46,6 +47,7 @@ public class AsyncExecutor implements Executor {
     }
 
     @Override
+    /** executeTask操作 */
     public Mono<String> executeTask(Long userId, String clientId, String command)
             throws MqttException {
         // 创建任务
@@ -64,6 +66,7 @@ public class AsyncExecutor implements Executor {
     }
 
     @Override
+    /** executeCommand操作 */
     public Mono<String> executeCommand(String clientId, String command)
             throws MqttException {
         String taskId = taskPublish.publishCommand(ClientCommand.builder()

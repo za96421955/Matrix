@@ -19,11 +19,13 @@ public class GatewayLogFilter implements GlobalFilter, Ordered {
     private static final String START_TIME_ATTR = "startTime";
 
     @Override
+    /** 获取排序值 */
     public int getOrder() {
         return -1;
     }
 
     @Override
+    /** 过滤请求 */
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         Instant startTime = Instant.now();
         exchange.getAttributes().put(START_TIME_ATTR, startTime.toEpochMilli());

@@ -9,6 +9,7 @@ public abstract class GuidUtil {
 
     private GuidUtil() {}
 
+    /** 程序入口点 */
     public static void main(String[] args) {
         System.out.println(GuidUtil.getUUID());
     }

@@ -135,16 +135,19 @@ public class HttpClient {
         return this;
     }
 
+    /** contentType操作 */
     public HttpClient contentType(String value) {
         this.header(HttpHeaders.CONTENT_TYPE, value);
         return this;
     }
 
+    /** accept操作 */
     public HttpClient accept(String value) {
         this.header(HttpHeaders.ACCEPT, value);
         return this;
     }
 
+    /** authorization操作 */
     public HttpClient authorization(String value) {
         this.header(HttpHeaders.AUTHORIZATION, "Bearer " + value);
         return this;

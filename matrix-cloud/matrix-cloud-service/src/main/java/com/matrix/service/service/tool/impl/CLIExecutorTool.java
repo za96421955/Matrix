@@ -26,21 +26,25 @@ import java.util.List;
 public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
 
     @Override
+    /** 获取组件名称 */
     public String name() {
         return Constant.CLI_TOOL_NAME;
     }
 
     @Override
+    /** 获取组件描述 */
     public String description() {
         return "CLI 命令执行器。";
     }
 
     @Override
+    /** 获取请求参数类型 */
     public Class<Request> requestType() {
         return CLIExecutorTool.Request.class;
     }
 
     @Override
+    /** 执行工具核心逻辑 */
     public Flux<String> executePass(Long userId, Long sessionId, String toolCallId, Request request) {
         // 1. ClientId 检查
         String checkResult = this.checkClient(userId, request.getClientId());
@@ -66,7 +70,6 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
 
         // 4. 工具执行
         try {
-            // 1. 对工作目录做安全转义
             JSONObject json = new JSONObject();
             json.put("dir", request.getWorkingDirectory());
             json.put("command", finalCommand);
@@ -83,13 +86,9 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
     }
 
     /**
-     * @description 构建指令
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
+     * 构建指令字符串，支持写文件模式（base64编码）和普通命令模式（&&串联）。
      */
     private String buildFinalCommand(Request request) {
-        // 2. 构建实际执行的部分
         String actionPart;
         if (StringUtils.isNotBlank(request.getFilePath())
                 && StringUtils.isNotBlank(request.getFileContent())) {
@@ -104,21 +103,20 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
         } else {
             throw new IllegalArgumentException("必须提供 filePath/fileContent 或 commands 之一");
         }
-        // 3. 实际命令
         return actionPart;
     }
 
     /**
-     * 对参数做最基础的 shell 单引号转义，防止空格、特殊字符破坏命令结构。
-     * 更安全的做法是对路径做白名单校验，而不是只转义。
+     * 使用单引号包裹实现 shell 安全转义，防止空格、特殊字符破坏命令结构。
+     * 所有字符在单引号内均失去特殊含义，仅单引号自身需特殊处理。
      */
     private String shellEscape(String value) {
         if (value == null) {
-            return "\"\"";
+            return "''";
         }
-        // 双引号包裹，兼容 Windows cmd 和 Linux/macOS bash
-        // 若路径内本身包含双引号（极少见），可做简单转义，但通常忽略
-        return "\"" + value + "\"";
+        // 单引号包裹：所有字符在单引号之间保持字面含义
+        // 嵌入的单引号通过结束单引号+转义引号+恢复单引号的方式处理
+        return "'" + value.replace("'", "'\\''") + "'";
     }
 
     @Data
@@ -148,5 +146,3 @@ public class CLIExecutorTool extends AbstractTool<CLIExecutorTool.Request> {
     }
 
 }
-
-

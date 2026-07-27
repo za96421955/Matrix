@@ -29,6 +29,9 @@ public class SessionController {
     public ResponseEntity<CommonResponse<Page<SessionInfo>>> getPage(@AuthenticationPrincipal UserResponse userInfo,
                                                                      @PathVariable("pageNum") Integer pageNum,
                                                                      @PathVariable("pageSize") Integer pageSize) {
+        // TODO 固定查询所有
+        pageNum = 1;
+        pageSize = 1000;
         Page<SessionInfo> response = sessionService.getPage(userInfo.getUserId(), pageNum, pageSize);
         return ResponseEntity.ok(CommonResponse.success(response));
     }

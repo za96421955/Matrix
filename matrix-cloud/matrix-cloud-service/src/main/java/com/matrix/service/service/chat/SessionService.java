@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.matrix.common.dto.request.ChatRequest;
 import com.matrix.service.dal.entity.SessionInfo;
 
+import java.util.List;
+
 /**
  * Session 服务接口
  */
@@ -32,6 +34,14 @@ public interface SessionService {
      * @author 陈晨
      */
     SessionInfo getById(Long userId, Long sessionId);
+
+    /**
+     * @description 查询会话列表
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    List<SessionInfo> getListByUser(Long userId);
 
     /**
      * @description 更新会话标题

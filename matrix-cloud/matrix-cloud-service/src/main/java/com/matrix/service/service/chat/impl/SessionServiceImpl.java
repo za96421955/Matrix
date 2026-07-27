@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -115,6 +116,16 @@ public class SessionServiceImpl implements SessionService {
         return list.getFirst();
     }
 
+    @Override
+    public List<SessionInfo> getListByUser(Long userId) {
+        if (null == userId) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<SessionInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SessionInfo::getUserId, userId)
+                .eq(SessionInfo::getDeleted, false);
+        return sessionInfoMapper.selectList(wrapper);
+    }
 //    /**
 //     * @description 设置会话最后更新时间
 //     * <p> <功能详细描述> </p>

@@ -357,6 +357,16 @@ public interface Prompt {
     /** 思维链 */
     interface CoT {
 
+        String STEPS = """
+            查看上下文，快速、粗略的评估完成用户任务需要的执行步骤。
+            
+            ## 示例
+            user: 给 demo.js 添加 hello world
+            assistant: 1
+            
+            输出 (不要任何解释):
+            """;
+
         String PLAN = """
             ## 任务标准
             ### Specific：
@@ -386,7 +396,7 @@ public interface Prompt {
             """;
 
         String EXECUTE = """
-            1. 调用工具，按计划完成任务。
+            1. 调用工具，按计划完成任务
             2. 输出清晰、简洁的结果，不要使用 emoji 表情
             """;
 //            2. 对执行过程和结果进行完整总结，不要使用 emoji。
@@ -427,6 +437,37 @@ public interface Prompt {
             - `TRUE`
             - `CONTINUE: {说明原因}`
             - `TERMINATED: {说明原因}`
+            """;
+
+    }
+
+    /** 混合智能 */
+    interface MoA {
+
+        String[] DIRECTIONS = {"效率", "安全", "容错"};
+
+        String[] PRINCIPLES = {"六顶思考帽", "SWOT"};
+
+        String ASPECT = CoT.PLAN + """
+            ---
+            追求方向: %s
+            """;
+
+        String EVALUATION_DIRECTION = """
+            1. 查看执行计划，从%s，等方向给出批评和改进建议
+            2. 不要使用 emoji 表情
+            """;
+
+        String EVALUATION_PRINCIPLE = """
+            1. 使用 %s 视角分析执行计划
+            2. 给出批评和改进建议，不要使用 emoji 表情
+            """;
+
+        String CONVERGE = CoT.PLAN + """
+            ---
+            多个助手对用户问题给出了各自的执行计划。
+            仔细核对所有观点，先指出它们的异同和潜在错误，然后整合出一份更优的、无矛盾的最终答案。
+            务必去伪存真，并用清晰的结构输出。
             """;
 
     }

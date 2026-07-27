@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @description 执行模式
@@ -64,7 +66,15 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             return;
         }
 
-        // 2. CoT
+        // 2. 粗估执行步骤数
+        int steps = this.getSteps(sink, request.clone(), 0);
+        log.info("[执行模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
+                request.getUserId(), request.getSessionId(), steps);
+        if (steps <= 0) {
+            return;
+        }
+
+        // 3. CoT
         int count = 0;
         while (true) {
             // 【STOP】停止对话
@@ -78,11 +88,9 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             PatternRequest executorRequest = request.clone();
 
             // 1. 规划
-            String plan = this.callResultByClone(sink, executorRequest, Prompt.CoT.PLAN.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound()));
-            log.info("[执行模式] 任务规划, userId={}, sessionId={}, plan={}",
-                    request.getUserId(), request.getSessionId(), plan);
+            String plan = this.getPlan(sink, executorRequest.clone(), smart, steps);
+            log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
+                    request.getUserId(), request.getSessionId(), steps, plan);
 
             // 2. 执行
             executorRequest.getMessages().add(Message.user(plan));
@@ -108,7 +116,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             request.getMessages().add(Message.user(observe));
         }
 
-        // 3. 结果总结
+        // 4. 结果总结
         this.callResultByClone(sink, request, Prompt.Task.SUMMARY_RESULT);
     }
 
@@ -137,6 +145,160 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             request.getMessages().add(Message.user("按格式输出"));
             return this.generateSmart(sink, request, ++retry);
         }
+    }
+
+    /**
+     * @description 获取执行步骤
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private int getSteps(FluxSink<Response> sink, PatternRequest request, int retry) {
+        if (retry >= 3) {
+            return -1;
+        }
+        String result = this.callNoToolByClone(sink, request, Prompt.CoT.STEPS);
+        try {
+            return Integer.parseInt(result);
+        } catch (Exception e) {
+            request.getMessages().add(Message.user("按格式输出"));
+            return this.getSteps(sink, request, ++retry);
+        }
+    }
+
+    /**
+     * @description 获取执行计划
+     * <p>
+     *     1 步: 直接 Plan
+     *     2-6 步: 素朴切面 (MoA)
+     *     7-10 步: 素朴切面 + 评论修正 (MoA)
+     *     大于 10 步: 素朴切面 + 思考帽 & SWOT (MoA)
+     * </p>
+     *
+     * @author 陈晨
+     */
+    private String getPlan(FluxSink<Response> sink, PatternRequest request, Smart smart, int steps) {
+        // 1 步: 直接 Plan
+        if (steps <= 1) {
+            String plan = this.callResultByClone(sink, request, Prompt.CoT.PLAN.formatted(
+                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                    smart.getRelevant(), smart.getTimeBound()));
+            log.info("[执行模式] 任务规划: Plan, userId={}, sessionId={}, steps={}, plan={}",
+                    request.getUserId(), request.getSessionId(), steps, plan);
+            return plan;
+        }
+        // 多计划综合评估
+        List<String> plans;
+        // 2-6 步: 素朴切面 (MoA)
+        if (steps <= 6) {
+            plans = this.getPlansByAspect(sink, request, smart);
+            log.info("[执行模式] 任务规划: 素朴切面, userId={}, sessionId={}, steps={}, plans={}",
+                    request.getUserId(), request.getSessionId(), steps, plans);
+        }
+        // 7-10 步: 素朴切面 + 评论修正 (MoA)
+        else if (steps <= 10) {
+            plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
+            log.info("[执行模式] 任务规划: 素朴切面 + 评论修正, userId={}, sessionId={}, steps={}, plans={}",
+                    request.getUserId(), request.getSessionId(), steps, plans);
+        }
+        // 大于 10 步: 素朴切面 + 思考帽/SWOT修正 (MoA)
+        else {
+            plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
+            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
+                    request.getUserId(), request.getSessionId(), steps, plans);
+        }
+        // 融合
+        for (String plan : plans) {
+            request.getMessages().add(Message.assistant(plan));
+        }
+        return this.callResultByClone(sink, request, Prompt.MoA.CONVERGE.formatted(
+                smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                smart.getRelevant(), smart.getTimeBound()));
+    }
+
+    /**
+     * @description 并行切面, 获取多个执行计划
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private List<String> getPlansByAspect(FluxSink<Response> sink, PatternRequest request, Smart smart) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<String> plans = new ArrayList<>();
+        for (String direction : Prompt.MoA.DIRECTIONS) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                plans.add(this.callResultByClone(sink, request, Prompt.MoA.ASPECT.formatted(
+                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                        smart.getRelevant(), smart.getTimeBound(),
+                        direction)));
+            }));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        return plans;
+    }
+
+    /**
+     * @description 并行切面 + 评论, 获取多个执行计划
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private List<String> getPlansByAspectAndEvaluation(FluxSink<Response> sink, PatternRequest request, Smart smart) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<String> plans = new ArrayList<>();
+        for (String direction : Prompt.MoA.DIRECTIONS) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                PatternRequest localRequest = request.clone();
+                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT.formatted(
+                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                        smart.getRelevant(), smart.getTimeBound(),
+                        direction)));
+                // 生成执行计划
+                String plan = this.callResultByClone(sink, localRequest, null);
+                // 多方向评价
+                localRequest.getMessages().add(Message.assistant(plan));
+                String evaluation = this.callResultByClone(sink, localRequest,
+                        Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
+                // 修正
+                localRequest.getMessages().add(Message.user(evaluation));
+                plans.add(this.callResultByClone(sink, localRequest, null));
+            }));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        return plans;
+    }
+
+    /**
+     * @description 并行切面 + 原则, 获取多个执行计划
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private List<String> getPlansByAspectAndPrinciple(FluxSink<Response> sink, PatternRequest request, Smart smart) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<String> plans = new ArrayList<>();
+        for (String direction : Prompt.MoA.DIRECTIONS) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                PatternRequest localRequest = request.clone();
+                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT.formatted(
+                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                        smart.getRelevant(), smart.getTimeBound(),
+                        direction)));
+                // 生成执行计划
+                String plan = this.callResultByClone(sink, localRequest, null);
+                // 思考帽/SWOT评价
+                localRequest.getMessages().add(Message.assistant(plan));
+                for (String principle : Prompt.MoA.PRINCIPLES) {
+                    String evaluation = this.callResultByClone(sink, localRequest,
+                            Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle));
+                    localRequest.getMessages().add(Message.user(evaluation));
+                }
+                // 修正
+                plans.add(this.callResultByClone(sink, localRequest, null));
+            }));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        return plans;
     }
 
 }

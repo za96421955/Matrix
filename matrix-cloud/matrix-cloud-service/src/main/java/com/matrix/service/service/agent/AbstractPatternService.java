@@ -164,11 +164,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return null != message ? message.getContent() : "";
     }
 
-//    protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
-//        PatternRequest localRequest = request.clone();
-//        localRequest.getTools().clear();
-//        return this.callResultByClone(sink, request, prompt);
-//    }
+    protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
+        PatternRequest localRequest = request.clone();
+        localRequest.getTools().clear();
+        return this.callResultByClone(sink, request, prompt);
+    }
 
 
     /**

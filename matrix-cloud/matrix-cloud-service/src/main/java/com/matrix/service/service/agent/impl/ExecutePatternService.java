@@ -61,11 +61,14 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             return;
         }
         // 1. 规划任务目标
-        Smart smart = this.generateSmart(sink, request.clone(), 0);
-        log.info("[执行模式] 规划任务目标, userId={}, sessionId={}, smart={}",
-                request.getUserId(), request.getSessionId(), smart);
-        if (null == smart) {
-            return;
+        Smart smart = null;
+        if (this.isNeedSmart(sink, request)) {
+            smart = this.generateSmart(sink, request.clone(), 0);
+            log.info("[执行模式] 规划任务目标, userId={}, sessionId={}, smart={}",
+                    request.getUserId(), request.getSessionId(), smart);
+            if (null == smart) {
+                return;
+            }
         }
 
         // 2. 粗估执行步骤数
@@ -76,36 +79,37 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             return;
         }
 
-        // 3. CoT
+        // 3. 规划
+        String plan = this.getPlan(sink, request.clone(), smart, steps);
+        log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
+                request.getUserId(), request.getSessionId(), steps, plan);
+        if (StringUtils.isBlank(plan)) {
+            return;
+        }
+        request.getMessages().add(Message.assistant(plan));
+
+        // 4. CoT
         int count = 0;
         while (true) {
+            log.info("[执行模式] 任务执行, userId={}, sessionId={}, 执行轮次: {}",
+                    request.getUserId(), request.getSessionId(), ++count);
             // 【STOP】停止对话
             if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
                 log.warn("\n\n======================\n\n\tS T O P: 执行模式 CoT【结束】\n\n======================");
-                log.warn("执行轮次: {}", count);
-                log.warn("======================\n\n\tS T O P: 执行模式 CoT【结束】\n\n======================\n\n");
                 return;
             }
-            count++;
-            PatternRequest executorRequest = request.clone();
 
-            // 1. 规划
-            String plan = this.getPlan(sink, executorRequest.clone(), smart, steps);
-            log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
-                    request.getUserId(), request.getSessionId(), steps, plan);
-
-            // 2. 执行
-            executorRequest.getMessages().add(Message.user(plan));
-            String result = this.callResultByClone(sink, executorRequest, Prompt.CoT.EXECUTE);
+            // 1. 执行
+            String result = this.callResultByClone(sink, request, Prompt.Common.EXECUTE);
             log.info("[执行模式] 任务执行, userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), result);
+            request.getMessages().add(Message.assistant(result));
 
-            // 3. 观察
-            executorRequest.getMessages().add(Message.user(plan));
-            executorRequest.getMessages().add(Message.assistant(result));
-            String observe = this.callResultByClone(sink, executorRequest, Prompt.CoT.OBSERVE.formatted(
+            // 2. 观察
+            String prompt = null == smart ? Prompt.Common.OBSERVE : Prompt.CoT.OBSERVE_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound()));
+                    smart.getRelevant(), smart.getTimeBound());
+            String observe = this.callResultByClone(sink, request, prompt);
             log.info("[执行模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                     request.getUserId(), request.getSessionId(), observe);
             if (observe.contains("TERMINATED")) {
@@ -114,12 +118,22 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             if (observe.contains("TRUE")) {
                 break;
             }
-            request.getMessages().add(Message.assistant(result));
             request.getMessages().add(Message.user(observe));
         }
 
         // 4. 结果总结
-        this.callResultByClone(sink, request, Prompt.Task.SUMMARY_RESULT);
+        this.callResultByClone(sink, request, Prompt.Common.SUMMARY_RESULT);
+    }
+
+    /**
+     * @description 判断用户任务/需求是否需要 SMART 分析
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private boolean isNeedSmart(FluxSink<Response> sink, PatternRequest request) {
+        String result = this.callNoToolByClone(sink, request, Prompt.SMART.CHECK_NEED);
+        return result.contains("true");
     }
 
     /**
@@ -136,7 +150,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
                 JSONSchemaUtil.generate(Smart.class)));
         // 检查
         request.getMessages().add(Message.assistant(result));
-        String check = this.callResultByClone(sink, request, Prompt.SMART.CONFIRM_CHECK);
+        String check = this.callNoToolByClone(sink, request, Prompt.SMART.CONFIRM_CHECK);
         if (check.contains("TODO")) {
             return null;
         }
@@ -163,7 +177,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         if (retry >= 3) {
             return -1;
         }
-        String result = this.callNoToolByClone(sink, request, Prompt.CoT.STEPS);
+        String result = this.callNoToolByClone(sink, request, Prompt.Common.STEPS);
         try {
             return Integer.parseInt(result);
         } catch (Exception e) {
@@ -186,13 +200,15 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
     private String getPlan(FluxSink<Response> sink, PatternRequest request, Smart smart, int steps) {
         // 1 - 5 步: 直接 Plan
         if (steps <= 5) {
-            String plan = this.callResultByClone(sink, request, Prompt.CoT.PLAN.formatted(
+            String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound()));
+                    smart.getRelevant(), smart.getTimeBound());
+            String plan = this.callResultByClone(sink, request, prompt);
             log.info("[执行模式] 任务规划: Plan, userId={}, sessionId={}, steps={}, plan={}",
                     request.getUserId(), request.getSessionId(), steps, plan);
             return plan;
         }
+
         // 多计划综合评估
         List<String> plans;
         // 6 - 15 步: 素朴切面 (MoA)
@@ -213,15 +229,17 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
 //            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
 //                    request.getUserId(), request.getSessionId(), steps, plans);
 //        }
+
         // 融合
         for (int i = 0; i < plans.size(); i++) {
             request.getMessages().add(Message.assistant(
                     "#执行计划 " + ((char) ('A' + i)) + ": \n" +
                             plans.get(i)));
         }
-        return this.callResultByClone(sink, request, Prompt.MoA.CONVERGE.formatted(
+        String prompt = null == smart ? Prompt.MoA.CONVERGE : Prompt.MoA.CONVERGE_SMART.formatted(
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                smart.getRelevant(), smart.getTimeBound()));
+                smart.getRelevant(), smart.getTimeBound());
+        return this.callResultByClone(sink, request, prompt);
     }
 
     /**
@@ -235,10 +253,11 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         List<String> plans = new ArrayList<>();
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
-                plans.add(this.callResultByClone(sink, request, Prompt.MoA.ASPECT.formatted(
+                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound(),
-                        direction)));
+                        direction);
+                plans.add(this.callResultByClone(sink, request, prompt));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -257,10 +276,11 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
                 PatternRequest localRequest = request.clone();
-                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT.formatted(
+                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound(),
-                        direction)));
+                        direction);
+                localRequest.getMessages().add(Message.user(prompt));
                 // 生成执行计划
                 String plan = this.callResultByClone(sink, localRequest, null);
                 // 多方向评价
@@ -288,7 +308,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
                 PatternRequest localRequest = request.clone();
-                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT.formatted(
+                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT_SMART.formatted(
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound(),
                         direction)));

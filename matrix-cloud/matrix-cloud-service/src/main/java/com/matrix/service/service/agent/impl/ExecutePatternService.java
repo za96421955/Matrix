@@ -208,8 +208,10 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
                     request.getUserId(), request.getSessionId(), steps, plans);
         }
         // 融合
-        for (String plan : plans) {
-            request.getMessages().add(Message.assistant(plan));
+        for (int i = 0; i < plans.size(); i++) {
+            request.getMessages().add(Message.assistant(
+                    "#执行计划 " + ((char) ('A' + i)) + ": \n" +
+                            plans.get(i)));
         }
         return this.callResultByClone(sink, request, Prompt.MoA.CONVERGE.formatted(
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),

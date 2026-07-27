@@ -455,7 +455,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
 
         // 找到结束标记的位置（从末尾找）
-        int startIndex = input.indexOf(startMarker);
+        int startIndex = input.lastIndexOf(startMarker);
         int endIndex = input.lastIndexOf(endMarker);
         if (endIndex == -1 || endIndex <= startIndex) {
             return input;

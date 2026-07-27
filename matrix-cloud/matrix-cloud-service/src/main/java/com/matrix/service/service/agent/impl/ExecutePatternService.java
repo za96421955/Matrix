@@ -11,6 +11,7 @@ import com.matrix.service.service.agent.AbstractPatternService;
 import com.matrix.service.service.agent.Prompt;
 import com.matrix.service.service.agent.schema.Smart;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -140,10 +141,14 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             return null;
         }
         try {
-            return JSON.parseObject(this.removeCodeBlockMarkers(result), Smart.class);
+            String json = this.removeCodeBlockMarkers(result);
+            if (StringUtils.isBlank(json)) {
+                throw new RuntimeException("json content is empty");
+            }
+            return JSON.parseObject(json, Smart.class);
         } catch (Exception e) {
             // 格式错误，重试
-            request.getMessages().add(Message.user("按格式输出"));
+            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
             return this.generateSmart(sink, request, ++retry);
         }
     }
@@ -162,7 +167,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         try {
             return Integer.parseInt(result);
         } catch (Exception e) {
-            request.getMessages().add(Message.user("按格式输出"));
+            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
             return this.getSteps(sink, request, ++retry);
         }
     }

@@ -5,6 +5,7 @@ import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
+import com.matrix.common.enums.RedisKey;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
@@ -123,6 +124,8 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
 
         // 4. 结果总结
         this.callResultByClone(sink, request, Prompt.Common.SUMMARY_RESULT);
+        // 清除 SMART 分析缓存
+        this.clearNeedSmart(request);
     }
 
     /**
@@ -132,8 +135,27 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      * @author 陈晨
      */
     private boolean isNeedSmart(FluxSink<Response> sink, PatternRequest request) {
-        String result = this.callNoToolByClone(sink, request, Prompt.SMART.CHECK_NEED);
-        return result.contains("true");
+        RedisKey redisKey = RedisKey.NEED_SMART;
+        String key = redisKey.generateKey(request.getUserId(), request.getSessionId());
+        String isNeedSmart = serviceCache.get(key);
+        if (StringUtils.isBlank(isNeedSmart)) {
+            String result = this.callNoToolByClone(sink, request, Prompt.SMART.CHECK_NEED);
+            serviceCache.set(key, result, redisKey.getTtl());
+            isNeedSmart = result;
+        }
+        return isNeedSmart.contains("true");
+    }
+
+    /**
+     * @description 清除 SMART 分析缓存
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private void clearNeedSmart(PatternRequest request) {
+        RedisKey redisKey = RedisKey.NEED_SMART;
+        String key = redisKey.generateKey(request.getUserId(), request.getSessionId());
+        serviceCache.delete(key);
     }
 
     /**

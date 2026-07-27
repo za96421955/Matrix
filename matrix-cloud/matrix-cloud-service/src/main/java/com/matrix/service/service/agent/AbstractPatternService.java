@@ -11,6 +11,7 @@ import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.model.Role;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.util.JSONSchemaUtil;
+import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.context.RegisterContext;
 import com.matrix.service.context.ToolContext;
@@ -47,6 +48,8 @@ import java.util.function.Consumer;
 @Slf4j
 public abstract class AbstractPatternService<T extends PatternRequest> implements PatternService<T, Response> {
 
+    @Resource
+    protected ServiceCache serviceCache;
     @Resource
     protected RegisterContext registerContext;
     @Resource

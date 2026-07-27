@@ -35,6 +35,9 @@ public enum RedisKey {
     /** 上下文缓存: 指令风险等级 - app */
     RISK_LEVEL_APP("matrix:context:risk-level:%s:app", 3 * 60L),
 
+    /** 执行模式：是否需要 SMART 分析 */
+    NEED_SMART("matrix:execute:pattern:need-smart:%s:%s", 6 * 60 * 60L),
+
     /** 任务: 任务信息 */
     TASK_INFO("matrix:task:info:%s", 60 * 60L),
     /** 任务: 任务信息 */

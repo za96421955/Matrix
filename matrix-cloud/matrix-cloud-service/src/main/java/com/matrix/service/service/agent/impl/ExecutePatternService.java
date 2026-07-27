@@ -291,12 +291,15 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
                 String plan = this.callResultByClone(sink, localRequest, null);
                 // 思考帽/SWOT评价
                 localRequest.getMessages().add(Message.assistant(plan));
+                List<String> evaluations = new ArrayList<>();
                 for (String principle : Prompt.MoA.PRINCIPLES) {
-                    String evaluation = this.callResultByClone(sink, localRequest,
-                            Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle));
-                    localRequest.getMessages().add(Message.user(evaluation));
+                    evaluations.add(this.callResultByClone(sink, localRequest,
+                            Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle)));
                 }
                 // 修正
+                for (String evaluation : evaluations) {
+                    localRequest.getMessages().add(Message.user(evaluation));
+                }
                 plans.add(this.callResultByClone(sink, localRequest, null));
             }));
         }

@@ -60,7 +60,10 @@ public class ChatService {
                     // 设置 agent 请求参数
                     request.setSessionId(session.getId());
                     request.setMessages(this.buildMessages(
-                            request.getUserId(), request.getSessionId(), request.getMessages()));
+                            request.getUserId(),
+                            request.getSessionId(),
+                            request.getMessages(),
+                            request.getReferencedSessionIds()));
                     if (StringUtils.isNotBlank(session.getAgent())) {
                         request.setAgent(session.getAgent());
                     }
@@ -117,30 +120,55 @@ public class ChatService {
 
     /**
      * @description 构建消息集合
-     * <p> <功能详细描述> </p>
+     * <p>
+     * 消息构建顺序：
+     * 1. 引用会话的全量消息（按 referencedSessionIds 顺序依次加载）
+     * 2. 当前会话的历史消息
+     * 3. 当前用户新输入的消息
+     * 引用会话的消息不会持久化到当前会话的 message 表中
+     * </p>
      *
      * @author 陈晨
      */
-    private List<Message> buildMessages(long userId, long sessionId, List<Message> messages) {
-        // 查询 messages, system/user/assistant
-        List<MessageInfo> messageInfoList = messageService.getChatList(userId, sessionId);
-        // message 转换
-        List<Message> convertMessages = new ArrayList<>();
-        messageInfoList.forEach(message -> convertMessages.add(messageService.convert(message)));
-        // 构建 agent messages
+    private List<Message> buildMessages(long userId, long sessionId, List<Message> messages, List<Long> referencedSessionIds) {
         List<Message> buildMessages = new ArrayList<>();
-        for (Message message : convertMessages) {
-            if (null == message) {
-                continue;
-            }
-            if (CollectionUtils.isEmpty(message.getTool_calls())) {
-                buildMessages.add(message);
+
+        // 1. 加载引用会话的消息（作为上下文前置，不持久化）
+        if (!CollectionUtils.isEmpty(referencedSessionIds)) {
+            for (Long refSessionId : referencedSessionIds) {
+                if (refSessionId == null || refSessionId.equals(sessionId)) {
+                    continue; // 跳过空引用和自身引用
+                }
+                try {
+                    List<MessageInfo> refMessageList = messageService.getChatList(userId, refSessionId);
+                    for (MessageInfo info : refMessageList) {
+                        Message msg = messageService.convert(info);
+                        if (msg != null && CollectionUtils.isEmpty(msg.getTool_calls())) {
+                            buildMessages.add(msg);
+                        }
+                    }
+                    log.info("userId={}, referenced sessionId={}, loaded {} messages as context",
+                            userId, refSessionId, refMessageList.size());
+                } catch (Exception e) {
+                    log.error("userId={}, referenced sessionId={}, 加载引用会话消息异常: {}",
+                            userId, refSessionId, e.getMessage(), e);
+                }
             }
         }
 
-        // TODO 上下文压缩 (是否需要？)
+        // 2. 查询当前会话的历史消息
+        List<MessageInfo> messageInfoList = messageService.getChatList(userId, sessionId);
+        for (MessageInfo message : messageInfoList) {
+            Message converted = messageService.convert(message);
+            if (converted == null) {
+                continue;
+            }
+            if (CollectionUtils.isEmpty(converted.getTool_calls())) {
+                buildMessages.add(converted);
+            }
+        }
 
-        // 合并 input messages
+        // 3. 合并用户新输入的消息并入库
         try {
             for (Message message : messages) {
                 buildMessages.add(message);

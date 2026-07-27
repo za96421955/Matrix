@@ -29,6 +29,9 @@ export function chatCompletion(
     const store = useChatStore.getState()
     const effectiveSessionId = store.getEffectiveSessionId()
 
+    // 构建引用会话ID列表
+    const referencedSessionIds: number[] = store.referencedSessions.map((rs) => rs.id)
+
     const requestBody: Record<string, unknown> = {
         messages: [
             {role: "user", content: userMessage},
@@ -45,6 +48,11 @@ export function chatCompletion(
 
     if (effectiveSessionId !== undefined) {
         requestBody.sessionId = effectiveSessionId
+    }
+
+    // 携带引用会话ID列表
+    if (referencedSessionIds.length > 0) {
+        requestBody.referencedSessionIds = referencedSessionIds
     }
 
     const body = JSON.stringify(requestBody)

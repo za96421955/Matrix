@@ -251,3 +251,40 @@ pre.qrcode {
     color: #000;
     background: #fff;
 }
+
+/* ========== @提及/引用会话高亮样式 ========== */
+/* 通用引用高亮 - 用于非蓝色背景区域（助手消息、输入框badge等） */
+.mention-highlight {
+    display: inline;
+    padding: 0.125rem 0.25rem;
+    margin: 0 0.0625rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.dark .mention-highlight {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* 蓝色背景上的引用高亮 - 用于用户消息气泡（蓝色背景上需要白色底才能看清） */
+.mention-highlight-on-blue {
+    display: inline;
+    padding: 0.125rem 0.25rem;
+    margin: 0 0.0625rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1d4ed8;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.dark .mention-highlight-on-blue {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #93c5fd;
+    border-color: rgba(255, 255, 255, 0.1);
+}

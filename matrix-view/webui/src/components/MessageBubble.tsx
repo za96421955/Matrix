@@ -451,6 +451,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
     // ===== System message =====
     if (isSystem) {
         if (!message.content || !message.content.trim()) return null
+        // 渲染带有@提及高亮的用户消息内容
         return (
             <motion.div initial={{opacity: 0, y: 8}} animate={{opacity: 1, y: 0}}
                         className="flex justify-center px-4 py-1">
@@ -496,6 +497,16 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
     // ===== User message =====
     if (isUser) {
         if (!message.content || !message.content.trim()) return null
+        // 渲染带有@提及高亮的用户消息内容
+        const renderUserContent = (text: string) => {
+            const parts = text.split(/(@[\u4e00-\u9fa5a-zA-Z0-9_\-]+)/g);
+            return parts.map(function(part, idx) {
+                if (part.startsWith("@")) {
+                    return <span key={idx} className="mention-highlight-on-blue">{part}</span>;
+                }
+                return part;
+            });
+        };
         return (
             <motion.div
                 initial={{opacity: 0, y: 12}}
@@ -515,7 +526,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                     <div className="max-w-full break-words">
                         <div
                             className="rounded-2xl px-4 py-3 shadow-sm max-w-full relative ml-auto bg-gradient-to-br from-[#2563eb] to-[#3b82f6] text-white rounded-tr-sm shadow-md shadow-blue-500/20">
-                            <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{message.content}</p>
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{renderUserContent(message.content)}</p>
                             <BubbleActions
                                 showCopy={true}
                                 showDelete={!!onDelete}

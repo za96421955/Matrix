@@ -106,6 +106,11 @@ interface ChatState {
     selectBackendSession: (id: number) => void
     clearCurrentSession: () => void
     getEffectiveSessionId: () => number | undefined
+    /** 引用的会话列表 */
+    referencedSessions: BackendSessionSummary[]
+    addReferencedSession: (session: BackendSessionSummary) => void
+    removeReferencedSession: (sessionId: number) => void
+    clearReferencedSessions: () => void
     addHistoryMessage: (msg: Omit<Message, 'id' | 'timestamp'>) => void
     updateLastHistoryMessage: (content: string) => void
     updateLastHistoryReasoning: (deltaReasoning: string) => void
@@ -176,6 +181,7 @@ export const useChatStore = create<ChatState>()(
             sessionsLoading: false,
             sessionsLoaded: false,
             userAuthLevel: 0,
+            referencedSessions: [],
             pattern: 'auto',
             itemPath: '',
             projectPathHistory: [],
@@ -700,6 +706,23 @@ export const useChatStore = create<ChatState>()(
             setMessageFilterMode: (mode) => set({messageFilterMode: mode}),
             setMaxTokens: (v) => set({maxTokens: v}),
             setUserAuthLevel: (level: number) => set({userAuthLevel: level}),
+
+            addReferencedSession: (session: BackendSessionSummary) => {
+                set((s) => {
+                    if (s.referencedSessions.find((rs) => rs.id === session.id)) return s;
+                    return { referencedSessions: [...s.referencedSessions, session] };
+                });
+            },
+
+            removeReferencedSession: (sessionId: number) => {
+                set((s) => ({
+                    referencedSessions: s.referencedSessions.filter((rs) => rs.id !== sessionId),
+                }));
+            },
+
+            clearReferencedSessions: () => {
+                set({ referencedSessions: [] });
+            },
             setCurrentClientId: (v) => set({currentClientId: v}),
             setPattern: (v) => set({pattern: v}),
             setItemPath: (v) => set({itemPath: v}),

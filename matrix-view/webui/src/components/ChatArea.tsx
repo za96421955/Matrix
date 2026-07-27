@@ -710,6 +710,8 @@ export default function ChatArea() {
                         checkAndStartPolling()
                     },
                     onDone: () => {
+                        // 清除引用的会话
+                        useChatStore.getState().clearReferencedSessions();
                         flushContent();
                         flushReasoning();
                         flushToolCallsBatch();
@@ -753,6 +755,8 @@ export default function ChatArea() {
                         }
                     },
                     onError: (msg) => {
+                        // 清除引用的会话
+                        useChatStore.getState().clearReferencedSessions();
                         flushToolCallsBatch();
                         useToastStore.getState().addToast({type: 'error', message: msg})
                         setStreaming(false)

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.io.Serial;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -28,6 +29,9 @@ public class PatternRequest extends Request {
     /** 工作目录 */
     private String itemPath;
 
+    /** 引用的会话ID列表，消息构建时优先加载这些会话的全量消息作为上下文 */
+    private List<Long> referencedSessionIds;
+
     @Override
     public String toString() {
         return super.toString();
@@ -40,5 +44,3 @@ public class PatternRequest extends Request {
     }
 
 }
-
-

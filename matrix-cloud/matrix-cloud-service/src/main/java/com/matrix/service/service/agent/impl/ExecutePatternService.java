@@ -63,7 +63,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         }
         // 1. 规划任务目标
         Smart smart = null;
-        if (this.isNeedSmart(sink, request)) {
+        if (this.isSmart(sink, request)) {
             smart = this.generateSmart(sink, request.clone(), 0);
             log.info("[执行模式] 规划任务目标, userId={}, sessionId={}, smart={}",
                     request.getUserId(), request.getSessionId(), smart);
@@ -72,7 +72,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             }
         }
 
-        // 2. 粗估执行步骤数
+        // 2. 粗估执行步骤
         int steps = this.getSteps(sink, request.clone(), 0);
         log.info("[执行模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
                 request.getUserId(), request.getSessionId(), steps);
@@ -134,16 +134,16 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      *
      * @author 陈晨
      */
-    private boolean isNeedSmart(FluxSink<Response> sink, PatternRequest request) {
-        RedisKey redisKey = RedisKey.NEED_SMART;
+    private boolean isSmart(FluxSink<Response> sink, PatternRequest request) {
+        RedisKey redisKey = RedisKey.IS_SMART;
         String key = redisKey.generateKey(request.getUserId(), request.getSessionId());
-        String isNeedSmart = serviceCache.get(key);
-        if (StringUtils.isBlank(isNeedSmart)) {
+        String isSmart = serviceCache.get(key);
+        if (StringUtils.isBlank(isSmart)) {
             String result = this.callNoToolByClone(sink, request, Prompt.SMART.CHECK_NEED);
             serviceCache.set(key, result, redisKey.getTtl());
-            isNeedSmart = result;
+            isSmart = result;
         }
-        return isNeedSmart.contains("true");
+        return isSmart.contains("true");
     }
 
     /**
@@ -153,7 +153,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      * @author 陈晨
      */
     private void clearNeedSmart(PatternRequest request) {
-        RedisKey redisKey = RedisKey.NEED_SMART;
+        RedisKey redisKey = RedisKey.IS_SMART;
         String key = redisKey.generateKey(request.getUserId(), request.getSessionId());
         serviceCache.delete(key);
     }
@@ -190,7 +190,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
     }
 
     /**
-     * @description 获取执行步骤
+     * @description 粗略估计执行步骤
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
@@ -220,8 +220,8 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
      * @author 陈晨
      */
     private String getPlan(FluxSink<Response> sink, PatternRequest request, Smart smart, int steps) {
-        // 1 - 5 步: 直接 Plan
-        if (steps <= 5) {
+        // <= 7 步: 直接 Plan
+        if (steps <= 7) {
             String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
@@ -233,24 +233,24 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
 
         // 多计划综合评估
         List<String> plans;
-        // 6 - 15 步: 素朴切面 (MoA)
-        if (steps <= 15) {
+        // <= 20 步: 素朴切面 (MoA)
+        if (steps <= 20) {
             plans = this.getPlansByAspect(sink, request, smart);
             log.info("[执行模式] 任务规划: 素朴切面, userId={}, sessionId={}, steps={}, plans={}",
                     request.getUserId(), request.getSessionId(), steps, plans);
         }
-        // 大于 15 步: 素朴切面 + 评论修正 (MoA)
-        else {
-            plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
-            log.info("[执行模式] 任务规划: 素朴切面 + 评论修正, userId={}, sessionId={}, steps={}, plans={}",
-                    request.getUserId(), request.getSessionId(), steps, plans);
-        }
-        // 大于 10 步: 素朴切面 + 思考帽/SWOT修正 (MoA)
+        // > 20 步: 素朴切面 + 评论修正 (MoA)
 //        else {
-//            plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
-//            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
+//            plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
+//            log.info("[执行模式] 任务规划: 素朴切面 + 评论修正, userId={}, sessionId={}, steps={}, plans={}",
 //                    request.getUserId(), request.getSessionId(), steps, plans);
 //        }
+        // > 20 步: 素朴切面 + 思考帽/SWOT修正 (MoA)
+        else {
+            plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
+            log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
+                    request.getUserId(), request.getSessionId(), steps, plans);
+        }
 
         // 融合
         for (int i = 0; i < plans.size(); i++) {
@@ -330,10 +330,11 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
                 PatternRequest localRequest = request.clone();
-                localRequest.getMessages().add(Message.user(Prompt.MoA.ASPECT_SMART.formatted(
+                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound(),
-                        direction)));
+                        direction);
+                localRequest.getMessages().add(Message.user(prompt));
                 // 生成执行计划
                 String plan = this.callResultByClone(sink, localRequest, null);
                 // 思考帽/SWOT评价

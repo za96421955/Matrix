@@ -111,10 +111,10 @@ const MessageList = React.memo(
                         <MatrixLogo size="xl" className="w-10 h-10 sm:w-16 sm:h-16 text-white dark:text-gray-900"/>
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                        {isBackendSession ? '暂无消息' : 'Matrix'}
+                        Matrix
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-sm md:max-w-md leading-relaxed">
-                        {isBackendSession ? '该会话暂无消息记录' : 'Be water, my friend.'}
+                        {isBackendSession ? '会话暂无消息记录' : 'Be water, my friend.'}
                     </p>
                 </div>
             )

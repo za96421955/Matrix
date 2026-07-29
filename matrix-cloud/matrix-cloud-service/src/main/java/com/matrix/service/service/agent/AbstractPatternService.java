@@ -174,7 +174,9 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     /** callNoToolByClone操作 */
     protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
-        localRequest.getTools().clear();
+        if (!CollectionUtils.isEmpty(localRequest.getTools())) {
+            localRequest.getTools().clear();
+        }
         return this.callResultByClone(sink, localRequest, prompt);
     }
 

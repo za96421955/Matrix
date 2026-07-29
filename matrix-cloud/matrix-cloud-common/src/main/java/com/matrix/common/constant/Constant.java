@@ -81,7 +81,7 @@ public interface Constant {
         String EXECUTE = "execute";
 
         /** 任务模式 */
-        String TASK_CHAIN = "task-chain";
+        String TASK = "task";
 
         /** 任务图模式 */
         String TASK_GRAPH = "task-graph";

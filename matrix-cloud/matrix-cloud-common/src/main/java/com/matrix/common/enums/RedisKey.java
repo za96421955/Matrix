@@ -35,26 +35,28 @@ public enum RedisKey {
     /** 上下文缓存: 指令风险等级 - app */
     RISK_LEVEL_APP("matrix:context:risk-level:%s:app", 3 * 60L),
 
-    /** 执行模式：是否需要 SMART 分析 */
-    IS_SMART("matrix:execute:pattern:need-smart:%s:%s", 6 * 60 * 60L),
-
-    /** 任务: 任务信息 */
+    /** 任务缓存: 任务信息 */
     TASK_INFO("matrix:task:info:%s", 60 * 60L),
-    /** 任务: 任务信息 */
+    /** 任务缓存: 任务信息 */
     TASK_WAITING_AUTH_LIST("matrix:task:waiting-auth:%s", 60 * 60L),
 
-    /** 任务模式：任务链 */
-    TASK_PATTERN_CHAIN("matrix:task:chain:pattern:%s:%s", 6 * 60 * 60L),
-    /** 任务模式：任务图 */
-    TASK_PATTERN_GRAPH("matrix:task:graph:pattern:%s:%s", 6 * 60 * 60L),
-    /** 任务模式：已完成的任务 */
-    TASK_PATTERN_COMPLETE("matrix:task:pattern:complete:%s:%s", 6 * 60 * 60L),
+    /** 模式缓存 */
+    PATTERN("matrix:pattern:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：是否需要 SMART 分析 */
+    TASK_PATTERN_IS_SMART("matrix:task:pattern:is-smart:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：SMART 分析 */
+    TASK_PATTERN_SMART("matrix:task:pattern:smart:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：执行步骤数 */
+    TASK_PATTERN_STEPS("matrix:task:pattern:steps:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：执行计划 */
+    TASK_PATTERN_PLAN("matrix:task:pattern:plan:%s:%s", 6 * 60 * 60L),
 
-    /** 编程模式：环节编号 */
-    CODING_PATTERN_NO("matrix:coding:pattern:no:%s:%s", 6 * 60 * 60L),
-
-    /** 资料模式：环节编号 */
-    INFORMATION_PATTERN_NO("matrix:information:pattern:no:%s:%s", 6 * 60 * 60L),
+//    /** 任务模式：任务图 */
+//    TASK_PATTERN_GRAPH("matrix:task:graph:pattern:%s:%s", 6 * 60 * 60L),
+//    /** 编程模式：环节编号 */
+//    CODING_PATTERN_NO("matrix:coding:pattern:no:%s:%s", 6 * 60 * 60L),
+//    /** 资料模式：环节编号 */
+//    INFORMATION_PATTERN_NO("matrix:information:pattern:no:%s:%s", 6 * 60 * 60L),
 
     /** 定时器: 有定时任务的用户列表 */
     TIMER_USER_LIST("matrix:timer:user-list", -1L),

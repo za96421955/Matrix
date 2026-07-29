@@ -884,9 +884,9 @@ export default function ChatArea() {
     // ===================== 模式映射 =====================
     const patternOptions: { value: Pattern; label: string }[] = [
         {value: 'auto', label: '自动'},
-        {value: 'plan', label: '规划'},
+        {value: 'plan', label: '计划'},
         {value: 'execute', label: '执行'},
-        {value: 'task-chain', label: '任务'},
+        {value: 'task', label: '任务'},
         {value: 'task-graph', label: '目标'},
         {value: 'agent', label: '技能'},
         {value: 'coding', label: '需求开发'},
@@ -1017,9 +1017,9 @@ export default function ChatArea() {
                     <div
                         className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                         {patternOptions.map((opt) => {
-                            const disabledPatterns = ['task-chain', 'task-graph', 'agent', 'coding', 'information'];
+                            const disabledPatterns = ['task-graph', 'agent', 'coding', 'information'];
                             const isDisabled = disabledPatterns.includes(opt.value);
-                            const isHidden = ['task-chain', 'task-graph', 'agent', 'coding', 'information'].includes(opt.value);
+                            const isHidden = ['task-graph', 'agent', 'coding', 'information'].includes(opt.value);
                             return (
                                 <button
                                     key={opt.value}

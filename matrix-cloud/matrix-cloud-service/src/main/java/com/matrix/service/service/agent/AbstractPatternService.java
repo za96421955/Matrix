@@ -13,6 +13,7 @@ import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.context.ChatContext;
+import com.matrix.service.context.PatternContext;
 import com.matrix.service.context.RegisterContext;
 import com.matrix.service.context.ToolContext;
 import com.matrix.service.dal.entity.ClientInfo;
@@ -56,6 +57,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     protected ChatContext chatContext;
     @Resource
     protected ToolContext toolContext;
+    @Resource
+    protected PatternContext patternContext;
 
     @Resource
     protected Executor executor;
@@ -84,6 +87,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 }
                 sink.complete();
             } catch (Exception e) {
+                // 记录 Error 消息
+                this.saveErrorMessage(request.getUserId(), request.getSessionId(), e.getMessage());
                 sink.error(e);
             }
         }, FluxSink.OverflowStrategy.BUFFER);
@@ -126,8 +131,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             Response.Error error = response.getError();
             if (null != error) {
                 log.error("[ReActAgent] model={}, 模型请求失败: {}", model.getModel(), error.getMessage());
-                // 记录 Error 消息
-                this.saveErrorMessage(userId, sessionId, error.getMessage());
                 throw new RuntimeException(error.getMessage());
             }
             // 记录 Assistant 消息

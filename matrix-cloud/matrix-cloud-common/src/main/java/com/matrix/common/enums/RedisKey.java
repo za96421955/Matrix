@@ -50,6 +50,8 @@ public enum RedisKey {
     TASK_PATTERN_STEPS("matrix:task:pattern:steps:%s:%s", 6 * 60 * 60L),
     /** 任务模式：执行计划 */
     TASK_PATTERN_PLAN("matrix:task:pattern:plan:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：执行方案列表 */
+    TASK_PATTERN_ACTIONS("matrix:task:pattern:actions:%s:%s", 6 * 60 * 60L),
 
 //    /** 任务模式：任务图 */
 //    TASK_PATTERN_GRAPH("matrix:task:graph:pattern:%s:%s", 6 * 60 * 60L),

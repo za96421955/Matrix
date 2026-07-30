@@ -1,11 +1,9 @@
 package com.matrix.service.context;
 
-import com.matrix.common.enums.CodingPattern;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -77,6 +75,16 @@ public class PatternContext {
         } catch (Exception ignore) {}
         // 同时清除 sets
         this.clearSets(userId, sessionId);
+        // 同时清除 actions
+        this.clearActions(userId, sessionId);
+    }
+    public void clearActions(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 actions, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.TASK_PATTERN_ACTIONS;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
     }
 
     /**
@@ -124,7 +132,7 @@ public class PatternContext {
      * @author 陈晨
      */
     public void setSmart(long userId, long sessionId, String smart) {
-        log.info("[模式缓存] 设置模式 smart, userId={}, sessionId={}, isSmart={}",
+        log.info("[模式缓存] 设置模式 smart, userId={}, sessionId={}, smart={}",
                 userId, sessionId, smart);
         RedisKey redisKey = RedisKey.TASK_PATTERN_SMART;
         String key = redisKey.generateKey(userId, sessionId);
@@ -143,7 +151,7 @@ public class PatternContext {
      * @author 陈晨
      */
     public void setSets(long userId, long sessionId, String sets) {
-        log.info("[模式缓存] 设置模式 sets, userId={}, sessionId={}, isSmart={}",
+        log.info("[模式缓存] 设置模式 sets, userId={}, sessionId={}, sets={}",
                 userId, sessionId, sets);
         RedisKey redisKey = RedisKey.TASK_PATTERN_STEPS;
         String key = redisKey.generateKey(userId, sessionId);
@@ -162,7 +170,7 @@ public class PatternContext {
      * @author 陈晨
      */
     public void setPlan(long userId, long sessionId, String plan) {
-        log.info("[模式缓存] 设置模式 plan, userId={}, sessionId={}, isSmart={}",
+        log.info("[模式缓存] 设置模式 plan, userId={}, sessionId={}, plan={}",
                 userId, sessionId, plan);
         RedisKey redisKey = RedisKey.TASK_PATTERN_PLAN;
         String key = redisKey.generateKey(userId, sessionId);
@@ -170,6 +178,25 @@ public class PatternContext {
     }
     public String getPlan(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.TASK_PATTERN_PLAN;
+        String key = redisKey.generateKey(userId, sessionId);
+        return serviceCache.get(key);
+    }
+
+    /**
+     * @description 缓存: actions
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public void setActions(long userId, long sessionId, String actions) {
+        log.info("[模式缓存] 设置模式 actions, userId={}, sessionId={}, actions={}",
+                userId, sessionId, actions);
+        RedisKey redisKey = RedisKey.TASK_PATTERN_ACTIONS;
+        String key = redisKey.generateKey(userId, sessionId);
+        serviceCache.set(key, actions, redisKey.getTtl());
+    }
+    public String getActions(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.TASK_PATTERN_ACTIONS;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }

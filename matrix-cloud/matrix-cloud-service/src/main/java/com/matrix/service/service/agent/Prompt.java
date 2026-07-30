@@ -54,25 +54,6 @@ public interface Prompt {
             直接输出模式名，不要其他说明：
             """;
 
-        String RESET = """
-            根据上下文分析用户意图，判断是否需要重置任务目标或执行计划
-            - 重置任务目标, 输出: SMART
-            - 重置执行计划, 输出: PLAN
-            - 不需要重置, 输出: PASS
-            
-            ## 任务目标:
-            ```
-            %s
-            ```
-            
-            ## 执行计划:
-            ```
-            %s
-            ```
-            
-            输出`SMART/PLAN/PASS` (不要任何解释):
-            """;
-
         /** 操作终端 */
         String OPERATION_CLIENT_ID = "操作终端: %s\n\n";
 
@@ -101,10 +82,22 @@ public interface Prompt {
             ```
             """;
 
+        String ACTIONS = """
+            查看上下文, 生成任务执行方案列表
+
+            ## 约束
+            - 输出时，不要使用任何 emoji 表情
+            
+            ## 输出格式
+            ```json
+            %s
+            ```
+            """;
+
         /** 执行 */
         String EXECUTE = """
             1. 调用工具，按计划完成任务
-            2. 一段话总结执行结果，不要使用任何 emoji 表情
+            2. 一段话简要总结执行结果，不要使用任何 emoji 表情
             """;
 
         /** 观察 */
@@ -130,37 +123,34 @@ public interface Prompt {
 
         String SUMMARY = """
             1. 详细分析任务完成情况、git diff等信息。
-            2. 一段话总结执行结果，不要使用任何 emoji 表情
-            """;
-
-        String STEPS = """
-            查看上下文，快速、粗略的评估完成用户任务需要的执行步骤。
-            
-            ## 示例
-            user: 给 demo.js 添加 hello world
-            assistant: 1
-            
-            输出 (不要任何解释):
-            """;
-
-        String ACTIONS = """
-            查看上下文, 生成任务执行方案列表
-
-            ## 约束
-            - 输出时，不要使用任何 emoji 表情
-            
-            ## 输出格式
-            ```json
-            %s
-            ```
+            2. 一段话简要总结执行结果，不要使用任何 emoji 表情
             """;
 
     }
 
-    /** SMART 目标设定 */
-    interface SMART {
+    /** 检查项 */
+    interface Check {
 
-        String CHECK_NEED = """
+        String RESET = """
+            根据上下文分析用户意图，判断是否需要重置任务目标或执行计划
+            - 重置任务目标, 输出: SMART
+            - 重置执行计划, 输出: PLAN
+            - 不需要重置, 输出: PASS
+            
+            ## 任务目标:
+            ```
+            %s
+            ```
+            
+            ## 执行计划:
+            ```
+            %s
+            ```
+            
+            输出`SMART/PLAN/PASS` (不要任何解释):
+            """;
+
+        String IS_SMART = """
             1. 查看上下文，快速判断用户需求/任务是否需要 SMART 分析。
             2. 需要: true, 不需要: false
             
@@ -171,7 +161,30 @@ public interface Prompt {
             输出 (不要任何解释):
             """;
 
-        String CONFIRM = """
+        String GOAL = """
+            1. 检查任务目标是否有疑问或需要用户补充的信息
+            2. 通过: PASS; 有疑问: TODO
+            3. 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String PLAN = """
+            1. 检查执行计划是否有疑问或需要用户补充的信息
+            2. 通过: PASS; 有疑问: TODO
+            3. 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String RESULT = """
+            1. 检查执行结果是否有疑问或需要用户补充的信息
+            2. 通过: PASS; 有疑问: TODO
+            3. 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+    }
+
+    /** 任务: 思维链 */
+    interface CoT {
+
+        String SMART = """
             1. 围绕<SMART原则>与用户沟通，协助用户制定明确的任务目标
             2. 当信息充足，S、M、A、R、T都具备后，按格式输出目标信息
 
@@ -184,7 +197,7 @@ public interface Prompt {
             2. 验收标准，包含数字/比率/交付物等量化指标。
             3. 资源与约束条件，执行时不能跨越的界。必须和用户确认。
             4. 背景与意图，明确任务方向。必须和用户确认。
-            5. 截止日期，格式：yyyy-MM-dd HH:mm:ss。必须用户给出。
+            5. 截止日期，格式：yyyy-MM-dd HH:mm:ss。若用户没有明确给出，则默认为空。
             
             ## 输出格式
             ```json
@@ -192,16 +205,15 @@ public interface Prompt {
             ```
             """;
 
-        String CONFIRM_CHECK = """
-            1. 检查任务目标是否还有疑问或需要用户补充的信息
-            2. 没疑问: PASS; 有疑问: TODO
-            3. 仅输出 PASS/TODO, 不要任何解释
+        String STEPS = """
+            查看上下文，快速、粗略的评估完成用户任务需要的执行步骤。
+            
+            ## 示例
+            user: 给 demo.js 添加 hello world
+            assistant: 1
+            
+            输出 (不要任何解释):
             """;
-
-    }
-
-    /** 思维链 */
-    interface CoT {
 
         String TASK_STANDARD = """
             ## 任务标准
@@ -258,7 +270,7 @@ public interface Prompt {
 
     }
 
-    /** 混合智能 */
+    /** 任务: 混合智能 */
     interface MoA {
 
         String[] DIRECTIONS = {"效率", "安全", "容错"};

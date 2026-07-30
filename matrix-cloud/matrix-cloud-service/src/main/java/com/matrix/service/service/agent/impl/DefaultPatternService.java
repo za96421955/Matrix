@@ -101,7 +101,7 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
             String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
             String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
             this.call(request, sink -> {
-                String reset = this.callNoToolByClone(sink, request, Prompt.Common.RESET.formatted(smart, plan));
+                String reset = this.callNoToolByClone(sink, request, Prompt.Check.RESET.formatted(smart, plan));
                 if (reset.contains("SMART")) {
                     patternContext.clear(request.getUserId(), request.getSessionId());
                     return;

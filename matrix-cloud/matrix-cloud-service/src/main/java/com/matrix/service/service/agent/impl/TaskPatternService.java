@@ -5,7 +5,6 @@ import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
-import com.matrix.common.enums.RedisKey;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
@@ -81,12 +80,15 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         String plan = this.getPlan(sink, request.clone(), smart, steps);
         log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
                 request.getUserId(), request.getSessionId(), steps, plan);
+        if (null == plan) {
+            return;
+        }
         if (StringUtils.isBlank(plan)) {
             throw new RuntimeException("执行计划生成失败");
         }
         request.getMessages().add(Message.assistant(plan));
 
-        // 4. CoT
+        // 4. CoT 执行
         int count = 0;
         while (true) {
             log.info("[执行模式] 任务执行, userId={}, sessionId={}, 执行轮次: {}",
@@ -121,6 +123,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     request.getUserId(), request.getSessionId(), observe);
             // 任务终止
             if (observe.contains("TERMINATED")) {
+                // 清除执行计划
+                patternContext.clearPlan(request.getUserId(), request.getSessionId());
                 return;
             }
             // 任务完成
@@ -129,9 +133,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             }
             // 任务继续
             request.getMessages().add(Message.user(observe));
+            // 清除执行方案
+            patternContext.clearActions(request.getUserId(), request.getSessionId());
         }
 
-        // 4. 结果总结
+        // 5. 结果总结
         this.callResultByClone(sink, request, Prompt.Common.SUMMARY);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
@@ -146,7 +152,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
     private boolean isSmart(FluxSink<Response> sink, PatternRequest request) {
         String isSmart = patternContext.getIsSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(isSmart)) {
-            String result = this.callNoToolByClone(sink, request, Prompt.SMART.CHECK_NEED);
+            String result = this.callNoToolByClone(sink, request, Prompt.Check.IS_SMART);
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
             isSmart = result;
         }
@@ -165,11 +171,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             if (retry >= 3) {
                 return null;
             }
-            smart = this.callResultByClone(sink, request, Prompt.SMART.CONFIRM.formatted(
+            smart = this.callResultByClone(sink, request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
             // 检查
             request.getMessages().add(Message.assistant(smart));
-            String check = this.callNoToolByClone(sink, request, Prompt.SMART.CONFIRM_CHECK);
+            String check = this.callNoToolByClone(sink, request, Prompt.Check.GOAL);
             if (check.contains("TODO")) {
                 return null;
             }
@@ -201,7 +207,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             if (retry >= 3) {
                 return -1;
             }
-            sets = this.callNoToolByClone(sink, request, Prompt.Common.STEPS);
+            sets = this.callNoToolByClone(sink, request, Prompt.CoT.STEPS);
         }
         try {
             int setsInt = Integer.parseInt(sets);
@@ -229,19 +235,16 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         if (StringUtils.isNotBlank(plan)) {
             return plan;
         }
-        // 计算执行计划
-        try {
-            // <= 7 步: 直接 Plan
-            if (steps <= 7) {
-                String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound());
-                plan = this.callResultByClone(sink, request, prompt);
-                log.info("[执行模式] 任务规划: Plan, userId={}, sessionId={}, steps={}, plan={}",
-                        request.getUserId(), request.getSessionId(), steps, plan);
-                return plan;
-            }
-
+        // <= 7 步: 直接 Plan
+        if (steps <= 7) {
+            String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
+                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                    smart.getRelevant(), smart.getTimeBound());
+            plan = this.callResultByClone(sink, request, prompt);
+            log.info("[执行模式] 任务规划: Plan, userId={}, sessionId={}, steps={}, plan={}",
+                    request.getUserId(), request.getSessionId(), steps, plan);
+            return plan;
+        } else {
             // 多计划综合评估
             List<String> plans;
             // <= 20 步: 素朴切面 (MoA)
@@ -251,18 +254,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                         request.getUserId(), request.getSessionId(), steps, plans);
             }
             // > 20 步: 素朴切面 + 评论修正 (MoA)
-//        else {
-//            plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
-//            log.info("[执行模式] 任务规划: 素朴切面 + 评论修正, userId={}, sessionId={}, steps={}, plans={}",
-//                    request.getUserId(), request.getSessionId(), steps, plans);
-//        }
-            // > 20 步: 素朴切面 + 思考帽/SWOT修正 (MoA)
             else {
-                plans = this.getPlansByAspectAndPrinciple(sink, request, smart);
+                plans = this.getPlansByAspectAndEvaluation(sink, request, smart);
                 log.info("[执行模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
                         request.getUserId(), request.getSessionId(), steps, plans);
             }
-
             // 融合
             for (int i = 0; i < plans.size(); i++) {
                 request.getMessages().add(Message.assistant(
@@ -273,10 +269,16 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
             plan = this.callResultByClone(sink, request, prompt);
-            return plan;
-        } finally {
-            patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
         }
+
+        // 检查
+        request.getMessages().add(Message.assistant(plan));
+        String check = this.callNoToolByClone(sink, request, Prompt.Check.PLAN);
+        if (check.contains("TODO")) {
+            return null;
+        }
+        patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
+        return plan;
     }
 
     /**
@@ -377,17 +379,22 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private TaskActions generateTaskActions(FluxSink<Response> sink, PatternRequest request, int retry) {
-        if (retry >= 3) {
-            return null;
+        String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
+        if (StringUtils.isBlank(actions)) {
+            if (retry >= 3) {
+                return null;
+            }
+            actions = this.callResultByClone(sink, request, Prompt.Common.ACTIONS.formatted(
+                    JSONSchemaUtil.generate(TaskActions.class)));
         }
-        String result = this.callResultByClone(sink, request, Prompt.Common.ACTIONS.formatted(
-                JSONSchemaUtil.generate(TaskActions.class)));
         try {
-            String json = this.removeCodeBlockMarkers(result);
+            String json = this.removeCodeBlockMarkers(actions);
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            return JSON.parseObject(json, TaskActions.class);
+            TaskActions actionsObj = JSON.parseObject(json, TaskActions.class);
+            patternContext.setActions(request.getUserId(), request.getSessionId(), json);
+            return actionsObj;
         } catch (Exception e) {
             // 格式错误，重试
             request.getMessages().add(Message.user("格式错误: " + e.getMessage()));

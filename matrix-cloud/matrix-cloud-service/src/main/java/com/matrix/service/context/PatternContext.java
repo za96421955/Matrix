@@ -118,6 +118,8 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.TASK_PATTERN_IS_SMART;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, isSmart, redisKey.getTtl());
+        // 清除后续步骤缓存
+        this.clearSmart(userId, sessionId);
     }
     public String getIsSmart(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.TASK_PATTERN_IS_SMART;
@@ -137,6 +139,8 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.TASK_PATTERN_SMART;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, smart, redisKey.getTtl());
+        // 清除后续步骤缓存
+        this.clearPlan(userId, sessionId);
     }
     public String getSmart(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.TASK_PATTERN_SMART;
@@ -153,6 +157,9 @@ public class PatternContext {
     public void setSets(long userId, long sessionId, String sets) {
         log.info("[模式缓存] 设置模式 sets, userId={}, sessionId={}, sets={}",
                 userId, sessionId, sets);
+        // 清除后续步骤缓存【特殊顺序，先清理，后设置】
+        this.clearPlan(userId, sessionId);
+        // 设置
         RedisKey redisKey = RedisKey.TASK_PATTERN_STEPS;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, sets, redisKey.getTtl());
@@ -175,6 +182,8 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.TASK_PATTERN_PLAN;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, plan, redisKey.getTtl());
+        // 清除后续步骤缓存
+        this.clearActions(userId, sessionId);
     }
     public String getPlan(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.TASK_PATTERN_PLAN;

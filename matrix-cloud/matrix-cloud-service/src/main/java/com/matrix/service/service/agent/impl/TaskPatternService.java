@@ -166,11 +166,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private Smart generateSmart(FluxSink<Response> sink, PatternRequest request, int retry) {
+        if (retry >= 3) {
+            return null;
+        }
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(smart)) {
-            if (retry >= 3) {
-                return null;
-            }
             smart = this.callResultByClone(sink, request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
             // 检查
@@ -202,11 +202,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private int getSteps(FluxSink<Response> sink, PatternRequest request, int retry) {
+        if (retry >= 3) {
+            return -1;
+        }
         String sets = patternContext.getSets(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(sets)) {
-            if (retry >= 3) {
-                return -1;
-            }
             sets = this.callNoToolByClone(sink, request, Prompt.CoT.STEPS);
         }
         try {
@@ -379,11 +379,11 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private TaskActions generateTaskActions(FluxSink<Response> sink, PatternRequest request, int retry) {
+        if (retry >= 3) {
+            return null;
+        }
         String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(actions)) {
-            if (retry >= 3) {
-                return null;
-            }
             actions = this.callResultByClone(sink, request, Prompt.Common.ACTIONS.formatted(
                     JSONSchemaUtil.generate(TaskActions.class)));
         }

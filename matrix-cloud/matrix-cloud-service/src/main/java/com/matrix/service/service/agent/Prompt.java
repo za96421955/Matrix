@@ -88,7 +88,7 @@ public interface Prompt {
             ## 约束
             - 输出时，不要使用任何 emoji 表情
             
-            ## 输出格式
+            ## 输出格式 (Schema -> Object)
             ```json
             %s
             ```
@@ -199,7 +199,7 @@ public interface Prompt {
             4. 背景与意图，明确任务方向。必须和用户确认。
             5. 截止日期，格式：yyyy-MM-dd HH:mm:ss。若用户没有明确给出，则默认为空。
             
-            ## 输出格式
+            ## 输出格式 (Schema -> Object)
             ```json
             %s
             ```
@@ -357,7 +357,7 @@ public interface Prompt {
 //            1. 用最简单的方法解决问题
 //            2. 想不通的时候就换个思路
 //
-//            ## 输出格式
+//            ## 输出格式 (Schema -> Object)
 //            ```json
 //            %s
 //            ```

@@ -393,6 +393,9 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                 throw new RuntimeException("json content is empty");
             }
             TaskActions actionsObj = JSON.parseObject(json, TaskActions.class);
+            if (null == actionsObj.getActions()) {
+                throw new RuntimeException("actions is empty");
+            }
             patternContext.setActions(request.getUserId(), request.getSessionId(), json);
             return actionsObj;
         } catch (Exception e) {

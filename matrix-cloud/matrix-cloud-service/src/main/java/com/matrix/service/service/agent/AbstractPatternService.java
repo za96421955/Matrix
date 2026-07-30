@@ -168,7 +168,13 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         Response response = this.call(sink, localRequest);
         Message message = null != response ? response.getMessage() : null;
-        return null != message ? message.getContent() : "";
+        String result = "";
+        if (null != message) {
+            result = StringUtils.isNotBlank(message.getContent())
+                    ? message.getContent()
+                    : message.getReasoning_content();
+        }
+        return result;
     }
 
     /** callNoToolByClone操作 */

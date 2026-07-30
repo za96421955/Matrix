@@ -1,6 +1,7 @@
 package com.matrix.service.service.agent.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
@@ -61,6 +62,9 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         if (null == sink || null == request) {
             return;
         }
+        // 记录：任务模式
+        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.TASK);
+
         // 1. 规划任务目标
         Smart smart = null;
         if (this.isSmart(sink, request)) {

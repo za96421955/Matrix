@@ -53,7 +53,7 @@ public class ChatService {
             return Flux.just(Response.error(ErrorCode.IN_THE_CONVERSATION.getMessage()));
         }
         // 获取模式服务
-        PatternService patternService = defaultPatternService.getPatternService(request.getPattern());
+//        PatternService patternService = defaultPatternService.getPatternService(request.getPattern());
         // 流式响应
         return Mono.fromCallable(() -> sessionService.getOrCreateSession(request, request.getMessages().getFirst().getContent()))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -81,7 +81,7 @@ public class ChatService {
 
                     // 2. 构建共享的 agent 流
                     // 将冷流变为热流，多播给多个订阅者
-                    Flux<Response> sharedAgentFlux = patternService.call(request).share();
+                    Flux<Response> sharedAgentFlux = defaultPatternService.call(request).share();
 
                     // 3. 独立的后台消费者：负责处理业务逻辑（完全不受客户端断开影响）
                     sharedAgentFlux.subscribeOn(Schedulers.boundedElastic())  // 在弹性线程池中执行，避免阻塞

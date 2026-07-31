@@ -72,27 +72,12 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             log.info("[执行模式] 规划任务目标, userId={}, sessionId={}, smart={}",
                     request.getUserId(), request.getSessionId(), smart);
             if (null == smart) {
+                // 用户 todo
                 return;
             }
         }
 
-        // 2. 粗估执行步骤
-        int steps = this.getSteps(sink, request.clone(), 0);
-        log.info("[执行模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
-                request.getUserId(), request.getSessionId(), steps);
-        // 3. 规划
-        String plan = this.getPlan(sink, request.clone(), smart, steps);
-        log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
-                request.getUserId(), request.getSessionId(), steps, plan);
-        if (null == plan) {
-            return;
-        }
-        if (StringUtils.isBlank(plan)) {
-            throw new RuntimeException("执行计划生成失败");
-        }
-        request.getMessages().add(Message.assistant(plan));
-
-        // 4. CoT 执行
+        // 2. CoT 执行
         int count = 0;
         while (true) {
             log.info("[执行模式] 任务执行, userId={}, sessionId={}, 执行轮次: {}",
@@ -103,12 +88,29 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                 return;
             }
 
-            // 1. 构建任务执行方案列表
+            // 1.1. 粗估执行步骤
+            int steps = this.getSteps(sink, request.clone(), 0);
+            log.info("[执行模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
+                    request.getUserId(), request.getSessionId(), steps);
+            // 1.2. 规划
+            String plan = this.getPlan(sink, request.clone(), smart, steps);
+            log.info("[执行模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
+                    request.getUserId(), request.getSessionId(), steps, plan);
+            if (null == plan) {
+                // 用户 todo
+                return;
+            }
+            if (StringUtils.isBlank(plan)) {
+                throw new RuntimeException("执行计划生成失败");
+            }
+            request.getMessages().add(Message.assistant(plan));
+
+            // 2.1. 构建任务执行方案列表
             TaskActions actions = this.generateTaskActions(sink, request, 0);
             if (null == actions) {
                 throw new RuntimeException("执行方案列表生成失败");
             }
-            // 2. 执行
+            // 2.2. 执行
             for (String action : actions.getActions()) {
                 PatternRequest actionRequest = request.clone();
                 actionRequest.getMessages().add(Message.user(action));
@@ -141,7 +143,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             patternContext.clearActions(request.getUserId(), request.getSessionId());
         }
 
-        // 5. 结果总结
+        // 3. 结果总结
         this.callResultByClone(sink, request, Prompt.Common.SUMMARY);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());

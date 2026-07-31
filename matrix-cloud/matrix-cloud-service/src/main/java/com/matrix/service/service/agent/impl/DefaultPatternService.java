@@ -9,7 +9,6 @@ import com.matrix.service.service.agent.PatternService;
 import com.matrix.service.service.agent.Prompt;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -26,8 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DefaultPatternService extends AbstractPatternService<PatternRequest> {
 
     @Resource
-    private PlanPatternService planPatternService;
-    @Resource
     private ExecutePatternService executePatternService;
     @Resource
     private TaskPatternService taskPatternService;
@@ -38,19 +35,12 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
      *
      * @author 陈晨
      */
-    public PatternService getPatternService(String pattern) {
+    private PatternService getPatternService(String pattern) {
         log.info("[默认模式] 获取模式, pattern={}", pattern);
-        if (StringUtils.isBlank(pattern)) {
-            pattern = Constant.Pattern.EXECUTE;
+        if (Constant.Pattern.TASK.equals(pattern)) {
+            return taskPatternService;
         }
-        PatternService patternService;
-        switch (pattern) {
-            case Constant.Pattern.PLAN -> patternService = planPatternService;
-            case Constant.Pattern.EXECUTE -> patternService = executePatternService;
-            case Constant.Pattern.TASK -> patternService = taskPatternService;
-            default -> patternService = this;
-        }
-        return patternService;
+        return executePatternService;
     }
 
     @Override

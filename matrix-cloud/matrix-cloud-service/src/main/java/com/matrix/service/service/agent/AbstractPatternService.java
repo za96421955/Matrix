@@ -126,7 +126,9 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             log.info("\n\n>>> reasoning: \n{} \n\n >>> answer: \n{} \n\n >>> toolCalls: \n{}\n\n",
                     response.getReasoning(), response.getAnswer(), response.getToolCalls());
             // SSE 响应
-            sink.next(response);
+            if (null != sink) {
+                sink.next(response);
+            }
             // 模型调用失败, 抛出异常
             Response.Error error = response.getError();
             if (null != error) {
@@ -176,14 +178,17 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         return result;
     }
+    protected String callResultByClone(PatternRequest request, String prompt) {
+        return this.callResultByClone(null, request, prompt);
+    }
 
     /** callNoToolByClone操作 */
-    protected String callNoToolByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
+    protected String callNoToolByClone(PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         if (!CollectionUtils.isEmpty(localRequest.getTools())) {
             localRequest.getTools().clear();
         }
-        return this.callResultByClone(sink, localRequest, prompt);
+        return this.callResultByClone(localRequest, prompt);
     }
 
 
@@ -247,7 +252,9 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             Response toolResult = Response.tool(toolCall.getId(), result);
             messages.add(toolResult.getMessage());
             // SSE 响应
-            sink.next(toolResult);
+            if (null != sink) {
+                sink.next(toolResult);
+            }
             // 记录工具结果消息
             this.saveMessage(userId, sessionId, Role.TOOL, toolResult);
         }

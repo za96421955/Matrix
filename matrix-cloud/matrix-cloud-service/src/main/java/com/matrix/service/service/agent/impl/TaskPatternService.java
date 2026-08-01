@@ -92,12 +92,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
 
             // 1.1. 粗估执行步骤
             int steps = this.getSteps(request.clone(), 0);
-            log.info("[任务模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
-                    request.getUserId(), request.getSessionId(), steps);
             // 1.2. 规划
             String plan = this.getPlan(request.clone(), smart, steps);
-            log.info("[任务模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
-                    request.getUserId(), request.getSessionId(), steps, plan);
             if (null == plan) {
                 // 用户 todo
                 return;
@@ -212,6 +208,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         try {
             int setsInt = Integer.parseInt(sets);
             patternContext.setSets(request.getUserId(), request.getSessionId(), sets);
+            log.info("[任务模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
+                    request.getUserId(), request.getSessionId(), setsInt);
             return setsInt;
         } catch (Exception e) {
             request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
@@ -241,9 +239,6 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
             plan = this.callResultByClone(request, prompt);
-            log.info("[任务模式] 任务规划: Plan, userId={}, sessionId={}, steps={}, plan={}",
-                    request.getUserId(), request.getSessionId(), steps, plan);
-            return plan;
         } else {
             // 多计划综合评估
             List<String> plans;
@@ -270,6 +265,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     smart.getRelevant(), smart.getTimeBound());
             plan = this.callResultByClone(request, prompt);
         }
+        log.info("[任务模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
+                request.getUserId(), request.getSessionId(), steps, plan);
 
         // 检查
         request.getMessages().add(Message.assistant(plan));

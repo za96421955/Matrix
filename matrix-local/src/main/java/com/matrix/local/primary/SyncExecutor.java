@@ -5,7 +5,7 @@ import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.constant.TaskType;
 import com.matrix.common.dto.command.TaskCommand;
-import com.matrix.common.util.GuidUtil;
+import com.matrix.common.util.ContentUtil;
 import com.matrix.service.context.CompletableContext;
 import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.service.task.Executor;
@@ -46,7 +46,7 @@ public class SyncExecutor implements Executor {
         // 创建授权任务
         TaskCommand taskCommand = TaskCommand.builder()
                 .userId(userId)
-                .taskId(GuidUtil.getUUID())
+                .taskId(ContentUtil.getUUID())
                 .agentName("")
                 .type(TaskType.USER_AUTH)
                 .body(command)

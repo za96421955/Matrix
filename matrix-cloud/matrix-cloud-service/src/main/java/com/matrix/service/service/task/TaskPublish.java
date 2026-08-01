@@ -4,7 +4,7 @@ import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.dto.command.ClientCommand;
 import com.matrix.common.dto.command.TaskCommand;
-import com.matrix.common.util.GuidUtil;
+import com.matrix.common.util.ContentUtil;
 import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.mqtt.MqttPublisher;
 import com.matrix.service.mqtt.MqttSubscriber;
@@ -50,7 +50,7 @@ public class TaskPublish {
      * @author 陈晨
      */
     public TaskCommand publishTask(TaskCommand taskCommand) throws MqttException {
-        taskCommand.setTaskId(GuidUtil.getUUID());
+        taskCommand.setTaskId(ContentUtil.getUUID());
         // 新增任务状态
         taskService.insert(TaskInfo.builder()
                         .userId(taskCommand.getUserId())
@@ -79,7 +79,7 @@ public class TaskPublish {
             return null;
         }
         if (StringUtils.isBlank(command.getTaskId())) {
-            command.setTaskId(GuidUtil.getUUID());
+            command.setTaskId(ContentUtil.getUUID());
         }
         mqttPublisher.publishToCe(command.getClientId(), command.toString());
         log.info("[发布指令] command={}, 发送完成", command);

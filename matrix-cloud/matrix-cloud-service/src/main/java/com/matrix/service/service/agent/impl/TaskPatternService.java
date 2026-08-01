@@ -6,6 +6,7 @@ import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
+import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
@@ -177,7 +178,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             }
         }
         try {
-            String json = this.removeCodeBlockMarkers(smart);
+            String json = ContentUtil.removeJsonMarkers(smart);
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
@@ -454,7 +455,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     JSONSchemaUtil.generate(TaskActions.class)));
         }
         try {
-            String json = this.removeCodeBlockMarkers(actions);
+            String json = ContentUtil.removeJsonMarkers(actions);
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
@@ -488,7 +489,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     JSONSchemaUtil.generate(TaskChain.class)));
         }
         try {
-            String json = this.removeCodeBlockMarkers(actions);
+            String json = ContentUtil.removeJsonMarkers(actions);
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }

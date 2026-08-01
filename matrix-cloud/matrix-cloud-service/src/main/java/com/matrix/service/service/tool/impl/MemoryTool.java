@@ -3,6 +3,7 @@ package com.matrix.service.service.tool.impl;
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.dto.command.RegisterCommand;
+import com.matrix.common.util.ContentUtil;
 import com.matrix.service.service.agent.ModelService;
 import com.matrix.service.service.agent.Prompt;
 import com.matrix.service.service.tool.AbstractTool;
@@ -73,7 +74,7 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
                 // 生成记忆
                 RegisterCommand.Model model = registerContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
                 String input = Prompt.MEMORY_MANAGER.formatted(currMemory, request.getRequire());
-                String newMemory = modelService.call(model, input);
+                String newMemory = modelService.call(model, ContentUtil.removeMarkdownMarkers(input));
                 // 更新记忆
                 try {
                     return this.writeMemory(request.getClientId(), newMemory).flux();

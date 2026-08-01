@@ -186,7 +186,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             return smartObj;
         } catch (Exception e) {
             // 格式错误，重试
-            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
+            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.generateSmart(request, ++retry);
         }
     }
@@ -212,7 +212,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     request.getUserId(), request.getSessionId(), setsInt);
             return setsInt;
         } catch (Exception e) {
-            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
+            // 格式错误，重试
+            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.getSteps(request, ++retry);
         }
     }
@@ -466,7 +467,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         } catch (Exception e) {
             // 格式错误，重试
             patternContext.clearActions(request.getUserId(), request.getSessionId());
-            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
+            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.generateTaskActions(request, ++retry);
         }
     }
@@ -500,7 +501,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         } catch (Exception e) {
             // 格式错误，重试
             patternContext.clearActions(request.getUserId(), request.getSessionId());
-            request.getMessages().add(Message.user("格式错误: " + e.getMessage()));
+            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.generateTaskChain(request, ++retry);
         }
     }

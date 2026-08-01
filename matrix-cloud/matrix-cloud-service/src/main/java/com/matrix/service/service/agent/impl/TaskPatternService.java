@@ -91,10 +91,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                 return;
             }
 
-            // 1.1. 粗估执行步骤
-            int steps = this.getSteps(request.clone(), 0);
-            // 1.2. 规划
-            String plan = this.getPlan(request.clone(), smart, steps);
+            // 1. 规划
+            String plan = this.getPlan(request.clone(), smart, this.getPlanMode(request.clone()));
             if (null == plan) {
                 // 用户 todo
                 return;
@@ -105,7 +103,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             request.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if (steps <= 20) {
+            if ("SERIAL".equals(this.getActionMode(request))) {
                 this.executeTaskAction(request);
             } else {
                 this.executeTaskChain(request);
@@ -193,29 +191,31 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
     }
 
     /**
-     * @description 粗略估计执行步骤
+     * @description 获取执行计划生成模式
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
      */
-    private int getSteps(PatternRequest request, int retry) {
-        if (retry >= 3) {
-            return -1;
-        }
-        String sets = patternContext.getSets(request.getUserId(), request.getSessionId());
-        if (StringUtils.isBlank(sets)) {
-            sets = this.callNoToolByClone(request, Prompt.CoT.STEPS);
+    private String getPlanMode(PatternRequest request) {
+        String planMode = patternContext.getPlanMode(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(planMode)) {
+            return planMode;
         }
         try {
-            int setsInt = Integer.parseInt(sets);
-            patternContext.setSets(request.getUserId(), request.getSessionId(), sets);
-            log.info("[任务模式] 粗估执行步骤数, userId={}, sessionId={}, steps={}",
-                    request.getUserId(), request.getSessionId(), setsInt);
-            return setsInt;
+            planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
+            if (planMode.contains("ASPECT")) {
+                planMode = "ASPECT";
+            } else if (planMode.contains("EVALUATION")) {
+                planMode = "EVALUATION";
+            } else {
+                planMode = "PLAN";
+            }
+            patternContext.setPlanMode(request.getUserId(), request.getSessionId(), planMode);
+            log.info("[任务模式] 执行计划生成模式, userId={}, sessionId={}, planMode={}",
+                    request.getUserId(), request.getSessionId(), planMode);
+            return planMode;
         } catch (Exception e) {
-            // 格式错误，重试
-            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.getSteps(request, ++retry);
+            return "PLAN";
         }
     }
 
@@ -230,13 +230,13 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private String getPlan(PatternRequest request, Smart smart, int steps) {
+    private String getPlan(PatternRequest request, Smart smart, String planMode) {
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
         if (StringUtils.isNotBlank(plan)) {
             return plan;
         }
-        // <= 7 步: 直接 Plan
-        if (steps <= 7) {
+        // 直接 Plan
+        if ("PLAN".equals(planMode)) {
             String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
@@ -244,17 +244,17 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         } else {
             // 多计划综合评估
             List<String> plans;
-            // <= 20 步: 素朴切面 (MoA)
-            if (steps <= 20) {
+            // 素朴切面 (MoA)
+            if ("ASPECT".equals(planMode)) {
                 plans = this.getPlansByAspect(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面, userId={}, sessionId={}, steps={}, plans={}",
-                        request.getUserId(), request.getSessionId(), steps, plans);
+                log.info("[任务模式] 任务规划: 素朴切面, userId={}, sessionId={}, planMode={}, plans={}",
+                        request.getUserId(), request.getSessionId(), planMode, plans);
             }
-            // > 20 步: 素朴切面 + 评论修正 (MoA)
+            // 素朴切面 + 评论修正 (MoA)
             else {
                 plans = this.getPlansByAspectAndEvaluation(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, steps={}, plans={}",
-                        request.getUserId(), request.getSessionId(), steps, plans);
+                log.info("[任务模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
+                        request.getUserId(), request.getSessionId(), planMode, plans);
             }
             // 融合
             for (int i = 0; i < plans.size(); i++) {
@@ -267,8 +267,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     smart.getRelevant(), smart.getTimeBound());
             plan = this.callResultByClone(request, prompt);
         }
-        log.info("[任务模式] 任务规划, userId={}, sessionId={}, steps={}, plan={}",
-                request.getUserId(), request.getSessionId(), steps, plan);
+        log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
+                request.getUserId(), request.getSessionId(), planMode, plan);
 
         // 检查
         request.getMessages().add(Message.assistant(plan));
@@ -369,6 +369,33 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         return plans;
+    }
+
+    /**
+     * @description 获取执行方案生成模式
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private String getActionMode(PatternRequest request) {
+        String actionMode = patternContext.getActionMode(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(actionMode)) {
+            return actionMode;
+        }
+        try {
+            actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
+            if (actionMode.contains("PARALLEL")) {
+                actionMode = "PARALLEL";
+            } else {
+                actionMode = "SERIAL";
+            }
+            patternContext.setActionMode(request.getUserId(), request.getSessionId(), actionMode);
+            log.info("[任务模式] 执行方案生成模式, userId={}, sessionId={}, actionMode={}",
+                    request.getUserId(), request.getSessionId(), actionMode);
+            return actionMode;
+        } catch (Exception e) {
+            return "SERIAL";
+        }
     }
 
     /**

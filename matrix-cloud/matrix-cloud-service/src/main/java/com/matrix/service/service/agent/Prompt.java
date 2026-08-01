@@ -214,14 +214,13 @@ public interface Prompt {
             ```
             """;
 
-        String STEPS = """
-            查看上下文，快速、粗略的评估完成用户任务需要的执行步骤。
+        String PLAN_MODE = """
+            根据上下文，快速评估下一步制定执行计划需要采用哪种模式：
+            - 可以直接制定执行计划: PLAN
+            - 需要从多方面考虑: ASPECT
+            - 需要非常谨慎的考虑和评估: EVALUATION
             
-            ## 示例
-            user: 给 demo.js 添加 hello world
-            assistant: 1
-            
-            输出 (不要任何解释):
+            输出`PLAN/ASPECT/EVALUATION` (不要任何解释):
             """;
 
         String TASK_STANDARD = """
@@ -255,6 +254,14 @@ public interface Prompt {
             ## 约束
             - 输出时，不要使用 emoji 表情
             - 你仅负责输出执行计划，禁止执行任何写操作
+            """;
+
+        String ACTION_MODE = """
+            根据上下文，快速评估根据执行计划生成执行方案需要采用哪种模式：
+            - 直接按流程顺序执行: SERIAL
+            - 存在相互间结果完全无关的任务: PARALLEL
+            
+            输出`SERIAL/PARALLEL` (不要任何解释):
             """;
 
         String OBSERVE_SMART = TASK_STANDARD + """

@@ -46,10 +46,12 @@ public enum RedisKey {
     TASK_PATTERN_IS_SMART("matrix:task:pattern:is-smart:%s:%s", 6 * 60 * 60L),
     /** 任务模式：SMART 分析 */
     TASK_PATTERN_SMART("matrix:task:pattern:smart:%s:%s", 6 * 60 * 60L),
-    /** 任务模式：执行步骤数 */
-    TASK_PATTERN_STEPS("matrix:task:pattern:steps:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：执行计划生成模式 */
+    TASK_PATTERN_PLAN_MODE("matrix:task:pattern:plan-mode:%s:%s", 6 * 60 * 60L),
     /** 任务模式：执行计划 */
     TASK_PATTERN_PLAN("matrix:task:pattern:plan:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：执行方案生成模式 */
+    TASK_PATTERN_ACTION_MODE("matrix:task:pattern:action-mode:%s:%s", 6 * 60 * 60L),
     /** 任务模式：执行方案列表 */
     TASK_PATTERN_ACTIONS("matrix:task:pattern:actions:%s:%s", 6 * 60 * 60L),
 

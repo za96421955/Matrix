@@ -140,13 +140,23 @@ public class JSONSchemaUtil {
             fieldNode.put("items", generate(componentType, isComplete));
         }
         else if (genericType instanceof ParameterizedType parameterizedType) {
-            // 处理List类型
+            // 处理泛型类型（List / Map 等）
             if (parameterizedType.getRawType() == List.class) {
+                // 处理List类型，元素可能是 Class 或嵌套泛型（如 List<Map<String,Object>>）
                 Type[] typeArgs = parameterizedType.getActualTypeArguments();
+                fieldNode.put("type", "array");
                 if (typeArgs.length > 0) {
-                    fieldNode.put("type", "array");
-                    fieldNode.put("items", generate((Class<?>) typeArgs[0], isComplete));
+                    Class<?> itemClass = resolveRawClass(typeArgs[0]);
+                    if (itemClass == Map.class) {
+                        // Map 元素直接描述为对象，避免生成无意义的 Map 类 Schema
+                        fieldNode.put("items", new JSONObject().fluentPut("type", "object"));
+                    } else {
+                        fieldNode.put("items", generate(itemClass, isComplete));
+                    }
                 }
+            } else {
+                // 其他泛型类型（如 Map<String,Object>）按对象描述
+                fieldNode.put("type", "object");
             }
         }
         else {
@@ -156,6 +166,25 @@ public class JSONSchemaUtil {
         }
 
         return fieldNode;
+    }
+
+    /**
+     * @description 解析泛型 Type 对应的原始 Class，兼容 Class 与嵌套 ParameterizedType
+     * <p> 如 List<Map<String,Object>> 的元素类型解析为 Map.class </p>
+     *
+     * @author 陈晨
+     */
+    private static Class<?> resolveRawClass(Type type) {
+        if (type instanceof Class<?> clazz) {
+            return clazz;
+        }
+        if (type instanceof ParameterizedType parameterizedType) {
+            Type rawType = parameterizedType.getRawType();
+            if (rawType instanceof Class<?> clazz) {
+                return clazz;
+            }
+        }
+        return Object.class;
     }
 
     /**

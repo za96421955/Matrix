@@ -8,10 +8,7 @@
 
 ![index.png](index.png)
 ### Modes
-- **Plan:** Build task plans
-- **Execute:** Execute tasks directly
-- **Tasks:** Task list (TAG + Observer architecture)
-- **Goals:** Task list (Graph + Observer architecture)
+- **Auto**
 
 ## Usage Statistics
 ![use.png](use.png)

@@ -259,7 +259,7 @@ public interface Prompt {
         String ACTION_MODE = """
             根据上下文，快速评估根据执行计划生成执行方案需要采用哪种模式：
             - 直接按流程顺序执行: SERIAL
-            - 存在相互间结果完全无关的任务: PARALLEL
+            - 存在执行过程和结果相互间完全无关的任务: PARALLEL
             
             输出`SERIAL/PARALLEL` (不要任何解释):
             """;
@@ -556,3 +556,5 @@ public interface Prompt {
 //    }
 
 }
+
+

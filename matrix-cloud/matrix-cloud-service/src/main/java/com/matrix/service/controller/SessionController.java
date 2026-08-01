@@ -1,6 +1,7 @@
 package com.matrix.service.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.response.CommonResponse;
 import com.matrix.service.context.ChatContext;
@@ -30,8 +31,8 @@ public class SessionController {
                                                                      @PathVariable("pageNum") Integer pageNum,
                                                                      @PathVariable("pageSize") Integer pageSize) {
         // TODO 固定查询所有
-        pageNum = 1;
-        pageSize = 1000;
+        pageNum = SystemParam.DEFAULT_PAGE_NUM;
+        pageSize = SystemParam.DEFAULT_PAGE_SIZE;
         Page<SessionInfo> response = sessionService.getPage(userInfo.getUserId(), pageNum, pageSize);
         return ResponseEntity.ok(CommonResponse.success(response));
     }

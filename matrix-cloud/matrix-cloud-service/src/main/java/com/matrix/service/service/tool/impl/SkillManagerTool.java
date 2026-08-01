@@ -2,6 +2,7 @@ package com.matrix.service.service.tool.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.ToolOperation;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.service.service.tool.AbstractTool;
 import jdk.jfr.Description;
@@ -60,22 +61,23 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
         }
         try {
             switch (request.getOperation()) {
-                case "list":
+                case ToolOperation.LIST:
                     return this.listSkills(userId);
-                case "view":
+                case ToolOperation.VIEW:
                     return this.viewSkill(request);
-                case "create":
-                case "update":
+                case ToolOperation.CREATE:
+                case ToolOperation.UPDATE:
                     return this.createOrUpdateSkill(request);
-                case "enable":
+                case ToolOperation.ENABLE:
                     return this.enableSkill(request, true);
-                case "disable":
+                case ToolOperation.DISABLE:
                     return this.enableSkill(request, false);
-                case "install":
+                case ToolOperation.INSTALL:
                     return this.installSkill(request);
                 default:
                     return Flux.just("不支持的操作类型: " + request.getOperation()
-                            + "，支持: list / view / create / update / enable / disable / install");
+                            + "，支持: " + String.join(" / ", ToolOperation.LIST, ToolOperation.VIEW, ToolOperation.CREATE,
+                            ToolOperation.UPDATE, ToolOperation.ENABLE, ToolOperation.DISABLE, ToolOperation.INSTALL));
             }
         } catch (Exception e) {
             log.error("userId={}, request={}, SkillManager 执行异常: {}",
@@ -151,7 +153,7 @@ public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
             json.put("skillName", request.getSkillName());
             json.put("content", content);
             String writeCommand = Constant.SYSTEM_COMMAND.WRITE_SKILL + json.toJSONString();
-            String opLabel = "create".equals(request.getOperation()) ? "创建" : "更新";
+            String opLabel = ToolOperation.CREATE.equals(request.getOperation()) ? "创建" : "更新";
             String writeResult = executor.executeCommand(request.getClientId(), writeCommand).block();
             // 触发重新注册（异步执行，不阻塞返回）
             try {

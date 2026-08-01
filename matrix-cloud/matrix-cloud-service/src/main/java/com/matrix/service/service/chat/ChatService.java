@@ -1,6 +1,7 @@
 package com.matrix.service.service.chat;
 
 import com.alibaba.fastjson2.JSON;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.model.Role;
@@ -9,7 +10,6 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.dal.entity.SessionInfo;
-import com.matrix.service.service.agent.PatternService;
 import com.matrix.service.service.agent.impl.DefaultPatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +96,7 @@ public class ChatService {
                                 } catch (Exception e) {
                                     // 异常, 再次尝试
                                     try {
-                                        Thread.sleep(3000);
+                                        Thread.sleep(SystemParam.STOP_RETRY_DELAY_MS);
                                         chatContext.stopConversation(request.getUserId(), request.getSessionId());
                                     } catch (Exception ignore) {}
                                 }
@@ -253,3 +253,5 @@ public class ChatService {
     }
 
 }
+
+

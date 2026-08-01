@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.matrix.common.constant.ApiKeyStatus;
 import com.matrix.common.constant.ClientType;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.SecurityHeader;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.exception.BusinessException;
@@ -48,10 +49,10 @@ public class UserServiceImpl implements UserService {
     @Override
     /** extractApiKey操作 */
     public String extractApiKey(String authHeader) {
-        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
+        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith(SecurityHeader.BEARER_PREFIX)) {
             throw new BusinessException(ErrorCode.AUTH_HEADER_INVALID);
         }
-        return authHeader.substring(7);
+        return authHeader.substring(SecurityHeader.BEARER_PREFIX_LENGTH);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.matrix.service.service.user;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.matrix.common.constant.ClientStatus;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.mapper.ClientInfoMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,17 +30,17 @@ public class ClientOfflineScheduler {
     private ClientInfoMapper clientInfoMapper;
 
     // 心跳间隔，默认60秒
-    @Value("${matrix.service.mqtt.keep-alive:60}")
+    @Value("${matrix.service.mqtt.keep-alive:" + SystemParam.KEEP_ALIVE_DEFAULT + "}")
     private int keepAlive;
     // 离线判定系数
-    @Value("${matrix.service.mqtt.offline-threshold:1.5}")
+    @Value("${matrix.service.mqtt.offline-threshold:" + SystemParam.OFFLINE_THRESHOLD_DEFAULT + "}")
     private double offlineThreshold;
 
     /**
      * 定时检查设备离线状态
      * 每30秒执行一次
      */
-    @Scheduled(fixedDelay = 30000)
+    @Scheduled(fixedDelay = SystemParam.OFFLINE_CHECK_DELAY_MS)
     public void checkDeviceOffline() {
         log.debug("开始检查设备离线状态");
         try {

@@ -2,6 +2,8 @@ package com.matrix.service.service.tool.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.TyphoonAgency;
+import com.matrix.common.constant.TyphoonBasin;
 import com.matrix.service.service.tool.AbstractTool;
 import jdk.jfr.Description;
 import lombok.AllArgsConstructor;
@@ -10,7 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.paho.mqttv5.common.MqttException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,22 +30,22 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
     private static final Map<String, String> BASIN_AGENCY = new HashMap<>();
 
     static {
-        AGENCY_REGION.put("pgtw", "pn");   // JTWC 关岛 - 西北太平洋
-        AGENCY_REGION.put("rjtd", "jp");   // JMA 日本气象厅
-        AGENCY_REGION.put("rksl", "ko");   // KMA 韩国气象厅
-        AGENCY_REGION.put("knhc", "nt");   // NHC 美国国家飓风中心 - 北大西洋（默认）
-        AGENCY_REGION.put("kwnh", "pa");   // CPHC 中太平洋飓风中心
-        AGENCY_REGION.put("fmee", "io");   // 毛里求斯气象局 - 西南印度洋
-        AGENCY_REGION.put("amsl", "sh");   // 南半球
+        AGENCY_REGION.put(TyphoonAgency.PGTW, "pn");   // JTWC 关岛 - 西北太平洋
+        AGENCY_REGION.put(TyphoonAgency.RJTD, "jp");   // JMA 日本气象厅
+        AGENCY_REGION.put(TyphoonAgency.RKSL, "ko");   // KMA 韩国气象厅
+        AGENCY_REGION.put(TyphoonAgency.KNHC, "nt");   // NHC 美国国家飓风中心 - 北大西洋（默认）
+        AGENCY_REGION.put(TyphoonAgency.KWNHC, "pa");   // CPHC 中太平洋飓风中心
+        AGENCY_REGION.put(TyphoonAgency.FMEE, "io");   // 毛里求斯气象局 - 西南印度洋
+        AGENCY_REGION.put(TyphoonAgency.AMSL, "sh");   // 南半球
 
-        BASIN_AGENCY.put("wp", "pgtw");    // 西北太平洋
-        BASIN_AGENCY.put("io", "fmee");    // 印度洋
-        BASIN_AGENCY.put("at", "knhc");    // 北大西洋
-        BASIN_AGENCY.put("ep", "knhc");    // 东北太平洋
-        BASIN_AGENCY.put("cp", "kwnh");    // 中太平洋
-        BASIN_AGENCY.put("sh", "amsl");    // 南半球
-        BASIN_AGENCY.put("jp", "rjtd");    // 日本（JMA）
-        BASIN_AGENCY.put("ko", "rksl");    // 韩国（KMA）
+        BASIN_AGENCY.put(TyphoonBasin.WP, TyphoonAgency.PGTW);    // 西北太平洋
+        BASIN_AGENCY.put(TyphoonBasin.IO, TyphoonAgency.FMEE);    // 印度洋
+        BASIN_AGENCY.put(TyphoonBasin.AT, TyphoonAgency.KNHC);    // 北大西洋
+        BASIN_AGENCY.put(TyphoonBasin.EP, TyphoonAgency.KNHC);    // 东北太平洋
+        BASIN_AGENCY.put(TyphoonBasin.CP, TyphoonAgency.KWNHC);    // 中太平洋
+        BASIN_AGENCY.put(TyphoonBasin.SH, TyphoonAgency.AMSL);    // 南半球
+        BASIN_AGENCY.put(TyphoonBasin.JP, TyphoonAgency.RJTD);    // 日本（JMA）
+        BASIN_AGENCY.put(TyphoonBasin.KO, TyphoonAgency.RKSL);    // 韩国（KMA）
     }
 
     @Override
@@ -74,8 +75,8 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
             return Flux.just("执行失败: " + checkResult);
         }
         // 2. 解析参数
-        String basin = StringUtils.defaultIfBlank(request.getBasin(), "wp");
-        String agency = StringUtils.defaultIfBlank(request.getAgency(), BASIN_AGENCY.getOrDefault(basin, "pgtw"));
+        String basin = StringUtils.defaultIfBlank(request.getBasin(), TyphoonBasin.WP);
+        String agency = StringUtils.defaultIfBlank(request.getAgency(), BASIN_AGENCY.getOrDefault(basin, TyphoonAgency.PGTW));
         String regionCode = resolveRegionCode(basin, agency);
         // 3. 构建命令
         String command;
@@ -116,8 +117,8 @@ public class TyphoonTool extends AbstractTool<TyphoonTool.Request> {
      */
     private String resolveRegionCode(String basin, String agency) {
         // NHC 同时负责北大西洋(nt)和东北太平洋(pz)，根据洋区区分
-        if ("knhc".equals(agency)) {
-            if ("ep".equals(basin)) {
+        if (TyphoonAgency.KNHC.equals(agency)) {
+            if (TyphoonBasin.EP.equals(basin)) {
                 return "pz";
             }
             return "nt";

@@ -1,6 +1,7 @@
 package com.matrix.service.service.task;
 
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.MqttTopic;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.dto.command.ClientCommand;
 import com.matrix.common.dto.command.TaskCommand;
@@ -8,7 +9,6 @@ import com.matrix.common.util.ContentUtil;
 import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.mqtt.MqttPublisher;
 import com.matrix.service.mqtt.MqttSubscriber;
-import com.matrix.service.mqtt.MqttTopics;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -63,7 +63,7 @@ public class TaskPublish {
                         .creator(Constant.SYSTEM_USER)
                 .build());
         // 发布任务
-        mqttPublisher.publish(MqttTopics.TASK_PUBLISH, taskCommand.toString());
+        mqttPublisher.publish(MqttTopic.TASK_PUBLISH, taskCommand.toString());
         log.info("[发布任务] taskCommand={}, 发送完成", taskCommand);
         return taskCommand;
     }
@@ -99,7 +99,7 @@ public class TaskPublish {
             return Mono.just(taskInfo.getResult());
         }
         // 订阅结果
-        String topic = MqttTopics.TASK_RESULT.replaceAll("\\+", taskId);
+        String topic = MqttTopic.TASK_RESULT.replaceAll("\\+", taskId);
         try {
             return mqttSubscriber.subscribeWaitResult(topic, timeoutSeconds)
                     .onErrorResume(e -> {
@@ -119,3 +119,5 @@ public class TaskPublish {
     }
 
 }
+
+

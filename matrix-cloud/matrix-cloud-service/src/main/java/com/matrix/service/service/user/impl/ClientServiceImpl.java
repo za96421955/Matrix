@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.matrix.common.constant.ClientStatus;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.util.ClientDetectUtil;
 import com.matrix.service.context.RegisterContext;
@@ -36,8 +37,6 @@ public class ClientServiceImpl implements ClientService {
     private RegisterContext registerContext;
     @Resource
     private Executor executor;
-
-    private static final long HEARTBEAT_RATE_LIMIT_MS = 10000; // 10 秒
 
     @Override
     /** 获取ByUserId属性值 */
@@ -128,7 +127,7 @@ public class ClientServiceImpl implements ClientService {
         // 检查心跳频率（防刷）
         if (client.getLastHeartbeat() != null) {
             long interval = System.currentTimeMillis() - client.getLastHeartbeat().getTime();
-            if (interval < HEARTBEAT_RATE_LIMIT_MS) {
+            if (interval < SystemParam.HEARTBEAT_RATE_LIMIT_MS) {
                 log.warn("心跳过于频繁，deviceId={}, interval={}ms", clientId, interval);
                 return;
             }

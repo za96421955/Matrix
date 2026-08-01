@@ -2,7 +2,9 @@ package com.matrix.service.service.tool.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.ToolOperation;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.common.enums.TimerStatus;
 import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.tool.AbstractTool;
 import jakarta.annotation.Resource;
@@ -69,11 +71,11 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
         }
         // 根据 option 分发
         String option = request.getOption();
-        if ("create".equalsIgnoreCase(option)) {
+        if (ToolOperation.CREATE.equalsIgnoreCase(option)) {
             return createTask(userId, sessionId, request);
-        } else if ("list".equalsIgnoreCase(option)) {
+        } else if (ToolOperation.LIST.equalsIgnoreCase(option)) {
             return listTasks(userId);
-        } else if ("delete".equalsIgnoreCase(option)) {
+        } else if (ToolOperation.DELETE.equalsIgnoreCase(option)) {
             return deleteTask(userId, request);
         } else {
             return Flux.just("无效的操作类型: " + option + ", 可选值: create, list, delete");
@@ -137,7 +139,7 @@ public class TimerTool extends AbstractTool<TimerTool.Request> {
                 .intervalSeconds(request.getIntervalSeconds())
                 .executedCount(0)
                 .nextExecuteTime(startTimestamp)
-                .status("ACTIVE")
+                .status(TimerStatus.ACTIVE.getValue())
                 .createTime(System.currentTimeMillis())
                 .build();
 

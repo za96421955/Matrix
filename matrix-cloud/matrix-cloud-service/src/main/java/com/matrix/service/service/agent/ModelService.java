@@ -1,6 +1,7 @@
 package com.matrix.service.service.agent;
 
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.command.RegisterCommand;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Request;
@@ -9,6 +10,8 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.util.HttpClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -39,7 +42,7 @@ public class ModelService {
         Request request = Request.builder()
                 .model(model.getModel())
                 .messages(List.of(Message.user("直接返回: OK")))
-                .max_tokens(4096)
+                .max_tokens(SystemParam.MAX_TOKENS)
                 .thinking(Request.Thinking.disabled())
                 .stream(false)
                 .build();
@@ -66,8 +69,8 @@ public class ModelService {
         try {
             request.setModel(model.getModel());
             String output = HttpClient.post(model.getBaseUrl() + Constant.Model.COMPLETIONS)
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                     .authorization(model.getApiKey())
                     .body(request.toString())
                     .asString();
@@ -121,8 +124,8 @@ public class ModelService {
         try {
             request.setModel(model.getModel());
             HttpClient.post(model.getBaseUrl() + Constant.Model.COMPLETIONS)
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                     .authorization(model.getApiKey())
                     .body(request.toString())
                     .asStream(handle);

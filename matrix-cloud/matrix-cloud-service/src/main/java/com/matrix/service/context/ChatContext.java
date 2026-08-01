@@ -1,6 +1,7 @@
 package com.matrix.service.context;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.enums.RedisKey;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
@@ -20,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 public class ChatContext {
     private static final com.github.benmanes.caffeine.cache.Cache<String, Boolean> CONVERSATION_CACHE =
             Caffeine.newBuilder()
-            .expireAfterWrite(1, TimeUnit.SECONDS)
-            .maximumSize(30000)  // 缓存 3 秒
+            .expireAfterWrite(SystemParam.CONVERSATION_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
+            .maximumSize(SystemParam.CONVERSATION_CACHE_MAX_SIZE)  // 缓存 3 秒
             .build();
 
     @Resource
@@ -42,7 +43,7 @@ public class ChatContext {
         String key = redisKey.generateKey(userId, sessionId);
         String value = System.currentTimeMillis() + "";
         serviceCache.set(key, value, redisKey.getTtl());
-        String cacheKey = userId + "@@@" + sessionId;
+        String cacheKey = userId + SystemParam.CACHE_KEY_SEPARATOR + sessionId;
         CONVERSATION_CACHE.put(cacheKey, true);
     }
 
@@ -57,7 +58,7 @@ public class ChatContext {
         RedisKey redisKey = RedisKey.CONVERSATION;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.delete(key);
-        String cacheKey = userId + "@@@" + sessionId;
+        String cacheKey = userId + SystemParam.CACHE_KEY_SEPARATOR + sessionId;
         CONVERSATION_CACHE.put(cacheKey, false);
     }
 
@@ -88,11 +89,11 @@ public class ChatContext {
             return false;
         }
         // -1L 表示系统任务（如定时任务），始终允许执行
-        if (-1L == sessionId) {
+        if (SystemParam.SYSTEM_SESSION_ID == sessionId) {
             return true;
         }
         // 1. 先查本地缓存
-        String cacheKey = userId + "@@@" + sessionId;
+        String cacheKey = userId + SystemParam.CACHE_KEY_SEPARATOR + sessionId;
         Boolean cached = CONVERSATION_CACHE.getIfPresent(cacheKey);
         if (cached != null) {
             return cached;

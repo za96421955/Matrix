@@ -1,5 +1,6 @@
 package com.matrix.service.service.task;
 
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.common.constant.TaskType;
 import com.matrix.common.dto.command.ClientCommand;
@@ -37,9 +38,9 @@ public class TaskConsumer {
             return;
         }
         // 使用Redisson的分布式锁
-        String lockKey = "lock:task:" + taskCommand.getTaskId();
+        String lockKey = SystemParam.TASK_LOCK_PREFIX + taskCommand.getTaskId();
         try {
-            boolean lock = serviceCache.lock(lockKey, 10);
+            boolean lock = serviceCache.lock(lockKey, SystemParam.TASK_LOCK_SECONDS);
             if (!lock) {
                 return;
             }
@@ -77,3 +78,5 @@ public class TaskConsumer {
     }
 
 }
+
+

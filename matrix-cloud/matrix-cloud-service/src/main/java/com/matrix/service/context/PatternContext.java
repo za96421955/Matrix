@@ -125,11 +125,12 @@ public class PatternContext {
     public void setIsSmart(long userId, long sessionId, String isSmart) {
         log.info("[模式缓存] 设置模式 isSmart, userId={}, sessionId={}, isSmart={}",
                 userId, sessionId, isSmart);
+        // 清除后续步骤缓存【特殊顺序，先清理，后设置】
+        this.clearSmart(userId, sessionId);
+        // 设置
         RedisKey redisKey = RedisKey.TASK_PATTERN_IS_SMART;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, isSmart, redisKey.getTtl());
-        // 清除后续步骤缓存
-        this.clearSmart(userId, sessionId);
     }
     public String getIsSmart(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.TASK_PATTERN_IS_SMART;

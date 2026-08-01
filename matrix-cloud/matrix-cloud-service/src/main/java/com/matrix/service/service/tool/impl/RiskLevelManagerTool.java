@@ -2,6 +2,8 @@ package com.matrix.service.service.tool.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.RiskRule;
+import com.matrix.common.constant.ToolOperation;
 import com.matrix.service.service.tool.AbstractTool;
 import jdk.jfr.Description;
 import lombok.AllArgsConstructor;
@@ -13,8 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
-
 /**
  * 管理 risk-level.yml 风险等级配置。
  * 支持 list(查询全貌/指定分类/指定指令的风险等级)、set(设置/修改风险等级)、
@@ -25,8 +25,6 @@ import java.util.List;
 @Slf4j
 @Component
 public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Request> {
-    private static final List<String> REJECTS = List.of("shutdown", "reboot", "sudo", "fdisk", "mkfs", "dd");
-    private static final List<String> HIGHS = List.of("rm");
 
     @Override
     /** 获取组件名称 */
@@ -57,15 +55,15 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
         }
         try {
             switch (request.getOperation()) {
-                case "list":
+                case ToolOperation.LIST:
                     return this.listRiskLevels(request);
-                case "get":
+                case ToolOperation.GET:
                     return this.getRiskLevel(request);
-                case "set":
+                case ToolOperation.SET:
                     return this.setRiskLevel(request);
-                case "delete":
+                case ToolOperation.DELETE:
                     return this.deleteRiskLevel(request);
-                case "add":
+                case ToolOperation.ADD:
                     return this.addRiskLevel(request);
                 default:
                     return Flux.just("不支持的操作类型: " + request.getOperation()
@@ -142,7 +140,7 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
         }
         try {
             JSONObject json = new JSONObject();
-            json.put("action", "set");
+            json.put("action", ToolOperation.SET);
             json.put("category", request.getCategory());
             json.put("command", request.getCommand());
             json.put("level", request.getLevel());
@@ -172,7 +170,7 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
         }
         try {
             JSONObject json = new JSONObject();
-            json.put("action", "delete");
+            json.put("action", ToolOperation.DELETE);
             json.put("category", request.getCategory());
             json.put("command", request.getCommand());
             String command = Constant.SYSTEM_COMMAND.UPDATE_RISK_LEVEL + json.toJSONString();
@@ -204,7 +202,7 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
         }
         try {
             JSONObject json = new JSONObject();
-            json.put("action", "add");
+            json.put("action", ToolOperation.ADD);
             json.put("category", request.getCategory());
             json.put("command", request.getCommand());
             json.put("level", request.getLevel());
@@ -229,15 +227,15 @@ public class RiskLevelManagerTool extends AbstractTool<RiskLevelManagerTool.Requ
         if (StringUtils.isBlank(category) || StringUtils.isBlank(command)) {
             return null;
         }
-        if (!"bash".equals(category)) {
+        if (!RiskRule.CATEGORY_BASH.equals(category)) {
             return null;
         }
         // 6 个系统高危指令，固定为 -1(禁止执行)
-        if (REJECTS.contains(command)) {
+        if (RiskRule.REJECTS.contains(command)) {
             return "指令 " + command + " 为系统高危指令，固定风险等级为 -1(禁止执行)，不可修改/删除";
         }
         // rm 固定为 3(高风险)
-        if (HIGHS.contains(command)) {
+        if (RiskRule.HIGHS.contains(command)) {
             return "指令 rm 为高风险指令，固定风险等级为 3，不可修改/删除";
         }
         return null;

@@ -1,5 +1,6 @@
 package com.matrix.service.controller;
 
+import com.matrix.common.constant.SecurityHeader;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.response.CommonResponse;
 import com.matrix.service.service.agent.ModelService;
@@ -30,7 +31,7 @@ public class UserController {
      */
     @RequestMapping("/checkApiKey")
     public ResponseEntity<CommonResponse<Boolean>> checkApiKey(ServerWebExchange exchange) {
-        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String authHeader = exchange.getRequest().getHeaders().getFirst(SecurityHeader.AUTHORIZATION_HEADER);
         String apiKey = userService.extractApiKey(authHeader);
         return ResponseEntity.ok(CommonResponse.success(modelService.checkApiKey(apiKey)));
     }

@@ -1,5 +1,7 @@
 package com.matrix.service.mqtt;
 
+import com.matrix.common.constant.MqttTopic;
+import com.matrix.common.constant.SystemParam;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
@@ -45,7 +47,7 @@ public class MqttPublisher {
      * @param payload 消息内容
      */
     public void publish(String topic, String payload) throws MqttException {
-        publish(topic, payload, 1);
+        publish(topic, payload, SystemParam.MQTT_QOS);
     }
 
     /**
@@ -54,8 +56,10 @@ public class MqttPublisher {
      * @param payload     命令内容
      */
     public void publishToCe(String clientExecutorId, String payload) throws MqttException {
-        String topic = MqttTopics.MATRIX_CLIENT_COMMAND.replaceAll("\\+", clientExecutorId);
+        String topic = MqttTopic.MATRIX_CLIENT_COMMAND.replaceAll("\\+", clientExecutorId);
         this.publish(topic, payload);
     }
 
 }
+
+

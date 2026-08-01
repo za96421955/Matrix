@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TaskChain {
 
-    @Description("块按顺序串行执行，按里程碑阶段拆分执行块")
+    @Description("块按顺序串行执行，按里程碑或阶段拆分执行块")
     private List<ActionBlock> blocks;
 
     @Override
@@ -29,8 +29,8 @@ public class TaskChain {
     @AllArgsConstructor
     public static class ActionBlock {
 
-        @Description("执行列表是否按顺序串行执行, 默认: true。")
-        private Boolean sync;
+        @Description("串行或并行, 列表中所有方案的执行过程和结果相互间完全无关可并行, 默认: true (串行)。")
+        private Boolean isSerial;
 
         @Description("执行方案列表")
         private List<String> actions;

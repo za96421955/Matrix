@@ -1,5 +1,6 @@
 package com.matrix.service.service.task.impl;
 
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.constant.TaskType;
 import com.matrix.common.dto.command.ClientCommand;
 import com.matrix.common.dto.command.TaskCommand;
@@ -8,7 +9,6 @@ import com.matrix.service.service.task.TaskPublish;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.mqttv5.common.MqttException;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -23,9 +23,6 @@ import reactor.core.publisher.Mono;
 @Component
 @ConditionalOnProperty(name = "matrix.mqtt.enabled", havingValue = "true")
 public class AsyncExecutor implements Executor {
-
-    private static final long TASK_TIMEOUT = 60;
-    private static final long COMMAND_TIMEOUT = 10;
 
     @Resource
     private TaskPublish taskPublish;
@@ -43,7 +40,7 @@ public class AsyncExecutor implements Executor {
                 .build());
         log.info("[等待授权] userId={}, command={}", userId, command);
         // 等待授权
-        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 10);
+        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), SystemParam.TASK_TIMEOUT * SystemParam.AUTH_WAIT_TIMEOUT_MULTIPLIER);
     }
 
     @Override
@@ -62,7 +59,7 @@ public class AsyncExecutor implements Executor {
                         .toString())
                 .build());
         // 等待执行结果
-        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), TASK_TIMEOUT * 3)
+        return taskPublish.waitForResult(userId, taskCommand.getTaskId(), SystemParam.TASK_TIMEOUT * SystemParam.TASK_WAIT_TIMEOUT_MULTIPLIER)
                 .doOnError(e -> log.warn("[任务执行超时] userId={}, taskId={}, clientId={}", 
                         userId, taskCommand.getTaskId(), clientId));
     }
@@ -75,7 +72,7 @@ public class AsyncExecutor implements Executor {
                 .clientId(clientId)
                 .command(command)
                 .build());
-        return taskPublish.waitForResult(null, taskId, COMMAND_TIMEOUT)
+        return taskPublish.waitForResult(null, taskId, SystemParam.COMMAND_TIMEOUT)
                 .doOnError(e -> log.warn("[指令执行超时] taskId={}, clientId={}", taskId, clientId));
     }
 

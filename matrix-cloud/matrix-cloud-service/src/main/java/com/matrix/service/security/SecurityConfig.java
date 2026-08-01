@@ -1,5 +1,6 @@
 package com.matrix.service.security;
 
+import com.matrix.common.constant.SecurityHeader;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.exception.BusinessException;
@@ -41,18 +42,6 @@ public class SecurityConfig {
     @Resource
     private ServiceCache serviceCache;
 
-    private static final String[] OPEN_PATHS = new String[] {
-            "/install.sh",
-            "/install.ps1",
-            "/install/**",
-            "/jdk/**",
-            "/favicon.ico",
-            "/index.html",
-            "/health/check",
-            "/actuator/**",
-            "/v1/user/checkApiKey"
-    };
-
     @Bean
     /** springSecurityFilterChain操作 */
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -61,7 +50,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         // 放行注册、登录、获取 token 的接口
-                        .pathMatchers(OPEN_PATHS).permitAll()
+                        .pathMatchers(SecurityHeader.OPEN_PATHS).permitAll()
                         // 其他所有请求都需要认证
                         .anyExchange().authenticated()
                 )
@@ -94,7 +83,7 @@ public class SecurityConfig {
     public ServerAuthenticationConverter tokenExtractor() {
         return exchange -> {
             String path = exchange.getRequest().getURI().getPath();
-            for (String openPath : OPEN_PATHS) {
+            for (String openPath : SecurityHeader.OPEN_PATHS) {
                 if (openPath.contains("*")) {
                     // Ant风格: /install/**匹配 /install/开头的路径
                     String prefix = openPath.substring(0, openPath.indexOf("*"));
@@ -108,12 +97,12 @@ public class SecurityConfig {
                 }
             }
             //提取 header
-            String deviceId = exchange.getRequest().getHeaders().getFirst("X-Device-Id");
+            String deviceId = exchange.getRequest().getHeaders().getFirst(SecurityHeader.DEVICE_ID_HEADER);
             if (StringUtils.isBlank(deviceId)) {
                 deviceId = "";
             }
-            String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
-            return Mono.just(new UsernamePasswordAuthenticationToken(null, deviceId + "@@@" + authHeader));
+            String authHeader = exchange.getRequest().getHeaders().getFirst(SecurityHeader.AUTHORIZATION_HEADER);
+            return Mono.just(new UsernamePasswordAuthenticationToken(null, deviceId + SecurityHeader.TOKEN_SEPARATOR + authHeader));
         };
     }
 
@@ -126,8 +115,8 @@ public class SecurityConfig {
             log.debug("Authentication credentials : {}", credentials);
             if (credentials instanceof String token) {
                 try {
-                    String deviceId = token.split("@@@")[0];
-                    String apiKey = token.split("@@@")[1];
+                    String deviceId = token.split(SecurityHeader.TOKEN_SEPARATOR)[0];
+                    String apiKey = token.split(SecurityHeader.TOKEN_SEPARATOR)[1];
                     apiKey = userService.extractApiKey(apiKey);
                     // API Key 认证
                     UserResponse userInfo = userService.validateApiKey(deviceId, apiKey);
@@ -138,7 +127,7 @@ public class SecurityConfig {
                     Authentication auth = new UsernamePasswordAuthenticationToken(
                             userInfo,         // principal
                             null,             // credentials (清空)
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                            Collections.singletonList(new SimpleGrantedAuthority(SecurityHeader.ROLE_USER))
                     );
                     return Mono.just(auth);
                 } catch (Exception e) {

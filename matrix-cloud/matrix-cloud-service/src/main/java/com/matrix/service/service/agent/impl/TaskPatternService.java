@@ -2,10 +2,12 @@ package com.matrix.service.service.agent.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.OutputKeyword;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
+import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.service.dal.entity.ClientInfo;
@@ -103,7 +105,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             request.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if ("SERIAL".equals(this.getActionMode(request))) {
+            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(request))) {
                 this.executeTaskAction(request);
             } else {
                 this.executeTaskChain(request);
@@ -117,13 +119,13 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                     request.getUserId(), request.getSessionId(), observe);
             // 任务终止
-            if (observe.contains("TERMINATED")) {
+            if (observe.contains(OutputKeyword.TERMINATED)) {
                 // 清除执行计划
                 patternContext.clearPlan(request.getUserId(), request.getSessionId());
                 return;
             }
             // 任务完成
-            if (observe.contains("TRUE")) {
+            if (observe.contains(OutputKeyword.TRUE)) {
                 break;
             }
             // 任务继续
@@ -151,7 +153,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
             isSmart = result;
         }
-        return isSmart.contains("true");
+        return isSmart.contains(OutputKeyword.LOWER_TRUE);
     }
 
     /**
@@ -171,7 +173,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             // 检查
             request.getMessages().add(Message.assistant(smart));
             String check = this.callNoToolByClone(request, Prompt.Check.GOAL);
-            if (check.contains("TODO")) {
+            if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }
         }
@@ -203,19 +205,19 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         }
         try {
             planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
-            if (planMode.contains("ASPECT")) {
-                planMode = "ASPECT";
-            } else if (planMode.contains("EVALUATION")) {
-                planMode = "EVALUATION";
+            if (planMode.contains(TaskMode.ASPECT.getValue())) {
+                planMode = TaskMode.ASPECT.getValue();
+            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
+                planMode = TaskMode.EVALUATION.getValue();
             } else {
-                planMode = "PLAN";
+                planMode = TaskMode.PLAN.getValue();
             }
             patternContext.setPlanMode(request.getUserId(), request.getSessionId(), planMode);
             log.info("[任务模式] 执行计划生成模式, userId={}, sessionId={}, planMode={}",
                     request.getUserId(), request.getSessionId(), planMode);
             return planMode;
         } catch (Exception e) {
-            return "PLAN";
+            return TaskMode.PLAN.getValue();
         }
     }
 
@@ -236,7 +238,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             return plan;
         }
         // 直接 Plan
-        if ("PLAN".equals(planMode)) {
+        if (TaskMode.PLAN.getValue().equals(planMode)) {
             String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
@@ -245,7 +247,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             // 多计划综合评估
             List<String> plans;
             // 素朴切面 (MoA)
-            if ("ASPECT".equals(planMode)) {
+            if (TaskMode.ASPECT.getValue().equals(planMode)) {
                 plans = this.getPlansByAspect(request, smart);
                 log.info("[任务模式] 任务规划: 素朴切面, userId={}, sessionId={}, planMode={}, plans={}",
                         request.getUserId(), request.getSessionId(), planMode, plans);
@@ -273,7 +275,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         // 检查
         request.getMessages().add(Message.assistant(plan));
         String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
-        if (check.contains("TODO")) {
+        if (check.contains(OutputKeyword.TODO)) {
             return null;
         }
         patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
@@ -384,17 +386,17 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         }
         try {
             actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
-            if (actionMode.contains("PARALLEL")) {
-                actionMode = "PARALLEL";
+            if (actionMode.contains(TaskMode.PARALLEL.getValue())) {
+                actionMode = TaskMode.PARALLEL.getValue();
             } else {
-                actionMode = "SERIAL";
+                actionMode = TaskMode.SERIAL.getValue();
             }
             patternContext.setActionMode(request.getUserId(), request.getSessionId(), actionMode);
             log.info("[任务模式] 执行方案生成模式, userId={}, sessionId={}, actionMode={}",
                     request.getUserId(), request.getSessionId(), actionMode);
             return actionMode;
         } catch (Exception e) {
-            return "SERIAL";
+            return TaskMode.SERIAL.getValue();
         }
     }
 
@@ -418,12 +420,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                 return;
             }
             // 方案执行
-            PatternRequest actionRequest = request.clone();
-            actionRequest.getMessages().add(Message.user(action));
-            String result = this.callResultByClone(actionRequest, Prompt.Common.EXECUTE);
-            log.info("[任务模式] 任务执行, userId={}, sessionId={}, result={}",
-                    request.getUserId(), request.getSessionId(), result);
-            request.getMessages().add(Message.assistant(result));
+            request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
         }
     }
 
@@ -441,29 +438,50 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         }
         // 2. 执行
         for (TaskChain.ActionBlock block : actions.getBlocks()) {
-            List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
-            PatternRequest localRequest = request.clone();
-            List<Message> results = new LinkedList<>();
-            for (String action : block.getActions()) {
-                taskFutures.add(CompletableFuture.runAsync(() -> {
+            if (block.getIsSerial()) {
+                for (String action : block.getActions()) {
                     // 【STOP】停止对话
                     if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
                         log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
                         return;
                     }
                     // 方案执行
-                    PatternRequest actionRequest = localRequest.clone();
-                    actionRequest.getMessages().add(Message.user(action));
-                    String result = this.callResultByClone(actionRequest, Prompt.Common.EXECUTE);
-                    log.info("[任务模式] 任务执行, userId={}, sessionId={}, result={}",
-                            request.getUserId(), request.getSessionId(), result);
-                    results.add(Message.assistant(result));
-                }));
+                    request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
+                }
+            } else {
+                List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
+                PatternRequest localRequest = request.clone();
+                List<Message> results = new LinkedList<>();
+                for (String action : block.getActions()) {
+                    taskFutures.add(CompletableFuture.runAsync(() -> {
+                        // 【STOP】停止对话
+                        if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
+                            log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
+                            return;
+                        }
+                        // 方案执行
+                        results.add(Message.assistant(this.actionExecute(localRequest, action)));
+                    }));
+                }
+                // 等待所有并行任务完成
+                CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
+                request.getMessages().addAll(results);
             }
-            // 等待所有并行任务完成
-            CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
-            request.getMessages().addAll(results);
         }
+    }
+
+    /**
+     * @description 方案执行
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private String actionExecute(PatternRequest request, String action) {
+        request.getMessages().add(Message.user(action));
+        String result = this.callResultByClone(request, Prompt.Common.EXECUTE);
+        log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
+                request.getUserId(), request.getSessionId(), result);
+        return result;
     }
 
     /**

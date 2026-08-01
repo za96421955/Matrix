@@ -1,5 +1,7 @@
 package com.matrix.service.mqtt;
 
+import com.matrix.common.constant.MqttTopic;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.service.context.CompletableContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,7 @@ public class MqttSubscriber {
         if (client == null) {
             return;
         }
-        client.subscribe(topic, 1).waitForCompletion();
+        client.subscribe(topic, SystemParam.MQTT_QOS).waitForCompletion();
     }
 
     /** unsubscribe操作 */
@@ -47,7 +49,7 @@ public class MqttSubscriber {
     /** 订阅消息或话题 */
     public void subscribe() {
         try {
-            for (String topic : MqttTopics.SUBSCRIBE_TOPICS) {
+            for (String topic : MqttTopic.SUBSCRIBE_TOPICS) {
                 try {
                     this.subscribe(topic);
                     log.info("Subscribed to: {}", topic);

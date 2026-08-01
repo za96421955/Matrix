@@ -1,4 +1,4 @@
-package com.matrix.service.mqtt;
+package com.matrix.common.constant;
 
 /**
  * MQTT主题
@@ -6,7 +6,7 @@ package com.matrix.service.mqtt;
  *
  * @author 陈晨
  */
-public interface MqttTopics {
+public interface MqttTopic {
 
     String MATRIX_CLIENT_COMMAND = "matrix/client/command/+";
 

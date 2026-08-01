@@ -1,8 +1,9 @@
 package com.matrix.service.mqtt;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.matrix.service.context.CompletableContext;
+import com.matrix.common.constant.MqttTopic;
 import com.matrix.common.dto.command.TaskCommand;
+import com.matrix.service.context.CompletableContext;
 import com.matrix.service.service.task.TaskConsumer;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+
+
 
 @Slf4j
 @Component
@@ -34,7 +37,7 @@ public class MqttConsumer {
         completableContext.complete(topic, payload);
 
         // topic 处理
-        if (MqttTopics.TASK_PUBLISH.equals(topic)) {
+        if (MqttTopic.TASK_PUBLISH.equals(topic)) {
             try {
                 taskConsumer.processTask(JSONObject.parseObject(payload, TaskCommand.class));
             } catch (Exception e) {

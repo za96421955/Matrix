@@ -1,15 +1,14 @@
 package com.matrix.service.service.task.impl;
 
+import com.matrix.common.constant.MqttTopic;
 import com.matrix.common.constant.TaskStatus;
 import com.matrix.service.dal.entity.TaskInfo;
 import com.matrix.service.mqtt.MqttPublisher;
-import com.matrix.service.mqtt.MqttTopics;
 import com.matrix.service.service.task.TaskComplete;
 import com.matrix.service.service.task.TaskService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.mqttv5.common.MqttException;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -45,7 +44,7 @@ public class MqttTaskComplete implements TaskComplete {
             result = "";
         }
         // 发布结果通知
-        String topic = MqttTopics.TASK_RESULT.replaceAll("\\+", taskId);
+        String topic = MqttTopic.TASK_RESULT.replaceAll("\\+", taskId);
         mqttPublisher.publish(topic, result);
         log.info("[任务完成] topic={}, result={}, 通知完成", topic, result);
         // 更新任务结果
@@ -58,3 +57,5 @@ public class MqttTaskComplete implements TaskComplete {
     }
 
 }
+
+

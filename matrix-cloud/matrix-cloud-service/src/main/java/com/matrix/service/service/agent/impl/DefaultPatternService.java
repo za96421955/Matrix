@@ -1,9 +1,11 @@
 package com.matrix.service.service.agent.impl;
 
 import com.matrix.common.constant.Constant;
+import com.matrix.common.constant.OutputKeyword;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
+import com.matrix.common.enums.TaskMode;
 import com.matrix.service.service.agent.AbstractPatternService;
 import com.matrix.service.service.agent.PatternService;
 import com.matrix.service.service.agent.Prompt;
@@ -11,8 +13,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @description 默认模式
@@ -88,11 +88,11 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
             String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
             String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
             String reset = this.callNoToolByClone(request, Prompt.Check.RESET.formatted(smart, plan));
-            if (reset.contains("SMART")) {
+            if (reset.contains(OutputKeyword.SMART)) {
                 patternContext.clear(request.getUserId(), request.getSessionId());
                 return taskPatternService;
             }
-            if (reset.contains("PLAN")) {
+            if (reset.contains(TaskMode.PLAN.getValue())) {
                 patternContext.clearPlan(request.getUserId(), request.getSessionId());
             }
             log.info("[默认模式] 获取任务模式缓存, userId={}, sessionId={}",
@@ -103,3 +103,5 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
     }
 
 }
+
+

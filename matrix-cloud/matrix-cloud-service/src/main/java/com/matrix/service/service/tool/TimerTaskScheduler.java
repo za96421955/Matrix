@@ -1,11 +1,13 @@
 package com.matrix.service.service.tool;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.common.enums.TimerStatus;
 import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.service.agent.impl.TimerPatternService;
 import com.matrix.service.service.tool.impl.TimerTool;
@@ -40,7 +42,7 @@ public class TimerTaskScheduler {
      *
      * @author 陈晨
      */
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = SystemParam.TIMER_SCAN_DELAY_MS)
     public void processTimerTasks() {
         log.debug("[定时任务调度] 轮询【开始】");
         try {
@@ -87,7 +89,7 @@ public class TimerTaskScheduler {
                     }
 
                     // 3. 检查任务是否需要执行
-                    if (!"ACTIVE".equals(taskInfo.getStatus())) {
+                    if (!TimerStatus.ACTIVE.getValue().equals(taskInfo.getStatus())) {
                         continue;
                     }
                     long now = System.currentTimeMillis();
@@ -128,7 +130,7 @@ public class TimerTaskScheduler {
                         // 7. 检查是否已完成
                         if (taskInfo.getExecuteCount() > 0
                                 && taskInfo.getExecutedCount() >= taskInfo.getExecuteCount()) {
-                            taskInfo.setStatus("COMPLETED");
+                            taskInfo.setStatus(TimerStatus.COMPLETED.getValue());
                             serviceCache.getHash().remove(taskKey, title);
                             log.info("[定时任务] 已完成, userId={}, title={}, totalExecuted={}",
                                     userId, title, taskInfo.getExecutedCount());
@@ -146,7 +148,7 @@ public class TimerTaskScheduler {
                         taskInfo.setNextExecuteTime(now + taskInfo.getIntervalSeconds() * 1000L);
                         if (taskInfo.getExecuteCount() > 0
                                 && taskInfo.getExecutedCount() >= taskInfo.getExecuteCount()) {
-                            taskInfo.setStatus("COMPLETED");
+                            taskInfo.setStatus(TimerStatus.COMPLETED.getValue());
                             serviceCache.getHash().remove(taskKey, title);
                         } else {
                             serviceCache.getHash().put(taskKey, title, JSONObject.toJSONString(taskInfo),

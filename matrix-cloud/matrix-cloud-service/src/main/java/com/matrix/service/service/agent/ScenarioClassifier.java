@@ -84,12 +84,12 @@ public class ScenarioClassifier {
         log.info("[场景分类] task={}", messages.getLast().getContent());
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
         // isExecute
-        AtomicBoolean isExecute = new AtomicBoolean(false);
-        taskFutures.add(CompletableFuture.runAsync(() -> {
-            isExecute.set(modelService.callAnswer(messages, EXECUTE)
-                    .contains(OutputKeyword.TRUE));
-            log.info("[场景分类] task={}, isExecute={}", messages.getLast().getContent(), isExecute);
-        }));
+//        AtomicBoolean isExecute = new AtomicBoolean(false);
+//        taskFutures.add(CompletableFuture.runAsync(() -> {
+//            isExecute.set(modelService.callAnswer(messages, EXECUTE)
+//                    .contains(OutputKeyword.TRUE));
+//            log.info("[场景分类] task={}, isExecute={}", messages.getLast().getContent(), isExecute);
+//        }));
         // isTask
         AtomicBoolean isTask = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
@@ -99,9 +99,9 @@ public class ScenarioClassifier {
         }));
         // 等待所有并行任务完成
         CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
-        if (isExecute.get()) {
-            return false;
-        }
+//        if (isExecute.get()) {
+//            return false;
+//        }
         if (isTask.get()) {
             return true;
         }

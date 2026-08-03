@@ -133,6 +133,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         String isSmart = patternContext.getIsSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(isSmart)) {
             String result = modelService.callAnswer(request.getMessages(), Prompt.Check.IS_SMART);
+            log.info("[直接回答] userId={}, sessionId={}, result={}",
+                    request.getUserId(), request.getSessionId(), result);
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
             isSmart = result;
         }
@@ -156,6 +158,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             // 检查
             request.getMessages().add(Message.assistant(smart));
             String check = modelService.callAnswer(request.getMessages(), Prompt.Check.GOAL);
+            log.info("[直接回答] userId={}, sessionId={}, result={}",
+                    request.getUserId(), request.getSessionId(), check);
             if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }

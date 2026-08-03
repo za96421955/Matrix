@@ -474,6 +474,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         try {
             planMode = modelService.callAnswer(request.getMessages(), Prompt.CoT.PLAN_MODE);
+            log.info("[直接回答] userId={}, sessionId={}, result={}",
+                    request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.ASPECT.getValue())) {
                 planMode = TaskMode.ASPECT.getValue();
             } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
@@ -545,6 +547,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
             String check = modelService.callAnswer(request.getMessages(), Prompt.Check.PLAN);
+            log.info("[直接回答] userId={}, sessionId={}, result={}",
+                    request.getUserId(), request.getSessionId(), check);
             if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }
@@ -657,6 +661,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         try {
             actionMode = modelService.callAnswer(request.getMessages(), Prompt.CoT.ACTION_MODE);
+            log.info("[直接回答] userId={}, sessionId={}, result={}",
+                    request.getUserId(), request.getSessionId(), actionMode);
             if (actionMode.contains(TaskMode.PARALLEL.getValue())) {
                 actionMode = TaskMode.PARALLEL.getValue();
             } else {

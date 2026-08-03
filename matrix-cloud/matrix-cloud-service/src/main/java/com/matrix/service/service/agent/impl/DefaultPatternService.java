@@ -64,6 +64,8 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
         String reset = modelService.callAnswer(request.getMessages(), Prompt.Check.RESET.formatted(smart, plan));
+        log.info("[直接回答] userId={}, sessionId={}, result={}",
+                request.getUserId(), request.getSessionId(), reset);
         if (reset.contains(OutputKeyword.SMART)) {
             patternContext.clear(request.getUserId(), request.getSessionId());
             log.info("[默认模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",

@@ -182,6 +182,7 @@ public class ModelService {
         if (CollectionUtils.isEmpty(messages)) {
             throw new RuntimeException(ErrorCode.SYSTEM_ERROR.getMessage());
         }
+        log.info("[直接回答] prompt={}", input);
         List<Message> localMessages = new ArrayList<>(messages);
         localMessages.add(Message.user(input));
         return this.callAnswer(localMessages);

@@ -29,48 +29,19 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
     @Resource
     private TaskPatternService taskPatternService;
 
-    /**
-     * @description 获取模式服务
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private PatternService getPatternService(String pattern) {
-        log.info("[默认模式] 获取模式, pattern={}", pattern);
-        if (Constant.Pattern.TASK.equals(pattern)) {
-            return taskPatternService;
-        }
-        return executePatternService;
-    }
-
     @Override
     public Flux<Response> call(PatternRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
         }
-
         // 获取模式缓存
         PatternService patternService = this.getPatternService(request);
         if (null != patternService) {
             return patternService.call(request);
         }
-        // 识别模式
-        int retry = 0;
-        while (++retry <= 3) {
-            String pattern = this.callNoToolByClone(request, Prompt.Common.AUTO_PATTERN);
-            log.info("[默认模式] 识别模式, userId={}, sessionId={}, pattern={}",
-                    request.getUserId(), request.getSessionId(), pattern);
-            patternService = this.getPatternService(pattern);
-            if (null != patternService) {
-                break;
-            }
-        }
-        if (null == patternService) {
-            log.error("[默认模式] 模式识别失败, userId={}, sessionId={}",
-                    request.getUserId(), request.getSessionId());
-            return Flux.just(Response.error(ErrorCode.SYSTEM_ERROR.getMessage()));
-        }
-        // 调用模式
+        // 判断是否交互式任务场景
+        boolean isTask = scenarioClassifier.isTask(request.getUserId(), request.getSessionId(), request.getMessages());
+        patternService = isTask ? taskPatternService : executePatternService;
         return patternService.call(request);
     }
 

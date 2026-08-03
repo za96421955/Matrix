@@ -12,8 +12,6 @@ public interface OutputKeyword {
 
     String TRUE = "TRUE";
 
-    String LOWER_TRUE = "true";
-
     String TODO = "TODO";
 
     String SMART = "SMART";

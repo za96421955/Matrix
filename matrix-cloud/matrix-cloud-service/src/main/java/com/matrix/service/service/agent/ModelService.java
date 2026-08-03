@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -143,6 +144,47 @@ public class ModelService {
      */
     public void stream(RegisterCommand.Model model, String message, HttpClient.StreamHandle handle) {
         this.stream(model, Request.build(model.getModel(), List.of(Message.user(message))).stream(), handle);
+    }
+
+    /**
+     * @description 获取回答
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public String callAnswer(List<Message> messages) {
+        if (CollectionUtils.isEmpty(messages)) {
+            throw new RuntimeException(ErrorCode.SYSTEM_ERROR.getMessage());
+        }
+        RegisterCommand.Model model = RegisterCommand.Model.builder()
+                .baseUrl(Constant.Model.BASE_URL)
+                .model(Constant.Model.DEEPSEEK_V4_FLASH)
+                .apiKey(System.getenv("DEEPSEEK_API_KEY"))
+                .build();
+        Request request = Request.builder()
+                .model(model.getModel())
+                .messages(messages)
+                .max_tokens(SystemParam.MAX_TOKENS)
+                .thinking(Request.Thinking.disabled())
+                .stream(false)
+                .build();
+        Response response = this.call(model, request);
+        if (null == response) {
+            throw new RuntimeException(ErrorCode.SYSTEM_ERROR.getMessage());
+        }
+        if (null != response.getError()) {
+            throw new RuntimeException(response.getError().getMessage());
+        }
+        return response.getMessage().getContent();
+    }
+
+    public String callAnswer(List<Message> messages, String input) {
+        if (CollectionUtils.isEmpty(messages)) {
+            throw new RuntimeException(ErrorCode.SYSTEM_ERROR.getMessage());
+        }
+        List<Message> localMessages = new ArrayList<>(messages);
+        localMessages.add(Message.user(input));
+        return this.callAnswer(localMessages);
     }
 
 }

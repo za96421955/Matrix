@@ -153,7 +153,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
             isSmart = result;
         }
-        return isSmart.contains(OutputKeyword.LOWER_TRUE);
+        return isSmart.contains(OutputKeyword.TRUE);
     }
 
     /**

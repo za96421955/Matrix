@@ -155,11 +155,11 @@ public interface Prompt {
 
         String IS_SMART = """
             1. 查看上下文，快速判断用户需求/任务是否需要 SMART 分析。
-            2. 需要: true, 不需要: false
+            2. 需要: TRUE, 不需要: FALSE
             
             ## 示例
             user: 给 demo.js 添加 hello world
-            assistant: false
+            assistant: FALSE
             
             输出 (不要任何解释):
             """;

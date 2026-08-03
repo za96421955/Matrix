@@ -32,7 +32,7 @@ public class TimerPatternService extends AbstractPatternService<PatternRequest> 
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request, clients, Prompt.Common.EXECUTE));
+        request.setMessages(this.buildMessages(request, clients, Prompt.CoT.EXECUTE));
         // ReAct Agent Call
         return this.call(request, null);
     }

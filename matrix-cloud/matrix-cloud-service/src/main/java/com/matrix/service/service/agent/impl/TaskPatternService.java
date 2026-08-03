@@ -14,18 +14,13 @@ import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
 import com.matrix.service.service.agent.Prompt;
 import com.matrix.service.service.agent.schema.Smart;
-import com.matrix.service.service.agent.schema.TaskActions;
-import com.matrix.service.service.agent.schema.TaskChain;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @description 任务模式
@@ -94,7 +89,8 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             }
 
             // 1. 规划
-            String plan = this.getPlan(request.clone(), smart, this.getPlanMode(request.clone()));
+            String plan = this.getPlan(request.clone(), smart, this.getPlanMode(request.clone()),
+                    true);
             if (null == plan) {
                 // 用户 todo
                 return;
@@ -112,30 +108,17 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             }
 
             // 3. 观察
-            String prompt = null == smart ? Prompt.Common.OBSERVE : Prompt.CoT.OBSERVE_SMART.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound());
-            String observe = this.callResultByClone(request, prompt);
-            log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
-                    request.getUserId(), request.getSessionId(), observe);
-            // 任务终止
-            if (observe.contains(OutputKeyword.TERMINATED)) {
-                // 清除执行计划
-                patternContext.clearPlan(request.getUserId(), request.getSessionId());
+            Boolean isContinue = this.observer(request, smart);
+            if (null == isContinue) {
                 return;
             }
-            // 任务完成
-            if (observe.contains(OutputKeyword.TRUE)) {
+            if (!isContinue) {
                 break;
             }
-            // 任务继续
-            request.getMessages().add(Message.user(observe));
-            // 清除执行方案
-            patternContext.clearActions(request.getUserId(), request.getSessionId());
         }
 
         // 3. 结果总结
-        this.callResultByClone(sink, request, Prompt.Common.SUMMARY);
+        this.callResultByClone(sink, request, Prompt.Common.BRIEF_SUMMARY);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
     }
@@ -149,7 +132,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
     private boolean isSmart(PatternRequest request) {
         String isSmart = patternContext.getIsSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(isSmart)) {
-            String result = this.callNoToolByClone(request, Prompt.Check.IS_SMART);
+            String result = modelService.callAnswer(request.getMessages(), Prompt.Check.IS_SMART);
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
             isSmart = result;
         }
@@ -172,7 +155,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     JSONSchemaUtil.generate(Smart.class)));
             // 检查
             request.getMessages().add(Message.assistant(smart));
-            String check = this.callNoToolByClone(request, Prompt.Check.GOAL);
+            String check = modelService.callAnswer(request.getMessages(), Prompt.Check.GOAL);
             if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }
@@ -189,366 +172,6 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             // 格式错误，重试
             request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.generateSmart(request, ++retry);
-        }
-    }
-
-    /**
-     * @description 获取执行计划生成模式
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private String getPlanMode(PatternRequest request) {
-        String planMode = patternContext.getPlanMode(request.getUserId(), request.getSessionId());
-        if (StringUtils.isNotBlank(planMode)) {
-            return planMode;
-        }
-        try {
-            planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
-            if (planMode.contains(TaskMode.ASPECT.getValue())) {
-                planMode = TaskMode.ASPECT.getValue();
-            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
-                planMode = TaskMode.EVALUATION.getValue();
-            } else {
-                planMode = TaskMode.PLAN.getValue();
-            }
-            patternContext.setPlanMode(request.getUserId(), request.getSessionId(), planMode);
-            log.info("[任务模式] 执行计划生成模式, userId={}, sessionId={}, planMode={}",
-                    request.getUserId(), request.getSessionId(), planMode);
-            return planMode;
-        } catch (Exception e) {
-            return TaskMode.PLAN.getValue();
-        }
-    }
-
-    /**
-     * @description 获取执行计划
-     * <p>
-     *     1 步: 直接 Plan
-     *     2-6 步: 素朴切面 (MoA)
-     *     7-10 步: 素朴切面 + 评论修正 (MoA)
-     *     大于 10 步: 素朴切面 + 思考帽 & SWOT (MoA)
-     * </p>
-     *
-     * @author 陈晨
-     */
-    private String getPlan(PatternRequest request, Smart smart, String planMode) {
-        String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
-        if (StringUtils.isNotBlank(plan)) {
-            return plan;
-        }
-        // 直接 Plan
-        if (TaskMode.PLAN.getValue().equals(planMode)) {
-            String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound());
-            plan = this.callResultByClone(request, prompt);
-        } else {
-            // 多计划综合评估
-            List<String> plans;
-            // 素朴切面 (MoA)
-            if (TaskMode.ASPECT.getValue().equals(planMode)) {
-                plans = this.getPlansByAspect(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面, userId={}, sessionId={}, planMode={}, plans={}",
-                        request.getUserId(), request.getSessionId(), planMode, plans);
-            }
-            // 素朴切面 + 评论修正 (MoA)
-            else {
-                plans = this.getPlansByAspectAndEvaluation(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
-                        request.getUserId(), request.getSessionId(), planMode, plans);
-            }
-            // 融合
-            for (int i = 0; i < plans.size(); i++) {
-                request.getMessages().add(Message.assistant(
-                        "#执行计划 " + ((char) ('A' + i)) + ": \n" +
-                                plans.get(i)));
-            }
-            String prompt = null == smart ? Prompt.MoA.CONVERGE : Prompt.MoA.CONVERGE_SMART.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound());
-            plan = this.callResultByClone(request, prompt);
-        }
-        log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
-                request.getUserId(), request.getSessionId(), planMode, plan);
-
-        // 检查
-        request.getMessages().add(Message.assistant(plan));
-        String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
-        if (check.contains(OutputKeyword.TODO)) {
-            return null;
-        }
-        patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
-        return plan;
-    }
-
-    /**
-     * @description 并行切面, 获取多个执行计划
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private List<String> getPlansByAspect(PatternRequest request, Smart smart) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
-            futures.add(CompletableFuture.runAsync(() -> {
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                plans.add(this.callResultByClone(request, prompt));
-            }));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
-    }
-
-    /**
-     * @description 并行切面 + 评论, 获取多个执行计划
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private List<String> getPlansByAspectAndEvaluation(PatternRequest request, Smart smart) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
-            futures.add(CompletableFuture.runAsync(() -> {
-                PatternRequest localRequest = request.clone();
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                localRequest.getMessages().add(Message.user(prompt));
-                // 生成执行计划
-                String plan = this.callResultByClone(localRequest, null);
-                // 多方向评价
-                localRequest.getMessages().add(Message.assistant(plan));
-                String evaluation = this.callResultByClone(localRequest,
-                        Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
-                // 修正
-                localRequest.getMessages().add(Message.user(evaluation));
-                plans.add(this.callResultByClone(localRequest, null));
-            }));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
-    }
-
-    /**
-     * @description 并行切面 + 原则, 获取多个执行计划
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private List<String> getPlansByAspectAndPrinciple(PatternRequest request, Smart smart) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
-            futures.add(CompletableFuture.runAsync(() -> {
-                PatternRequest localRequest = request.clone();
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                localRequest.getMessages().add(Message.user(prompt));
-                // 生成执行计划
-                String plan = this.callResultByClone(localRequest, null);
-                // 思考帽/SWOT评价
-                localRequest.getMessages().add(Message.assistant(plan));
-                List<String> evaluations = new ArrayList<>();
-                for (String principle : Prompt.MoA.PRINCIPLES) {
-                    evaluations.add(this.callResultByClone(localRequest,
-                            Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle)));
-                }
-                // 修正
-                for (String evaluation : evaluations) {
-                    localRequest.getMessages().add(Message.user(evaluation));
-                }
-                plans.add(this.callResultByClone(localRequest, null));
-            }));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
-    }
-
-    /**
-     * @description 获取执行方案生成模式
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private String getActionMode(PatternRequest request) {
-        String actionMode = patternContext.getActionMode(request.getUserId(), request.getSessionId());
-        if (StringUtils.isNotBlank(actionMode)) {
-            return actionMode;
-        }
-        try {
-            actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
-            if (actionMode.contains(TaskMode.PARALLEL.getValue())) {
-                actionMode = TaskMode.PARALLEL.getValue();
-            } else {
-                actionMode = TaskMode.SERIAL.getValue();
-            }
-            patternContext.setActionMode(request.getUserId(), request.getSessionId(), actionMode);
-            log.info("[任务模式] 执行方案生成模式, userId={}, sessionId={}, actionMode={}",
-                    request.getUserId(), request.getSessionId(), actionMode);
-            return actionMode;
-        } catch (Exception e) {
-            return TaskMode.SERIAL.getValue();
-        }
-    }
-
-    /**
-     * @description 方案列表执行
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private void executeTaskAction(PatternRequest request) {
-        // 1. 构建任务执行方案列表
-        TaskActions actions = this.generateTaskActions(request, 0);
-        if (null == actions) {
-            throw new RuntimeException("执行方案列表生成失败");
-        }
-        // 2. 执行
-        for (String action : actions.getActions()) {
-            // 【STOP】停止对话
-            if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                return;
-            }
-            // 方案执行
-            request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
-        }
-    }
-
-    /**
-     * @description 方案块执行
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private void executeTaskChain(PatternRequest request) {
-        // 1. 构建任务执行方案列表
-        TaskChain actions = this.generateTaskChain(request, 0);
-        if (null == actions) {
-            throw new RuntimeException("执行方案列表生成失败");
-        }
-        // 2. 执行
-        for (TaskChain.ActionBlock block : actions.getBlocks()) {
-            if (block.getIsSerial()) {
-                for (String action : block.getActions()) {
-                    // 【STOP】停止对话
-                    if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                        log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                        return;
-                    }
-                    // 方案执行
-                    request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
-                }
-            } else {
-                List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
-                PatternRequest localRequest = request.clone();
-                List<Message> results = new LinkedList<>();
-                for (String action : block.getActions()) {
-                    taskFutures.add(CompletableFuture.runAsync(() -> {
-                        // 【STOP】停止对话
-                        if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                            log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                            return;
-                        }
-                        // 方案执行
-                        results.add(Message.assistant(this.actionExecute(localRequest, action)));
-                    }));
-                }
-                // 等待所有并行任务完成
-                CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
-                request.getMessages().addAll(results);
-            }
-        }
-    }
-
-    /**
-     * @description 方案执行
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private String actionExecute(PatternRequest request, String action) {
-        request.getMessages().add(Message.user(action));
-        String result = this.callResultByClone(request, Prompt.Common.EXECUTE);
-        log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
-                request.getUserId(), request.getSessionId(), result);
-        return result;
-    }
-
-    /**
-     * @description 生成执行方案
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private TaskActions generateTaskActions(PatternRequest request, int retry) {
-        if (retry >= 3) {
-            return null;
-        }
-        String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
-        if (StringUtils.isBlank(actions)) {
-            actions = this.callResultByClone(request, Prompt.Common.ACTIONS.formatted(
-                    JSONSchemaUtil.generate(TaskActions.class)));
-        }
-        try {
-            String json = ContentUtil.removeJsonMarkers(actions);
-            if (StringUtils.isBlank(json)) {
-                throw new RuntimeException("json content is empty");
-            }
-            TaskActions actionsObj = JSON.parseObject(json, TaskActions.class);
-            if (null == actionsObj.getActions()) {
-                throw new RuntimeException("actions is empty");
-            }
-            patternContext.setActions(request.getUserId(), request.getSessionId(), json);
-            return actionsObj;
-        } catch (Exception e) {
-            // 格式错误，重试
-            patternContext.clearActions(request.getUserId(), request.getSessionId());
-            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.generateTaskActions(request, ++retry);
-        }
-    }
-
-    /**
-     * @description 生成执行链
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private TaskChain generateTaskChain(PatternRequest request, int retry) {
-        if (retry >= 3) {
-            return null;
-        }
-        String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
-        if (StringUtils.isBlank(actions)) {
-            actions = this.callResultByClone(request, Prompt.Common.ACTIONS.formatted(
-                    JSONSchemaUtil.generate(TaskChain.class)));
-        }
-        try {
-            String json = ContentUtil.removeJsonMarkers(actions);
-            if (StringUtils.isBlank(json)) {
-                throw new RuntimeException("json content is empty");
-            }
-            TaskChain actionsObj = JSON.parseObject(json, TaskChain.class);
-            if (null == actionsObj.getBlocks()) {
-                throw new RuntimeException("actions is empty");
-            }
-            patternContext.setActions(request.getUserId(), request.getSessionId(), json);
-            return actionsObj;
-        } catch (Exception e) {
-            // 格式错误，重试
-            patternContext.clearActions(request.getUserId(), request.getSessionId());
-            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.generateTaskChain(request, ++retry);
         }
     }
 

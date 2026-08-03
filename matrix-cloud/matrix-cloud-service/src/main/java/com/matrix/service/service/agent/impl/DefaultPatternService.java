@@ -11,6 +11,7 @@ import com.matrix.service.service.agent.PatternService;
 import com.matrix.service.service.agent.Prompt;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -54,23 +55,26 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
     private PatternService getPatternService(PatternRequest request) {
         // 获取模式缓存
         String pattern = patternContext.getPattern(request.getUserId(), request.getSessionId());
-        // 判断任务模式缓存是否重置
-        if (Constant.Pattern.TASK.equals(pattern)) {
-            String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
-            String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
-            String reset = this.callNoToolByClone(request, Prompt.Check.RESET.formatted(smart, plan));
-            if (reset.contains(OutputKeyword.SMART)) {
-                patternContext.clear(request.getUserId(), request.getSessionId());
-                return taskPatternService;
-            }
-            if (reset.contains(TaskMode.PLAN.getValue())) {
-                patternContext.clearPlan(request.getUserId(), request.getSessionId());
-            }
-            log.info("[默认模式] 获取任务模式缓存, userId={}, sessionId={}",
-                    request.getUserId(), request.getSessionId());
-            return taskPatternService;
+        if (StringUtils.isBlank(pattern)) {
+            return null;
         }
-        return null;
+        log.info("[默认模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
+                request.getUserId(), request.getSessionId(), pattern);
+        // 判断模式缓存是否重置
+        String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
+        String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
+        String reset = modelService.callAnswer(request.getMessages(), Prompt.Check.RESET.formatted(smart, plan));
+        if (reset.contains(OutputKeyword.SMART)) {
+            patternContext.clear(request.getUserId(), request.getSessionId());
+            log.info("[默认模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",
+                    request.getUserId(), request.getSessionId(), reset);
+        }
+        else if (reset.contains(TaskMode.PLAN.getValue())) {
+            patternContext.clearPlan(request.getUserId(), request.getSessionId());
+            log.info("[默认模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
+                    request.getUserId(), request.getSessionId(), reset);
+        }
+        return Constant.Pattern.TASK.equals(pattern) ? taskPatternService : executePatternService;
     }
 
 }

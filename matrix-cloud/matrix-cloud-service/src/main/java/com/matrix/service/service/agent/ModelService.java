@@ -165,7 +165,8 @@ public class ModelService {
                 .model(model.getModel())
                 .messages(messages)
                 .max_tokens(SystemParam.MAX_TOKENS)
-                .thinking(Request.Thinking.disabled())
+                .thinking(Request.Thinking.enabled())
+                .reasoning_effort("low")
                 .stream(false)
                 .build();
         Response response = this.call(model, request);

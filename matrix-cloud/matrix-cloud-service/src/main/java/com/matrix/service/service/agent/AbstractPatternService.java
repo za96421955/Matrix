@@ -478,8 +478,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                     request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.ASPECT.getValue())) {
                 planMode = TaskMode.ASPECT.getValue();
-            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
-                planMode = TaskMode.EVALUATION.getValue();
+//            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
+//                planMode = TaskMode.EVALUATION.getValue();
             } else {
                 planMode = TaskMode.PLAN.getValue();
             }

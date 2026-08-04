@@ -157,7 +157,7 @@ public interface Prompt {
 
         String PLAN_MODE = """
             根据上下文，快速评估下一步制定执行计划需要采用哪种模式：
-            - 可以直接制定执行计划: PLAN
+            - 可以直接制定执行计划 (默认): PLAN
             - 需要从多方面考虑: ASPECT
             - 需要非常谨慎的考虑和评估: EVALUATION
             

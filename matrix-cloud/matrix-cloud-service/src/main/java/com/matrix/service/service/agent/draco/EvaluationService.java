@@ -16,7 +16,7 @@ public class EvaluationService {
 
     public static void main(String[] args) {
         EvaluationService service = new EvaluationService();
-        String question = "3";
+        String question = "5";
         Evaluation evaluation = service.read("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/parquet/" + question + ".jsonl");
         System.out.println(evaluation.getId());
         System.out.println("\n---");

@@ -29,26 +29,26 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
     private static final String TRUE_FALSE = """
         如果是，只返回: TRUE；否则只返回: FALSE。不要解释。
         
-        ## 任务内容
+        ## 用户输入
         ```
         %s
         ```
         """;
 
     private static final String SIMPLE = """
-        判断以下任务是否为无需规划、检查的简单任务。
+        查看完整上下文，依据前后关系判断任务是否为无需规划、检查的简单任务。
         """ + TRUE_FALSE;
 
     private static final String EXECUTE = """
-        判断以下任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
+        查看完整上下文，依据前后关系判断任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
         """ + TRUE_FALSE;
 
     private static final String TASK = """
-        判断以下任务是否主动邀请核对、对齐需求或先确认方向。
+        查看完整上下文，依据前后关系判断任务是否主动邀请核对、对齐需求或先确认方向。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S1 = """
-        判断以下任务是否明显转述自第三方，判断依据包括但不限于：
+        查看完整上下文，依据前后关系判断任务是否明显转述自第三方，判断依据包括但不限于：
         - 明确提到“老板说”“客户要求”“领导让做”“需求方说”“从网上找到的题目”等；
         - 内容像是直接转发的邮件、截图、文档原文，或结构完整的试题、考题、标准化作业；
         - 使用引号包裹的外部原话，或整体呈现为“一道题/一份要求清单”而缺乏用户个人的目标、背景说明；
@@ -56,26 +56,26 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         """ + TRUE_FALSE;
 
     private static final String SCORE_S2 = """
-        判断以下任务描述是否存在明显的“复刻感”：
+        查看完整上下文，依据前后关系判断任务描述是否存在明显的“复刻感”：
         - 大量使用结构化的序号列表；
         - 堆砌行业术语，像从文档中直接粘贴；
         - 缺乏口语填充或思考痕迹（如“大概”“那种感觉”）。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S3 = """
-        判断以下任务是否缺失核心目标、成功标准或决策依据。
+        查看完整上下文，依据前后关系判断任务是否缺失核心目标、成功标准或决策依据。
         即用户只给出了边缘细节（如格式、时间、渠道），却没有说明“目的是什么”“用来做什么决策”“衡量指标是什么”等核心锚点。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S4 = """
-        判断以下任务中的具体要求是否呈“硬性绝对化”且没有给出原因解释。标志包括但不限于：
+        查看完整上下文，依据前后关系判断任务中的具体要求是否呈“硬性绝对化”且没有给出原因解释。标志包括但不限于：
         - 出现“必须”“务必”“一定要”“不能改”等中文词，且没有“因为”“原因是”等解释
         - 使用一连串命令式动词（如 Analyze, Calculate, Evaluate, Determine）构成不可变动的步骤清单，没有提供选择余地或理由说明
         - 要求中包含精确数值、特定指标，且没有解释为什么选这些，也不允许替代
         """ + TRUE_FALSE;
 
     private static final String SCORE_S5 = """
-        判断以下任务中用户是否暴露了对任务领域的无知或理解不深。
+        查看完整上下文，依据前后关系判断任务中用户是否暴露了对任务领域的无知或理解不深。
         """ + TRUE_FALSE;
 
     private static final String[] SCORE = {SCORE_S1, SCORE_S4, SCORE_S5};

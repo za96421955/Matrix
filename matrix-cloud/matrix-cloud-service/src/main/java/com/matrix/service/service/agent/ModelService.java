@@ -87,11 +87,20 @@ public class ModelService {
                         model.getModel(), request, error.getMessage());
                 return response;
             }
-            Message message = response.getMessage();
-            if (null == message) {
-                log.error("[模型同步请求] model={}, request={}, 失败: {}",
-                        model.getModel(), request, ErrorCode.MODEL_MESSAGE_EMPTY);
+            // response is empty
+            if (StringUtils.isBlank(response.getReasoning())
+                    && StringUtils.isBlank(response.getAnswer())
+                    && CollectionUtils.isEmpty(response.getToolCalls())) {
+                log.error("[模型同步请求] model={}, request={}, 失败: 响应全部为空",
+                        model.getModel(), request);
                 return Response.error(ErrorCode.MODEL_MESSAGE_EMPTY.getMessage());
+            }
+            // 若 answer 为空, reasoning 不为空, 则 answer = reasoning
+            if (StringUtils.isNotBlank(response.getReasoning())
+                    && StringUtils.isBlank(response.getAnswer())) {
+                log.warn("[模型同步请求] model={}, request={}, answer 为空, reasoning 不为空, answer = reasoning",
+                        model.getModel(), request);
+                response.getMessage().setContent(response.getReasoning());
             }
             return response;
         } catch (Exception e) {

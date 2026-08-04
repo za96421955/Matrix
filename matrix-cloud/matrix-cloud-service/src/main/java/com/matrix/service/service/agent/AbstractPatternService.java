@@ -172,20 +172,20 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (StringUtils.isNotBlank(prompt)) {
             localRequest.getMessages().add(Message.user(prompt));
         }
-        String result = "";
         try {
             Response response = this.call(sink, localRequest);
             Message message = null != response ? response.getMessage() : null;
             if (null != message) {
-                result = StringUtils.isNotBlank(message.getContent())
+                return StringUtils.isNotBlank(message.getContent())
                         ? message.getContent()
                         : message.getReasoning_content();
             }
+            throw new RuntimeException("response is null");
         } catch (Exception e) {
             // 记录 Error 消息
             this.saveErrorMessage(request.getUserId(), request.getSessionId(), e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
-        return result;
     }
     protected String callResultByClone(PatternRequest request, String prompt) {
         return this.callResultByClone(null, request, prompt);

@@ -43,7 +43,7 @@ public enum ErrorCode {
     SKILL_REQUEST_INVALID(400, "060005", "请求参数错误"),
     SKILL_NOT_FOUND(404, "060006", "Skill 不存在"),
     MODEL_PARAM_INVALID(400, "060007", "请求参数错误"),
-    MODEL_MESSAGE_EMPTY(400, "060008", "消息内容为空"),
+    MODEL_MESSAGE_EMPTY(400, "060008", "模型响应为空"),
     CHAT_PROCESS_ERROR(500, "060009", "对话处理失败"),
     APP_NOT_FOUND(404, "060010", "应用不存在"),
     APP_NOT_SUPPORT(400, "060011", "应用不支持"),

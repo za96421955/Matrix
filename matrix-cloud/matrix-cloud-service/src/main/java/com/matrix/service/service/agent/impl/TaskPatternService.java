@@ -157,7 +157,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成任务目标");
             smart = this.callResultByClone(request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
-            // 检查
+            // 待补充检查
             request.getMessages().add(Message.assistant(smart));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "检查是否需要补充信息");
             String check = this.callNoToolByClone(request, Prompt.Check.GOAL);

@@ -23,7 +23,7 @@ public class EvaluationService {
         System.out.println("## Answer:");
         System.out.println("直接完成以下任务");
         System.out.println("- 结果输出至：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md");
-        System.out.println("资源目录：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
+        System.out.println("- 临时或过程文件存放：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
         System.out.println("---");
         System.out.println(evaluation.getProblem());
         System.out.println("\n---");

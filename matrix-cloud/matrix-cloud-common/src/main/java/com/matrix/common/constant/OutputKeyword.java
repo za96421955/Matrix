@@ -16,6 +16,12 @@ public interface OutputKeyword {
 
     String SMART = "SMART";
 
+    String PASS = "PASS";
+
+    String REVISE = "REVISE";
+
+    String TERMINATE = "TERMINATE";
+
 }
 
 

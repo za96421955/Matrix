@@ -551,7 +551,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
                 request.getUserId(), request.getSessionId(), planMode, plan);
 
-        // 检查
+        // 待补充检查
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "检查是否需要补充信息");
@@ -562,8 +562,36 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 return null;
             }
         }
+
+        // 领域专家审查、修订
+        plan = this.domainReview(request.clone(), plan);
         patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
         return plan;
+    }
+
+    /**
+     * @description 领域专家审查、修订
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    private String domainReview(PatternRequest request, String plan) {
+        // 审查
+        request.getMessages().add(Message.assistant(plan));
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-审查执行计划");
+        String result = this.callResultByClone(request, Prompt.MoA.DOMAIN_REVIEW);
+        // 查通过
+        if (result.contains(OutputKeyword.PASS)) {
+            return plan;
+        }
+        // 终止执行
+        if (result.contains(OutputKeyword.TERMINATE)) {
+            throw new RuntimeException(result);
+        }
+        // 修订
+        request.getMessages().add(Message.user(result));
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
+        return this.callResultByClone(request, null);
     }
 
     /**

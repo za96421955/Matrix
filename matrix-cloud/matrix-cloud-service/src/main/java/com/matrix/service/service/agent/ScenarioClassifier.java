@@ -25,18 +25,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
 
-    private static final String TRUE_FALSE = "\n如果是，只返回: TRUE；否则只返回: FALSE。不要解释。";
+    private static final String TRUE_FALSE = """
+        如果是，只返回: TRUE；否则只返回: FALSE。不要解释。
+        
+        ## 任务内容
+        ```
+        %s
+        ```
+        """;
 
     private static final String EXECUTE = """
-        根据上下文，判断任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
+        判断以下任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
         """ + TRUE_FALSE;
 
     private static final String TASK = """
-        根据上下文，判断任务是否主动邀请核对、对齐需求或先确认方向。
+        判断以下任务是否主动邀请核对、对齐需求或先确认方向。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S1 = """
-        请判断任务是否明显转述自第三方，判断依据包括但不限于：
+        判断以下任务是否明显转述自第三方，判断依据包括但不限于：
         - 明确提到“老板说”“客户要求”“领导让做”“需求方说”“从网上找到的题目”等；
         - 内容像是直接转发的邮件、截图、文档原文，或结构完整的试题、考题、标准化作业；
         - 使用引号包裹的外部原话，或整体呈现为“一道题/一份要求清单”而缺乏用户个人的目标、背景说明；
@@ -44,26 +51,26 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         """ + TRUE_FALSE;
 
     private static final String SCORE_S2 = """
-        根据上下文，判断任务描述是否存在明显的“复刻感”：
+        判断以下任务描述是否存在明显的“复刻感”：
         - 大量使用结构化的序号列表；
         - 堆砌行业术语，像从文档中直接粘贴；
         - 缺乏口语填充或思考痕迹（如“大概”“那种感觉”）。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S3 = """
-        根据上下文，判断任务是否缺失核心目标、成功标准或决策依据。
+        判断以下任务是否缺失核心目标、成功标准或决策依据。
         即用户只给出了边缘细节（如格式、时间、渠道），却没有说明“目的是什么”“用来做什么决策”“衡量指标是什么”等核心锚点。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S4 = """
-        请判断任务中的具体要求是否呈“硬性绝对化”且没有给出原因解释。标志包括但不限于：
+        判断以下任务中的具体要求是否呈“硬性绝对化”且没有给出原因解释。标志包括但不限于：
         - 出现“必须”“务必”“一定要”“不能改”等中文词，且没有“因为”“原因是”等解释
         - 使用一连串命令式动词（如 Analyze, Calculate, Evaluate, Determine）构成不可变动的步骤清单，没有提供选择余地或理由说明
         - 要求中包含精确数值、特定指标，且没有解释为什么选这些，也不允许替代
         """ + TRUE_FALSE;
 
     private static final String SCORE_S5 = """
-        根据上下文，判断任务中用户是否暴露了对任务领域的无知或理解不深。
+        判断以下任务中用户是否暴露了对任务领域的无知或理解不深。
         """ + TRUE_FALSE;
 
     private static final String[] SCORE = {SCORE_S1, SCORE_S2, SCORE_S3, SCORE_S4, SCORE_S5};
@@ -84,18 +91,19 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
      */
     public boolean isTask(PatternRequest request) {
         String task = request.getMessages().getLast().getContent();
+
         log.info("[场景分类] task={}", task);
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
         // isExecute
         AtomicBoolean isExecute = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
-            isExecute.set(this.callNoToolByClone(request, EXECUTE).contains(OutputKeyword.TRUE));
+            isExecute.set(this.callNoToolByClone(request, EXECUTE.formatted(task)).contains(OutputKeyword.TRUE));
             log.info("[场景分类] task={}, isExecute={}", task, isExecute);
         }));
         // isTask
         AtomicBoolean isTask = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
-            isTask.set(this.callNoToolByClone(request, TASK).contains(OutputKeyword.TRUE));
+            isTask.set(this.callNoToolByClone(request, TASK.formatted(task)).contains(OutputKeyword.TRUE));
             log.info("[场景分类] task={}, isTask={}", task, isTask);
         }));
         // 等待所有并行任务完成
@@ -119,6 +127,8 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private int getRelayScore(PatternRequest request) {
+        String task = request.getMessages().getLast().getContent();
+
         AtomicInteger score = new AtomicInteger();
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
         for (String input : SCORE) {
@@ -128,7 +138,7 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
                     log.warn("\n\n======================\n\n\tS T O P: 场景分类【结束】\n\n======================");
                     return;
                 }
-                String result = this.callNoToolByClone(request, input);
+                String result = this.callNoToolByClone(request, input.formatted(task));
                 boolean isScore = result.contains(OutputKeyword.TRUE);
                 log.info("[场景分类] input={}, result={}, isScore={}", input, result, isScore);
                 if (isScore) {

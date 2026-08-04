@@ -29,12 +29,10 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
 
     private static final String EXECUTE = """
         根据上下文，判断任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
-        例如“直接做”“别问”“不要问问题”“没时间确认”“不用管细节，先出一稿”等。
         """ + TRUE_FALSE;
 
     private static final String TASK = """
         根据上下文，判断任务是否主动邀请核对、对齐需求或先确认方向。
-        例如“先对齐一下”“确认下需求”“帮我理一理”“你看方向对吗”“框架对一下”“随时沟通”“可以讨论”等。
         """ + TRUE_FALSE;
 
     private static final String SCORE_S1 = """
@@ -59,14 +57,13 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
 
     private static final String SCORE_S4 = """
         请判断任务中的具体要求是否呈“硬性绝对化”且没有给出原因解释。标志包括但不限于：
-        - 出现“必须”“务必”“一定要”“不能改”等中文词，且没有“因为”“原因是”等解释；
-        - 使用一连串命令式动词（如 Analyze, Calculate, Evaluate, Determine）构成不可变动的步骤清单，没有提供选择余地或理由说明；
-        - 要求中包含精确数值、特定指标，且没有解释为什么选这些，也不允许替代。
+        - 出现“必须”“务必”“一定要”“不能改”等中文词，且没有“因为”“原因是”等解释
+        - 使用一连串命令式动词（如 Analyze, Calculate, Evaluate, Determine）构成不可变动的步骤清单，没有提供选择余地或理由说明
+        - 要求中包含精确数值、特定指标，且没有解释为什么选这些，也不允许替代
         """ + TRUE_FALSE;
 
     private static final String SCORE_S5 = """
         根据上下文，判断任务中用户是否暴露了对任务领域的无知或理解不深。
-        标志包括：“我也不懂”“你看着弄”“差不多就行”“你专业的决定”等，或使用极度模糊的词（如“把品牌弄火”“提升体验”）而没有任何可衡量的说明。
         """ + TRUE_FALSE;
 
     private static final String[] SCORE = {SCORE_S1, SCORE_S2, SCORE_S3, SCORE_S4, SCORE_S5};
@@ -90,12 +87,11 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         log.info("[场景分类] task={}", task);
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
         // isExecute
-//        AtomicBoolean isExecute = new AtomicBoolean(false);
-//        taskFutures.add(CompletableFuture.runAsync(() -> {
-//            isExecute.set(modelService.callAnswer(messages, EXECUTE)
-//                    .contains(OutputKeyword.TRUE));
-//            log.info("[场景分类] task={}, isExecute={}", messages.getLast().getContent(), isExecute);
-//        }));
+        AtomicBoolean isExecute = new AtomicBoolean(false);
+        taskFutures.add(CompletableFuture.runAsync(() -> {
+            isExecute.set(this.callNoToolByClone(request, EXECUTE).contains(OutputKeyword.TRUE));
+            log.info("[场景分类] task={}, isExecute={}", task, isExecute);
+        }));
         // isTask
         AtomicBoolean isTask = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
@@ -104,9 +100,9 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         }));
         // 等待所有并行任务完成
         CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
-//        if (isExecute.get()) {
-//            return false;
-//        }
+        if (isExecute.get()) {
+            return false;
+        }
         if (isTask.get()) {
             return true;
         }

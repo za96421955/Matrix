@@ -60,6 +60,7 @@ public interface Prompt {
             - 输出时，不要使用任何 emoji 表情
             - 禁止执行任何写操作
             """;
+
         String REPORT_RESULTS = """
             1. 任务已完成，对任务结果进行详细汇报
             2. 直接输出汇报内容

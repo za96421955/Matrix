@@ -174,13 +174,18 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (StringUtils.isNotBlank(prompt)) {
             localRequest.getMessages().add(Message.user(prompt));
         }
-        Response response = this.call(sink, localRequest);
-        Message message = null != response ? response.getMessage() : null;
         String result = "";
-        if (null != message) {
-            result = StringUtils.isNotBlank(message.getContent())
-                    ? message.getContent()
-                    : message.getReasoning_content();
+        try {
+            Response response = this.call(sink, localRequest);
+            Message message = null != response ? response.getMessage() : null;
+            if (null != message) {
+                result = StringUtils.isNotBlank(message.getContent())
+                        ? message.getContent()
+                        : message.getReasoning_content();
+            }
+        } catch (Exception e) {
+            // 记录 Error 消息
+            this.saveErrorMessage(request.getUserId(), request.getSessionId(), e.getMessage());
         }
         return result;
     }
@@ -473,7 +478,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             return planMode;
         }
         try {
-            planMode = modelService.callAnswer(request.getMessages(), Prompt.CoT.PLAN_MODE);
+            planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.ASPECT.getValue())) {
@@ -546,7 +551,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 检查
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
-            String check = modelService.callAnswer(request.getMessages(), Prompt.Check.PLAN);
+            String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);
             if (check.contains(OutputKeyword.TODO)) {
@@ -663,7 +668,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             return actionMode;
         }
         try {
-            actionMode = modelService.callAnswer(request.getMessages(), Prompt.CoT.ACTION_MODE);
+            actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), actionMode);
             if (actionMode.contains(TaskMode.PARALLEL.getValue())) {

@@ -41,7 +41,7 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
             return patternService.call(request);
         }
         // 判断是否交互式任务场景
-        boolean isTask = scenarioClassifier.isTask(request.getUserId(), request.getSessionId(), request.getMessages());
+        boolean isTask = scenarioClassifier.isTask(request);
         patternService = isTask ? taskPatternService : executePatternService;
         return patternService.call(request);
     }
@@ -63,7 +63,7 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
         // 判断模式缓存是否重置
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
-        String reset = modelService.callAnswer(request.getMessages(), Prompt.Check.RESET.formatted(smart, plan));
+        String reset = this.callNoToolByClone(request, Prompt.Check.RESET.formatted(smart, plan));
         log.info("[直接回答] userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), reset);
         if (reset.contains(OutputKeyword.SMART)) {

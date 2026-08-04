@@ -162,6 +162,7 @@ public class ClientServiceImpl implements ClientService {
         boolean isOnline = ClientStatus.ONLINE.equals(client.getStatus());
         // 指令检查
         String osInfo = this.getOsInfo(clientId);
+        // TODO 本地模式, 始终在线
         boolean hasOsInfo = StringUtils.isNotBlank(osInfo);
         if (isOnline == hasOsInfo) {
             return isOnline;

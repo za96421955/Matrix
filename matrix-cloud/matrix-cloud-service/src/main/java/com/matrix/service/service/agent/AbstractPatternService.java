@@ -517,16 +517,16 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         } else {
             // 多计划综合评估
             List<String> plans;
-            // 素朴切面 (MoA)
+            // 切面 (MoA)
             if (TaskMode.ASPECT.getValue().equals(planMode)) {
                 plans = this.getPlansByAspect(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面, userId={}, sessionId={}, planMode={}, plans={}",
+                log.info("[任务模式] 任务规划: 切面, userId={}, sessionId={}, planMode={}, plans={}",
                         request.getUserId(), request.getSessionId(), planMode, plans);
             }
-            // 素朴切面 + 评论修正 (MoA)
+            // 切面 + 评论修正 (MoA)
             else {
                 plans = this.getPlansByAspectAndEvaluation(request, smart);
-                log.info("[任务模式] 任务规划: 素朴切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
+                log.info("[任务模式] 任务规划: 切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
                         request.getUserId(), request.getSessionId(), planMode, plans);
             }
             // 融合
@@ -558,7 +558,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     }
 
     /**
-     * @description 并行切面, 获取多个执行计划
+     * @description 切面, 获取多个执行计划
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
@@ -580,7 +580,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     }
 
     /**
-     * @description 并行切面 + 评论, 获取多个执行计划
+     * @description 切面 + 评论, 获取多个执行计划
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
@@ -612,7 +612,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     }
 
     /**
-     * @description 并行切面 + 原则, 获取多个执行计划
+     * @description 切面 + 原则, 获取多个执行计划
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
@@ -655,6 +655,9 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * @author 陈晨
      */
     protected String getActionMode(PatternRequest request) {
+        if (true) {
+            return TaskMode.SERIAL.getValue();
+        }
         String actionMode = patternContext.getActionMode(request.getUserId(), request.getSessionId());
         if (StringUtils.isNotBlank(actionMode)) {
             return actionMode;
@@ -835,7 +838,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected Boolean observer(PatternRequest request, Smart smart) {
+    protected String observe(PatternRequest request, Smart smart) {
         String prompt = null == smart ? Prompt.CoT.OBSERVE : Prompt.CoT.OBSERVE_SMART.formatted(
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                 smart.getRelevant(), smart.getTimeBound());
@@ -850,13 +853,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         // 任务完成
         if (observe.contains(OutputKeyword.TRUE)) {
-            return false;
+            return "";
         }
-        // 任务继续
-        request.getMessages().add(Message.user(observe));
         // 清除执行方案
         patternContext.clearActions(request.getUserId(), request.getSessionId());
-        return true;
+        return observe;
     }
 
 }

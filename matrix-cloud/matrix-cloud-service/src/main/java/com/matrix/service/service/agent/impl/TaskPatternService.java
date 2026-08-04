@@ -72,7 +72,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             log.info("[任务模式] 规划任务目标, userId={}, sessionId={}, smart={}",
                     request.getUserId(), request.getSessionId(), smart);
             if (null == smart) {
-                // 用户 todo
+                // 用户 TODO
                 return;
             }
         }
@@ -87,38 +87,38 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                 log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
                 return;
             }
+            PatternRequest localRequest = request.clone();
 
             // 1. 规划
-            String plan = this.getPlan(request.clone(), smart, this.getPlanMode(request.clone()),
+            String plan = this.getPlan(localRequest.clone(), smart, this.getPlanMode(localRequest.clone()),
                     true);
             if (null == plan) {
-                // 用户 todo
+                // 用户 TODO
                 return;
             }
             if (StringUtils.isBlank(plan)) {
                 throw new RuntimeException("执行计划生成失败");
             }
-            request.getMessages().add(Message.assistant(plan));
+            localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(request))) {
-                this.executeTaskAction(request);
+            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(localRequest))) {
+                this.executeTaskAction(localRequest);
             } else {
-                this.executeTaskChain(request);
+                this.executeTaskChain(localRequest);
             }
 
             // 3. 观察
-            Boolean isContinue = this.observer(request, smart);
-            if (null == isContinue) {
-                return;
-            }
-            if (!isContinue) {
+            String observe = this.observe(localRequest, smart);
+            if (StringUtils.isBlank(observe)) {
                 break;
             }
+            // 任务继续
+            request.getMessages().add(Message.user(observe));
         }
 
         // 3. 结果总结
-        this.callResultByClone(sink, request, Prompt.Common.BRIEF_SUMMARY);
+//        this.callResultByClone(sink, request, Prompt.Common.BRIEF_SUMMARY);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
     }

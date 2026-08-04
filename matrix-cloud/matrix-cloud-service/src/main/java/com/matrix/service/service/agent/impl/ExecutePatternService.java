@@ -70,34 +70,34 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
                 log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
                 return;
             }
+            PatternRequest localRequest = request.clone();
 
             // 1. 规划
-            String plan = this.getPlan(request.clone(), null, this.getPlanMode(request.clone()),
+            String plan = this.getPlan(localRequest.clone(), null, this.getPlanMode(localRequest.clone()),
                     false);
             if (StringUtils.isBlank(plan)) {
                 throw new RuntimeException("执行计划生成失败");
             }
-            request.getMessages().add(Message.assistant(plan));
+            localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(request))) {
-                this.executeTaskAction(request);
+            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(localRequest))) {
+                this.executeTaskAction(localRequest);
             } else {
-                this.executeTaskChain(request);
+                this.executeTaskChain(localRequest);
             }
 
             // 3. 观察
-            Boolean isContinue = this.observer(request, null);
-            if (null == isContinue) {
-                return;
-            }
-            if (!isContinue) {
+            String observe = this.observe(localRequest, null);
+            if (StringUtils.isBlank(observe)) {
                 break;
             }
+            // 任务继续
+            request.getMessages().add(Message.user(observe));
         }
 
         // 3. 结果总结
-        this.callResultByClone(sink, request, Prompt.Common.REPORT_RESULTS);
+//        this.callResultByClone(sink, request, Prompt.Common.REPORT_RESULTS);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
     }

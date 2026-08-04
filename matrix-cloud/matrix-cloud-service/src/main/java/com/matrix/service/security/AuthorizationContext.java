@@ -2,6 +2,7 @@ package com.matrix.service.security;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.enums.RedisKey;
+import com.matrix.common.util.JSONUtil;
 import com.matrix.service.cache.ServiceCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -49,7 +50,7 @@ public class AuthorizationContext implements ServerSecurityContextRepository {
         SecurityContext context = null;
         try {
             String value = serviceCache.get(key);
-            context = JSON.parseObject(value, SecurityContext.class);
+            context = JSONUtil.parseObject(value, SecurityContext.class);
         } catch (Exception e) {
             log.warn("Token 认证缓存解析失败: token={}", token);
         }

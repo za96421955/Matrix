@@ -3,6 +3,7 @@ package com.matrix.common.dto.model;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.util.JSONSchemaUtil;
+import com.matrix.common.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -100,7 +101,7 @@ public class Request implements Serializable {
     @Override
     /** 克隆对象副本 */
     public Request clone() {
-        return JSON.parseObject(JSON.toJSONString(this), Request.class);
+        return JSONUtil.parseObject(JSON.toJSONString(this), Request.class);
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.matrix.service.service.agent;
 
-import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.matrix.common.constant.Constant;
@@ -14,6 +13,7 @@ import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
+import com.matrix.common.util.JSONUtil;
 import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.context.PatternContext;
@@ -232,12 +232,12 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 } else {
                     // 调用系统工具
                     Flux<String> flux = tool.execute(userId, sessionId, toolCall.getId(),
-                            JSON.parseObject(toolCall.getFunction().getArguments(), tool.requestType()));
+                            JSONUtil.parseObject(toolCall.getFunction().getArguments(), tool.requestType()));
                     // 用一个容器收集最终的答案
                     AtomicReference<String> resultHolder = new AtomicReference<>("");
                     flux.doOnNext(output -> {
                             try {
-                                Response response = JSON.parseObject(output, Response.class);
+                                Response response = JSONUtil.parseObject(output, Response.class);
                                 sink.next(response);
                                 if (StringUtils.isNotBlank(response.getAnswer())) {
                                     resultHolder.set(response.getAnswer());
@@ -481,8 +481,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                     request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.ASPECT.getValue())) {
                 planMode = TaskMode.ASPECT.getValue();
-//            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
-//                planMode = TaskMode.EVALUATION.getValue();
+            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
+                planMode = TaskMode.EVALUATION.getValue();
             } else {
                 planMode = TaskMode.PLAN.getValue();
             }
@@ -787,7 +787,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            TaskActions actionsObj = JSON.parseObject(json, TaskActions.class);
+            TaskActions actionsObj = JSONUtil.parseObject(json, TaskActions.class);
             if (null == actionsObj.getActions()) {
                 throw new RuntimeException("actions is empty");
             }
@@ -821,7 +821,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            TaskChain actionsObj = JSON.parseObject(json, TaskChain.class);
+            TaskChain actionsObj = JSONUtil.parseObject(json, TaskChain.class);
             if (null == actionsObj.getBlocks()) {
                 throw new RuntimeException("actions is empty");
             }

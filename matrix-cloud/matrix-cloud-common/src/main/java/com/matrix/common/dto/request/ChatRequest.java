@@ -2,6 +2,7 @@ package com.matrix.common.dto.request;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.constant.RiskLevel;
+import com.matrix.common.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,7 +31,7 @@ public class ChatRequest extends AgentRequest {
     @Override
     /** 克隆对象副本 */
     public ChatRequest clone() {
-        return JSON.parseObject(JSON.toJSONString(this), ChatRequest.class);
+        return JSONUtil.parseObject(JSON.toJSONString(this), ChatRequest.class);
     }
 
 }

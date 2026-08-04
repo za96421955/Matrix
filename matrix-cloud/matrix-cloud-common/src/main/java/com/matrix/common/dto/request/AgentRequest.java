@@ -1,6 +1,7 @@
 package com.matrix.common.dto.request;
 
 import com.alibaba.fastjson2.JSON;
+import com.matrix.common.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,7 +29,7 @@ public class AgentRequest extends PatternRequest {
     @Override
     /** 克隆对象副本 */
     public AgentRequest clone() {
-        return JSON.parseObject(JSON.toJSONString(this), AgentRequest.class);
+        return JSONUtil.parseObject(JSON.toJSONString(this), AgentRequest.class);
     }
 
 }

@@ -1,6 +1,5 @@
 package com.matrix.service.service.agent.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.OutputKeyword;
 import com.matrix.common.dto.model.Message;
@@ -10,6 +9,7 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
+import com.matrix.common.util.JSONUtil;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.service.agent.AbstractPatternService;
 import com.matrix.service.service.agent.Prompt;
@@ -169,7 +169,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            Smart smartObj = JSON.parseObject(json, Smart.class);
+            Smart smartObj = JSONUtil.parseObject(json, Smart.class);
             patternContext.setSmart(request.getUserId(), request.getSessionId(), json);
             return smartObj;
         } catch (Exception e) {

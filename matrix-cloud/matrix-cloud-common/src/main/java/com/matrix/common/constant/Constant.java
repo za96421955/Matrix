@@ -77,6 +77,9 @@ public interface Constant {
         /** 计划模式 */
         String PLAN = "plan";
 
+        /** 简单模式 */
+        String SIMPLE = "simple";
+
         /** 执行模式 */
         String EXECUTE = "execute";
 

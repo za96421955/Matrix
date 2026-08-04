@@ -28,6 +28,8 @@ import reactor.core.publisher.Flux;
 public class DefaultPatternService extends AbstractPatternService<PatternRequest> {
 
     @Resource
+    private SimplePatternService simplePatternService;
+    @Resource
     private ExecutePatternService executePatternService;
     @Resource
     private TaskPatternService taskPatternService;
@@ -49,8 +51,14 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
             return patternService.call(request);
         }
         // 判断是否交互式任务场景
-        boolean isTask = scenarioClassifier.isTask(request);
-        patternService = isTask ? taskPatternService : executePatternService;
+        String scenario = scenarioClassifier.getScenario(request);
+        if (Constant.Pattern.TASK.equals(scenario)) {
+            patternService = taskPatternService;
+        } else if (Constant.Pattern.EXECUTE.equals(scenario)) {
+            patternService = executePatternService;
+        } else {
+            patternService = simplePatternService;
+        }
         return patternService.call(request);
     }
 

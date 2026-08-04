@@ -2,6 +2,7 @@ package com.matrix.common.dto.request;
 
 import com.alibaba.fastjson2.JSON;
 import com.matrix.common.dto.model.Request;
+import com.matrix.common.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,7 +41,7 @@ public class PatternRequest extends Request {
     @Override
     /** 克隆对象副本 */
     public PatternRequest clone() {
-        return JSON.parseObject(JSON.toJSONString(this), PatternRequest.class);
+        return JSONUtil.parseObject(JSON.toJSONString(this), PatternRequest.class);
     }
 
 }

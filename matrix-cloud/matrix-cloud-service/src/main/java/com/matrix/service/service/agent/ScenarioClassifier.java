@@ -1,5 +1,6 @@
 package com.matrix.service.service.agent;
 
+import com.matrix.common.constant.Constant;
 import com.matrix.common.constant.OutputKeyword;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
@@ -33,6 +34,10 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         %s
         ```
         """;
+
+    private static final String SIMPLE = """
+        判断以下任务是否为无需规划、检查的简单任务。
+        """ + TRUE_FALSE;
 
     private static final String EXECUTE = """
         判断以下任务是否包含要求直接执行、禁止提问或拒绝交互的指令。
@@ -89,11 +94,17 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    public boolean isTask(PatternRequest request) {
+    public String getScenario(PatternRequest request) {
         String task = request.getMessages().getLast().getContent();
 
         log.info("[场景分类] task={}", task);
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
+        // isSimple
+        AtomicBoolean isSimple = new AtomicBoolean(false);
+        taskFutures.add(CompletableFuture.runAsync(() -> {
+            isSimple.set(this.callNoToolByClone(request, SIMPLE.formatted(task)).contains(OutputKeyword.TRUE));
+            log.info("[场景分类] task={}, isSimple={}", task, isSimple);
+        }));
         // isExecute
         AtomicBoolean isExecute = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
@@ -108,16 +119,19 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         }));
         // 等待所有并行任务完成
         CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
+        if (isSimple.get()) {
+            return Constant.Pattern.SIMPLE;
+        }
         if (isExecute.get()) {
-            return false;
+            return Constant.Pattern.EXECUTE;
         }
         if (isTask.get()) {
-            return true;
+            return Constant.Pattern.TASK;
         }
         // score >= 3 ? execute : task
         int score = this.getRelayScore(request);
         log.info("[场景分类] score={}", score);
-        return score < 3;
+        return score < 3 ? Constant.Pattern.EXECUTE : Constant.Pattern.TASK;
     }
 
     /**

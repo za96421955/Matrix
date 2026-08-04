@@ -1,6 +1,7 @@
 package com.matrix.service.context;
 
 import com.matrix.common.enums.RedisKey;
+import com.matrix.common.util.ContentUtil;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +96,16 @@ public class PatternContext {
         } catch (Exception ignore) {}
         // 同时清除 actionMode
         this.clearActionMode(userId, sessionId);
+        // 同时清除 actionResult
+        this.clearResult(userId, sessionId);
+    }
+    public void clearResult(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 result, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.TASK_PATTERN_RESULT;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
     }
 
     /**
@@ -241,6 +252,27 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.TASK_PATTERN_ACTIONS;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+
+    /**
+     * @description 缓存: result
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public void setResult(long userId, long sessionId, String action, String result) {
+        log.info("[模式缓存] 设置模式 result, userId={}, sessionId={}, result={}",
+                userId, sessionId, result);
+        RedisKey redisKey = RedisKey.TASK_PATTERN_RESULT;
+        String key = redisKey.generateKey(userId, sessionId);
+        String hashKey = ContentUtil.sha256Hex(action);
+        serviceCache.getHash().put(key, hashKey, result, redisKey.getTtl());
+    }
+    public String getResult(long userId, long sessionId, String action) {
+        RedisKey redisKey = RedisKey.TASK_PATTERN_RESULT;
+        String key = redisKey.generateKey(userId, sessionId);
+        String hashKey = ContentUtil.sha256Hex(action);
+        return serviceCache.getHash().get(key, hashKey);
     }
 
 }

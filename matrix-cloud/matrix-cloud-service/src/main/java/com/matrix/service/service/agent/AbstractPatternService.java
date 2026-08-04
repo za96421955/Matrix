@@ -761,9 +761,14 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      */
     private String actionExecute(PatternRequest request, String action) {
         request.getMessages().add(Message.user(action));
-        String result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY);
+        String result = patternContext.getResult(request.getUserId(), request.getSessionId(), action);
+        if (StringUtils.isNotBlank(result)) {
+            return result;
+        }
+        result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY);
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
+        patternContext.setResult(request.getUserId(), request.getSessionId(), action, result);
         return result;
     }
 

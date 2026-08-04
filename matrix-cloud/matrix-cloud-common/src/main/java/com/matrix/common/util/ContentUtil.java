@@ -2,6 +2,9 @@ package com.matrix.common.util;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 /**
@@ -27,6 +30,30 @@ public abstract class ContentUtil {
             + uuid.substring(14, 18)
             + uuid.substring(19, 23)
             + uuid.substring(24, 36);
+    }
+
+    /**
+     * 对输入字符串进行 SHA-256 哈希，返回十六进制字符串
+     * @param input 原始字符串（可非常长）
+     * @return 64 位十六进制哈希字符串，大写或小写均可，以下返回小写
+     */
+    public static String sha256Hex(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            // 将字节数组转换为十六进制字符串
+            StringBuilder hexString = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
     }
 
     /**

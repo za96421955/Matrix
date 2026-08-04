@@ -8,8 +8,6 @@ package com.matrix.common.constant;
  */
 public interface OutputKeyword {
 
-    String TERMINATED = "TERMINATED";
-
     String TRUE = "TRUE";
 
     String TODO = "TODO";
@@ -18,9 +16,11 @@ public interface OutputKeyword {
 
     String PASS = "PASS";
 
-    String REVISE = "REVISE";
+    String CONTINUE = "CONTINUE";
 
     String TERMINATE = "TERMINATE";
+
+    String REVISE = "REVISE";
 
 }
 

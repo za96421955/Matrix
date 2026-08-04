@@ -673,18 +673,27 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         request.getMessages().add(Message.assistant(plan));
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-审查执行计划");
         String result = this.callResultByClone(request, Prompt.MoA.DOMAIN_REVIEW);
-        // 查通过
-        if (result.contains(OutputKeyword.PASS)) {
+        // 计算结果
+        int indexPass = result.indexOf(OutputKeyword.PASS);
+        int indexRevise = result.indexOf(OutputKeyword.REVISE);
+        int indexTerminate = result.indexOf(OutputKeyword.TERMINATE);
+        boolean isPass = indexPass >= 0
+                && (indexRevise < 0 || indexRevise > indexPass)
+                && (indexTerminate < 0 || indexTerminate > indexPass);
+        boolean isRevise = indexRevise >= 0
+                && (indexTerminate < 0 || indexTerminate > indexRevise);
+        // 审查通过
+        if (isPass) {
             return plan;
         }
-        // 终止执行
-        if (result.contains(OutputKeyword.TERMINATE)) {
-            throw new RuntimeException(result);
-        }
         // 修订
-        request.getMessages().add(Message.user(result));
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
-        return this.callResultByClone(request, null);
+        if (isRevise) {
+            request.getMessages().add(Message.user(result));
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
+            return this.callResultByClone(request, null);
+        }
+        // 终止执行
+        throw new RuntimeException(result);
     }
 
     /**
@@ -896,19 +905,28 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         String observe = this.callResultByClone(request, prompt);
         log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                 request.getUserId(), request.getSessionId(), observe);
-        // 任务终止
-        if (observe.contains(OutputKeyword.TERMINATED)) {
-            // 清除执行计划
-            patternContext.clearPlan(request.getUserId(), request.getSessionId());
+
+        // 计算结果
+        int indexPass = observe.indexOf(OutputKeyword.PASS);
+        int indexContinue = observe.indexOf(OutputKeyword.CONTINUE);
+        int indexTerminate = observe.indexOf(OutputKeyword.TERMINATE);
+        boolean isPass = indexPass >= 0
+                && (indexContinue < 0 || indexContinue > indexPass)
+                && (indexTerminate < 0 || indexTerminate > indexPass);
+        boolean isContinue = indexContinue >= 0
+                && (indexTerminate < 0 || indexTerminate > indexContinue);
+        // 任务完成
+        if (isPass) {
             return null;
         }
-        // 任务完成
-        if (observe.contains(OutputKeyword.TRUE)) {
-            return "";
+        // 清除执行计划
+        patternContext.clearPlan(request.getUserId(), request.getSessionId());
+        // 任务继续
+        if (isContinue) {
+            return observe;
         }
-        // 清除执行方案
-        patternContext.clearActions(request.getUserId(), request.getSessionId());
-        return observe;
+        // 任务终止
+        throw new RuntimeException(observe);
     }
 
 }

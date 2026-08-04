@@ -9,9 +9,11 @@ import com.matrix.common.enums.TaskMode;
 import com.matrix.service.service.agent.AbstractPatternService;
 import com.matrix.service.service.agent.PatternService;
 import com.matrix.service.service.agent.Prompt;
+import com.matrix.service.service.agent.ScenarioClassifier;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -29,6 +31,12 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
     private ExecutePatternService executePatternService;
     @Resource
     private TaskPatternService taskPatternService;
+
+    private final ScenarioClassifier scenarioClassifier;
+
+    public DefaultPatternService(@Lazy ScenarioClassifier scenarioClassifier) {
+        this.scenarioClassifier = scenarioClassifier;
+    }
 
     @Override
     public Flux<Response> call(PatternRequest request) {

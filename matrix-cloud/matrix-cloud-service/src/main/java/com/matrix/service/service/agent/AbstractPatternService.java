@@ -74,8 +74,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     protected ClientService clientService;
     @Resource
     protected MessageService messageService;
-    @Resource
-    protected ScenarioClassifier scenarioClassifier;
 
     /**
      * @description ReAct Agent Call

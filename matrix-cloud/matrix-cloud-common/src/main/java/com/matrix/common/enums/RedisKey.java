@@ -42,6 +42,8 @@ public enum RedisKey {
 
     /** 模式缓存 */
     PATTERN("matrix:pattern:%s:%s", 6 * 60 * 60L),
+    /** 任务模式：任务状态 */
+    TASK_PATTERN_STATUS("matrix:task:pattern:status:%s:%s", 6 * 60 * 60L),
     /** 任务模式：是否需要 SMART 分析 */
     TASK_PATTERN_IS_SMART("matrix:task:pattern:is-smart:%s:%s", 6 * 60 * 60L),
     /** 任务模式：SMART 分析 */

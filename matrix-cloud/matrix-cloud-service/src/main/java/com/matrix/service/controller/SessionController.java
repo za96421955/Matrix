@@ -1,13 +1,16 @@
 package com.matrix.service.controller;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.response.CommonResponse;
 import com.matrix.service.context.ChatContext;
+import com.matrix.service.context.PatternContext;
 import com.matrix.service.dal.entity.SessionInfo;
 import com.matrix.service.service.chat.SessionService;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +27,8 @@ public class SessionController {
     private SessionService sessionService;
     @Resource
     private ChatContext chatContext;
+    @Resource
+    private PatternContext patternContext;
 
     @GetMapping("/page/{pageNum}/{pageSize}")
     /** 获取Page属性值 */
@@ -47,10 +52,14 @@ public class SessionController {
 
     @GetMapping(value = "/isCompletions/{sessionId}")
     /** 判断是否为Conversation */
-    public ResponseEntity<CommonResponse<Boolean>> isConversation(@AuthenticationPrincipal UserResponse userInfo,
-                                                                  @PathVariable("sessionId") Long sessionId) {
-        return ResponseEntity.ok(CommonResponse.success(
-                chatContext.isConversation(userInfo.getUserId(), sessionId)));
+    public ResponseEntity<CommonResponse<JSONObject>> isConversation(@AuthenticationPrincipal UserResponse userInfo,
+                                                                     @PathVariable("sessionId") Long sessionId) {
+        boolean isConversation = chatContext.isConversation(userInfo.getUserId(), sessionId);
+        String status = patternContext.getStatus(userInfo.getUserId(), sessionId);
+        JSONObject result = new JSONObject();
+        result.put("isConversation", isConversation);
+        result.put("status", status);
+        return ResponseEntity.ok(CommonResponse.success(result));
     }
 
     @GetMapping(value = "/stop/{sessionId}")

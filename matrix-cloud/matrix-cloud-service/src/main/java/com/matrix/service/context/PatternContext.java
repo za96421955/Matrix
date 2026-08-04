@@ -38,6 +38,16 @@ public class PatternContext {
         } catch (Exception ignore) {}
         // 同时清除 smart
         this.clearSmart(userId, sessionId);
+        // 同时清除 status
+        this.clearStatus(userId, sessionId);
+    }
+    public void clearStatus(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 status, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.TASK_PATTERN_STATUS;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
     }
     public void clearIsSmart(long userId, long sessionId) {
         log.info("[模式缓存] 清除模式 isSmart, userId={}, sessionId={}", userId, sessionId);
@@ -123,6 +133,25 @@ public class PatternContext {
     }
     public String getPattern(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN;
+        String key = redisKey.generateKey(userId, sessionId);
+        return serviceCache.get(key);
+    }
+
+    /**
+     * @description 缓存: status
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public void setStatus(long userId, long sessionId, String status) {
+        log.info("[模式缓存] 设置模式 status, userId={}, sessionId={}, status={}",
+                userId, sessionId, status);
+        RedisKey redisKey = RedisKey.TASK_PATTERN_STATUS;
+        String key = redisKey.generateKey(userId, sessionId);
+        serviceCache.set(key, status, redisKey.getTtl());
+    }
+    public String getStatus(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.TASK_PATTERN_STATUS;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }

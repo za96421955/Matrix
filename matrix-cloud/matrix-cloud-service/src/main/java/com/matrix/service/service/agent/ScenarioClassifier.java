@@ -78,7 +78,7 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         判断以下任务中用户是否暴露了对任务领域的无知或理解不深。
         """ + TRUE_FALSE;
 
-    private static final String[] SCORE = {SCORE_S1, SCORE_S2, SCORE_S3, SCORE_S4, SCORE_S5};
+    private static final String[] SCORE = {SCORE_S1, SCORE_S4, SCORE_S5};
 
     @Resource
     protected ChatContext chatContext;
@@ -128,10 +128,10 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         if (isTask.get()) {
             return Constant.Pattern.TASK;
         }
-        // score >= 3 ? execute : task
+        // score >= 2 ? execute : task
         int score = this.getRelayScore(request);
         log.info("[场景分类] score={}", score);
-        return score < 3 ? Constant.Pattern.EXECUTE : Constant.Pattern.TASK;
+        return score >= 2 ? Constant.Pattern.EXECUTE : Constant.Pattern.TASK;
     }
 
     /**

@@ -357,6 +357,8 @@ export default function ChatArea() {
     const isStreaming = useChatStore((s) => s.isStreaming)
     const isBackendGenerating = useChatStore((s) => s.isBackendGenerating)
     const setBackendGenerating = useChatStore((s) => s.setBackendGenerating)
+    const backendStatus = useChatStore((s) => s.backendStatus)
+    const setBackendStatus = useChatStore((s) => s.setBackendStatus)
     const toggleSidebar = useChatStore((s) => s.toggleSidebar)
     const createSession = useChatStore((s) => s.createSession)
     const historyMessages = useChatStore((s) => s.historyMessages)
@@ -562,7 +564,7 @@ export default function ChatArea() {
         })
             .then((r) => r.json())
             .then((body) => {
-                const isCompleting = body?.data === true
+                const isCompleting = body?.data?.isConversation === true
                 const currentSid = useChatStore.getState().currentSessionId
                 if (!currentSid || !isBackendSessionId(currentSid)) {
                     stopPolling()
@@ -573,19 +575,22 @@ export default function ChatArea() {
 
                 if (isCompleting) {
                     setBackendGenerating(true)
+                    setBackendStatus(body?.data?.status || '')
                     pollingTimerRef.current = window.setTimeout(() => {
                         checkAndStartPolling()
                     }, 1000)
                 } else {
                     setBackendGenerating(false)
+                    setBackendStatus('')
                     stopPolling()
                 }
             })
             .catch(() => {
                 stopPolling()
                 setBackendGenerating(false)
+                setBackendStatus('')
             })
-    }, [setBackendGenerating, fetchHistoryMessages, stopPolling])
+    }, [setBackendGenerating, setBackendStatus, fetchHistoryMessages, stopPolling])
 
     useEffect(() => {
         checkAndStartPolling()
@@ -600,11 +605,12 @@ export default function ChatArea() {
         } else {
             stopPolling()
             setBackendGenerating(false)
+            setBackendStatus('')
         }
         return () => {
             stopPolling()
         }
-    }, [currentSessionId, checkAndStartPolling, setBackendGenerating])
+    }, [currentSessionId, checkAndStartPolling, setBackendGenerating, setBackendStatus])
 
     useEffect(() => {
         if (currentSessionId && isBackendSessionId(currentSessionId) && !historyLoaded && !historyLoading) {
@@ -628,6 +634,7 @@ export default function ChatArea() {
             scrollToBottom(false)
             setStreaming(true)
             setBackendGenerating(true)
+            setBackendStatus('')
             const controller = new AbortController()
             abortRef.current = controller
 
@@ -717,6 +724,7 @@ export default function ChatArea() {
                         flushToolCallsBatch();
                         setStreaming(false)
                         setBackendGenerating(false)
+                        setBackendStatus('')
                         abortRef.current = null
 
                         //切换本地会话到后端会话，并删除已转换的本地会话（避免脏数据残留）
@@ -761,6 +769,7 @@ export default function ChatArea() {
                         useToastStore.getState().addToast({type: 'error', message: msg})
                         setStreaming(false)
                         setBackendGenerating(false)
+                        setBackendStatus('')
                         abortRef.current = null
                     },
                 },
@@ -794,7 +803,7 @@ export default function ChatArea() {
                 }
             })
         },
-        [apiKey, setStreaming, setBackendGenerating, setBackendSessionId, scrollToBottom, fetchHistoryMessages, checkAndStartPolling]
+        [apiKey, setStreaming, setBackendGenerating, setBackendStatus, setBackendSessionId, scrollToBottom, fetchHistoryMessages, checkAndStartPolling]
     )
 
     const handleSend = useCallback(
@@ -822,6 +831,7 @@ export default function ChatArea() {
         abortRef.current = null
         setStreaming(false)
         setBackendGenerating(false)
+        setBackendStatus('')
         const apiKeyVal = useApiKeyStore.getState().apiKey
         if (apiKeyVal) {
             const sid = useChatStore.getState().currentSessionId
@@ -833,7 +843,7 @@ export default function ChatArea() {
                 })
             }
         }
-    }, [setStreaming, setBackendGenerating])
+    }, [setStreaming, setBackendGenerating, setBackendStatus])
 
     const handleDelete = useCallback(
         (msgId: string) => {
@@ -1008,7 +1018,7 @@ export default function ChatArea() {
                     {(isStreaming || isBackendGenerating) && (
                         <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
-                            执行中
+                            {backendStatus || '执行中'}
                         </span>
                     )}
                 </div>

@@ -96,6 +96,7 @@ interface ChatState {
     currentSessionId: string | null
     isStreaming: boolean
     isBackendGenerating: boolean
+    backendStatus: string
     sidebarOpen: boolean
     historyMessages: Message[]
     historyPage: number
@@ -120,6 +121,7 @@ interface ChatState {
     appendStreamMessage: (msg: Message) => void
     setStreaming: (v: boolean) => void
     setBackendGenerating: (v: boolean) => void
+    setBackendStatus: (v: string) => void
     setBackendSessionId: (sessionId: number) => void
     toggleSidebar: () => void
     setSidebarOpen: (v: boolean) => void
@@ -191,6 +193,7 @@ export const useChatStore = create<ChatState>()(
             currentSessionId: null,
             isStreaming: false,
             isBackendGenerating: false,
+            backendStatus: '',
             sidebarOpen: true,
             currentAgentName: 'plan_agent',
             thinkingType: 'enabled',
@@ -369,6 +372,7 @@ export const useChatStore = create<ChatState>()(
 
             setStreaming: (v) => set({isStreaming: v}),
             setBackendGenerating: (v) => set({isBackendGenerating: v}),
+            setBackendStatus: (v) => set({backendStatus: v}),
             setBackendSessionId: (sessionId) => {
                 set((s) => ({
                     sessions: s.sessions.map((ss) =>
@@ -501,7 +505,7 @@ export const useChatStore = create<ChatState>()(
                     })
                         .then(r => r.json())
                         .then(body => {
-                            set({isBackendGenerating: body?.data === true})
+                            set({isBackendGenerating: body?.data?.isConversation === true, backendStatus: body?.data?.status || ''})
                         })
                         .catch(() => {
                         })

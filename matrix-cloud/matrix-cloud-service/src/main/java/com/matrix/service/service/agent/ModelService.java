@@ -64,6 +64,7 @@ public class ModelService {
         if (null == model || null == request || CollectionUtils.isEmpty(request.getMessages())) {
             return Response.error(ErrorCode.MODEL_PARAM_INVALID.getMessage());
         }
+
         // 构建请求参数
         log.debug("[模型同步请求] model={}, request={}", model.getModel(), request);
         try {

@@ -476,6 +476,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             return planMode;
         }
         try {
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断执行计划生成模式");
             planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), planMode);
@@ -516,18 +517,21 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Plan）");
             plan = this.callResultByClone(request, prompt);
         } else {
             // 多计划综合评估
             List<String> plans;
             // 切面 (MoA)
             if (TaskMode.ASPECT.getValue().equals(planMode)) {
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Aspect）");
                 plans = this.getPlansByAspect(request, smart);
                 log.info("[任务模式] 任务规划: 切面, userId={}, sessionId={}, planMode={}, plans={}",
                         request.getUserId(), request.getSessionId(), planMode, plans);
             }
             // 切面 + 评论修正 (MoA)
             else {
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Evaluation）");
                 plans = this.getPlansByAspectAndEvaluation(request, smart);
                 log.info("[任务模式] 任务规划: 切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
                         request.getUserId(), request.getSessionId(), planMode, plans);
@@ -541,6 +545,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             String prompt = null == smart ? Prompt.MoA.CONVERGE : Prompt.MoA.CONVERGE_SMART.formatted(
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "融合执行计划");
             plan = this.callResultByClone(request, prompt);
         }
         log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
@@ -549,6 +554,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 检查
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "检查是否需要补充信息");
             String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);
@@ -603,10 +609,12 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 String plan = this.callResultByClone(localRequest, null);
                 // 多方向评价
                 localRequest.getMessages().add(Message.assistant(plan));
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "评估执行计划");
                 String evaluation = this.callResultByClone(localRequest,
                         Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
                 // 修正
                 localRequest.getMessages().add(Message.user(evaluation));
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "修订执行计划");
                 plans.add(this.callResultByClone(localRequest, null));
             }));
         }
@@ -666,6 +674,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             return actionMode;
         }
         try {
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断执行方案生成模式");
             actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), actionMode);
@@ -765,6 +774,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (StringUtils.isNotBlank(result)) {
             return result;
         }
+        String title = action.length() > 10 ? (action.substring(0, 10) + "...") : action;
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行任务：" + title);
         result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY);
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
@@ -784,6 +795,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(actions)) {
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行方案列表");
             actions = this.callResultByClone(request, Prompt.CoT.ACTIONS.formatted(
                     JSONSchemaUtil.generate(TaskActions.class)));
         }
@@ -818,6 +830,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(actions)) {
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行方案（块）列表");
             actions = this.callResultByClone(request, Prompt.CoT.ACTIONS.formatted(
                     JSONSchemaUtil.generate(TaskChain.class)));
         }
@@ -850,6 +863,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         String prompt = null == smart ? Prompt.CoT.OBSERVE : Prompt.CoT.OBSERVE_SMART.formatted(
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                 smart.getRelevant(), smart.getTimeBound());
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "观察执行结果");
         String observe = this.callResultByClone(request, prompt);
         log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                 request.getUserId(), request.getSessionId(), observe);

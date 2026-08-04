@@ -769,17 +769,18 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * @author 陈晨
      */
     private String actionExecute(PatternRequest request, String action) {
-        request.getMessages().add(Message.user(action));
         String result = patternContext.getResult(request.getUserId(), request.getSessionId(), action);
         if (StringUtils.isNotBlank(result)) {
+            request.getMessages().add(Message.user(action));
             return result;
         }
         String title = action.length() > 10 ? (action.substring(0, 10) + "...") : action;
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行任务：" + title);
-        result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY);
+        result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY.formatted(action));
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
         patternContext.setResult(request.getUserId(), request.getSessionId(), action, result);
+        request.getMessages().add(Message.user(action));
         return result;
     }
 

@@ -37,6 +37,11 @@ public class Evaluation implements Serializable {
     public static class Answer {
         private String id;
         private List<Section> sections;
+
+        @Override
+        public String toString() {
+            return JSONObject.toJSONString(this);
+        }
     }
 
     @Data
@@ -46,6 +51,11 @@ public class Evaluation implements Serializable {
         private String id;
         private String title;
         private List<Criterion> criteria;
+
+        @Override
+        public String toString() {
+            return JSONObject.toJSONString(this);
+        }
     }
 
     @Data
@@ -55,6 +65,11 @@ public class Evaluation implements Serializable {
         private String id;
         private int weight;
         private String requirement;
+
+        @Override
+        public String toString() {
+            return JSONObject.toJSONString(this);
+        }
     }
 
 }

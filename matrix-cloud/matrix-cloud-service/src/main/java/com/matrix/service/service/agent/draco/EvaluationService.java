@@ -16,9 +16,17 @@ public class EvaluationService {
 
     public static void main(String[] args) {
         EvaluationService service = new EvaluationService();
-        Evaluation evaluation = service.read("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/parquet/2.jsonl");
+        String question = "3";
+        Evaluation evaluation = service.read("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/parquet/" + question + ".jsonl");
         System.out.println(evaluation.getId());
-        System.out.println(service.calculateTotalWeight(evaluation));
+        System.out.println("资源目录：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
+        System.out.println("直接完成以下任务");
+        System.out.println("- 按以下评分标准，对 /Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md 进行评分：");
+        System.out.println("```");
+        System.out.println(evaluation.getAnswer());
+        System.out.println("```");
+        System.out.println("---");
+        service.calculateTotalWeight(evaluation);
     }
 
     public Evaluation read(String filePath) {

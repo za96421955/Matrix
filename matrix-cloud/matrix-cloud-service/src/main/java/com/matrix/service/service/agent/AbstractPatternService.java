@@ -202,6 +202,10 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return this.callByClone(null, request, prompt, false);
     }
 
+    protected String callResultByFlag(PatternRequest request, String prompt) {
+        return this.callByClone(null, request, prompt, true);
+    }
+
     /**
      * @description 标记类调用（clone）
      * <p> <功能详细描述> </p>
@@ -687,7 +691,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 审查
         request.getMessages().add(Message.assistant(plan));
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-审查执行计划");
-        String result = this.callByResult(request, Prompt.MoA.DOMAIN_REVIEW);
+        String result = this.callResultByFlag(request, Prompt.MoA.DOMAIN_REVIEW);
         // 计算结果
         int indexPass = result.indexOf(OutputKeyword.PASS);
         int indexRevise = result.indexOf(OutputKeyword.REVISE);
@@ -813,7 +817,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                 smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "观察执行结果");
-        String observe = this.callByResult(request, prompt);
+        String observe = this.callResultByFlag(request, prompt);
         log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                 request.getUserId(), request.getSessionId(), observe);
 

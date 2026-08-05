@@ -95,8 +95,8 @@ public interface Prompt {
             """;
 
         String IS_SMART = """
-            1. 查看上下文，快速判断用户需求/任务是否需要 SMART 分析。
-            2. 需要: TRUE, 不需要: FALSE
+            查看上下文，快速判断用户需求/任务是否需要 SMART 分析。
+            - 需要: TRUE, 不需要: FALSE
             
             ## 示例
             user: 给 demo.js 添加 hello world
@@ -106,21 +106,21 @@ public interface Prompt {
             """;
 
         String GOAL = """
-            1. 检查任务目标是否有疑问或需要用户补充的信息
-            2. 通过: PASS; 有疑问: TODO
-            3. 仅输出 PASS/TODO, 不要任何解释
+            检查任务目标是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
             """;
 
         String PLAN = """
-            1. 检查执行计划是否有疑问或需要用户补充的信息
-            2. 通过: PASS; 有疑问: TODO
-            3. 仅输出 PASS/TODO, 不要任何解释
+            检查执行计划是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
             """;
 
         String RESULT = """
-            1. 检查执行结果是否有疑问或需要用户补充的信息
-            2. 通过: PASS; 有疑问: TODO
-            3. 仅输出 PASS/TODO, 不要任何解释
+            检查助手最后的回答是否主动提出了疑问或寻求人工审核
+            - 通过: PASS; 需要暂停: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
             """;
 
         String OUTPUT_FORMAT = """

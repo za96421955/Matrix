@@ -583,7 +583,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                     initial={{opacity: 0, y: 12}}
                     animate={{opacity: 1, y: 0}}
                     transition={{duration: 0.3, ease: 'easeOut'}}
-                    className="flex items-start gap-2 px-4 py-1.5 group"
+                    className="flex items-start gap-2 px-4 py-1 group"
                     role="listitem"
                     aria-label="AI工具调用"
                 >
@@ -621,7 +621,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                 initial={{opacity: 0, y: 12}}
                 animate={{opacity: 1, y: 0}}
                 transition={{duration: 0.3, ease: 'easeOut'}}
-                className="flex items-start gap-2 px-4 py-1.5 group"
+                className="flex items-start gap-2 px-4 py-1 group"
                 role="listitem"
                 aria-label={hasReasoning ? "AI思考中" : "AI消息"}
             >
@@ -637,7 +637,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                         if (hasReasoning && !hasContent) {
                             return (
                                 <div
-                                    className="rounded-lg border-l-4 border-l-yellow-400 dark:border-l-yellow-500 bg-gray-50 dark:bg-[#1c1c20]/60 border border-gray-200 dark:border-white/[0.06] p-3">
+                                    className="rounded-lg border-l-4 border-l-yellow-400 dark:border-l-yellow-500 bg-gray-50 dark:bg-[#1c1c20]/60 border border-gray-200 dark:border-white/[0.06] px-3 py-2">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Lightbulb className="w-4 h-4 text-yellow-500"/>
                                         <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
@@ -672,7 +672,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                     <div className="relative">
                                         <div
                                             className={
-                                                'rounded-2xl px-4 py-2.5 shadow-sm max-w-full relative bg-gray-100 dark:bg-[#26262c] text-gray-900 dark:text-gray-100 rounded-tl-sm' +
+                                                'rounded-2xl px-4 py-2 shadow-sm max-w-full relative bg-gray-100 dark:bg-[#26262c] text-gray-900 dark:text-gray-100 rounded-tl-sm' +
                                                 (isStreaming ? ' border-2 border-blue-300 dark:border-blue-500/60' : '')
                                             }
                                         >
@@ -722,7 +722,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                 )}
                                 {!hasContent && isStreaming && (
                                     <div
-                                        className="rounded-2xl px-4 py-2.5 shadow-sm max-w-full bg-gray-100 dark:bg-[#1c1c20]/80 border-2 border-blue-300 dark:border-blue-500/60">
+                                        className="rounded-2xl px-4 py-2 shadow-sm max-w-full bg-gray-100 dark:bg-[#1c1c20]/80 border-2 border-blue-300 dark:border-blue-500/60">
                                         <span className="inline-flex gap-0.5">
                                             <span className="w-1.5 h-3.5 bg-gray-400 dark:bg-gray-500 rounded-[1px] animate-pulse"/>
                                         </span>
@@ -762,15 +762,14 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                         />
                         <button
                             onClick={() => setFlagExpanded(!flagExpanded)}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-indigo-100/40 dark:hover:bg-indigo-950/70 rounded-r-xl"
-                            aria-label={flagExpanded ? '收起标记详情' : '展开标记详情'}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-indigo-100/40 dark:hover:bg-indigo-950/70 rounded-r-xl"
+                            aria-label={flagExpanded ? '收起思考内容详情' : '展开思考内容详情'}
                         >
-                            <span className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="flex items-center flex-shrink-0">
                                 <Flag className="w-3 h-3 text-indigo-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300 whitespace-nowrap">标记</span>
                             </span>
                             <div className="flex-1 min-w-0">
-                                <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 truncate">
+                                <p className="text-[11px] font-bold text-indigo-800/80 dark:text-indigo-300/80 truncate">
                                     {message.content}
                                 </p>
                             </div>
@@ -791,12 +790,12 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                     transition={{ duration: 0.2 }}
                                     className="border-t border-indigo-100 dark:border-indigo-800/40"
                                 >
-                                    <div className="p-3">
+                                    <div className="px-3 py-2">
                                         <div className="text-[11px] text-indigo-900/90 dark:text-indigo-100/90 leading-relaxed break-words">
                                             {isStreaming || !markdownEnabled ? (
-                                                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                                                <p className="whitespace-pre-wrap break-words">{message.reasoningContent}</p>
                                             ) : (
-                                                <MarkdownRenderer content={message.content} />
+                                                <MarkdownRenderer content={message.reasoningContent!} />
                                             )}
                                         </div>
                                     </div>
@@ -834,7 +833,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                         />
                         <button
                             onClick={() => setErrorExpanded(!errorExpanded)}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-red-100/40 dark:hover:bg-red-950/70 rounded-r-xl"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-red-100/40 dark:hover:bg-red-950/70 rounded-r-xl"
                             aria-label={errorExpanded ? '收起错误详情' : '展开错误详情'}
                         >
                             <span className="flex items-center gap-1.5 flex-shrink-0">
@@ -862,8 +861,8 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                     transition={{ duration: 0.2 }}
                                     className="border-t border-red-100 dark:border-red-800/40"
                                 >
-                                    <div className="p-3">
-                                        <div className="text-[11px] text-red-900/90 dark:text-red-200/90 leading-relaxed whitespace-pre-wrap break-words font-mono bg-red-100/40 dark:bg-red-950/70 rounded-lg p-3 border border-red-200/60 dark:border-red-800/40 shadow-inner">
+                                    <div className="px-3 py-2">
+                                        <div className="text-[11px] text-red-900/90 dark:text-red-200/90 leading-relaxed whitespace-pre-wrap break-words font-mono bg-red-100/40 dark:bg-red-950/70 rounded-lg px-3 py-2 border border-red-200/60 dark:border-red-800/40 shadow-inner">
                                             {message.content}
                                         </div>
                                     </div>

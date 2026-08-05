@@ -95,8 +95,8 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     public String getScenario(PatternRequest request) {
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断交互场景");
         String task = request.getMessages().getLast().getContent();
-
         log.info("[场景分类] task={}", task);
         List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
         // isSimple

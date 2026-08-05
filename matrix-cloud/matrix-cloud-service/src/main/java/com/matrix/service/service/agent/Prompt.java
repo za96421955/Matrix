@@ -157,7 +157,7 @@ public interface Prompt {
             """;
 
         String PLAN_MODE = """
-            根据上下文，快速评估下一步制定执行计划需要采用哪种模式：
+            根据上下文，评估下一步制定执行计划需要采用哪种模式：
             - 可以直接制定执行计划 (默认): PLAN
             - 需要从多方面审核、修订: REVIEW
             
@@ -291,10 +291,10 @@ public interface Prompt {
             - 输出时，不要使用任何 emoji 表情
             - 禁止执行任何写操作
             
-            ## 最终输出格式（三选一，不要任何解释）：
+            ## 最终输出格式（三选一，不要任何多余的解释或说明）：
             - `PASS`
-            - `CONTINUE: {说明原因}`
-            - `TERMINATE: {说明原因}`
+            - `CONTINUE: {修订说明}`
+            - `TERMINATE: {终止原因}`
             """;
 
         String OBSERVE_SMART = TASK_STANDARD + """
@@ -316,10 +316,10 @@ public interface Prompt {
             - 输出时，不要使用任何 emoji 表情
             - 禁止执行任何写操作
             
-            ## 最终输出格式（三选一，不要任何解释）：
+            ## 最终输出格式（三选一，不要任何多余的解释或说明）：
             - `PASS`
-            - `CONTINUE: {说明原因}`
-            - `TERMINATE: {说明原因}`
+            - `CONTINUE: {修订说明}`
+            - `TERMINATE: {终止原因}`
             """;
 
     }
@@ -350,7 +350,7 @@ public interface Prompt {
             - 输出时，不要使用 emoji 表情
             - 禁止执行任何写操作
             
-            ## 最终输出格式（二选一，不要任何解释）：
+            ## 最终输出格式（二选一，不要任何多余的解释或说明）：
             - `PASS`
             - `REVISE: {修订说明}`
             """;
@@ -401,7 +401,7 @@ public interface Prompt {
             - 输出时，不要使用 emoji 表情
             - 禁止执行任何写操作
             
-            ## 最终输出格式（三选一，不要任何解释）：
+            ## 最终输出格式（三选一，不要任何多余的解释或说明）：
             - `PASS`
             - `REVISE: {修订说明}`
             - `TERMINATE: {终止原因}`

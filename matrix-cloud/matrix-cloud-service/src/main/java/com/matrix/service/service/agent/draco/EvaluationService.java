@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class EvaluationService {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         EvaluationService service = new EvaluationService();
         String question = "8";
         Evaluation evaluation = service.read("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/parquet/" + question + ".jsonl");
@@ -24,6 +24,7 @@ public class EvaluationService {
         System.out.println("直接完成以下任务");
         System.out.println("- 结果输出至：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md");
         System.out.println("- 源数据或临时文件存放：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
+        System.out.println("- 互联网带格式的源文件，首先清洗后再使用");
         System.out.println("---");
         System.out.println(evaluation.getProblem());
         System.out.println("\n---");
@@ -36,6 +37,21 @@ public class EvaluationService {
         System.out.println("```");
         System.out.println("---");
         service.calculateTotalWeight(evaluation);
+
+
+        String answer = Files.readString(Path.of("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md"));
+        System.out.println("\n\n\n---");
+        System.out.println("## Web Score (Pro):");
+        System.out.println("按以下评分标准，对<汇报结果>进行评分。计算得出总得分，及百分制得分：");
+        System.out.println("```");
+        System.out.println(evaluation.getAnswer());
+        System.out.println("---");
+        service.calculateTotalWeight(evaluation);
+        System.out.println("```");
+        System.out.println("\n## 汇报结果");
+        System.out.println("```");
+        System.out.println(answer);
+        System.out.println("```");
     }
 
     public Evaluation read(String filePath) {

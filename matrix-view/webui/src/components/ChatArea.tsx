@@ -110,10 +110,10 @@ const MessageList = React.memo(
                         className="w-20 h-20 rounded-full bg-black dark:bg-white flex items-center justify-center mb-4 sm:mb-5 shadow-lg overflow-hidden">
                         <MatrixLogo size="xl" className="w-10 h-10 sm:w-16 sm:h-16 text-white dark:text-gray-900"/>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-2">
                         Matrix
                     </h2>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-sm md:max-w-md leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-sm md:max-w-md leading-relaxed">
                         {isBackendSession ? '会话暂无消息记录' : 'Be water, my friend.'}
                     </p>
                 </div>
@@ -128,7 +128,7 @@ const MessageList = React.memo(
                         <button
                             onClick={onLoadMore}
                             disabled={historyLoading}
-                            className="flex items-center gap-1.5 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50"
                             aria-label="加载更早的消息"
                         >
                             {historyLoading ? (
@@ -1132,7 +1132,7 @@ export default function ChatArea() {
             {/* 消息容器 */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden py-3 sm:py-4 space-y-0 mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
+                className="flex-1 overflow-y-auto overflow-x-hidden py-2 sm:py-3 space-y-0 mx-auto w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
                 role="list"
                 aria-label="消息列表"
                 tabIndex={-1}

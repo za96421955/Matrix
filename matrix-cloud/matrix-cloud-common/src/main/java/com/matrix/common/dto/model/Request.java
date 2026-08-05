@@ -35,7 +35,7 @@ public class Request implements Serializable {
     private Integer max_tokens;
     /** 深度思考 */
     private Thinking thinking;
-    /** 思考深度: high, max */
+    /** 思考深度: low, high, max */
     private String reasoning_effort;
     /** 流式输出 */
     private Boolean stream;

@@ -159,11 +159,11 @@ interface ChatState {
     removeLastAssistantMessage: () => void
     removeLastHistoryMessage: () => void
     thinkingType: "enabled" | "disabled"
-    reasoningEffort: "high" | "max"
+    reasoningEffort: "low" | "high" | "max"
     modelType: 'flash' | 'pro'
     markdownEnabled: boolean
     setThinkingType: (v: "enabled" | "disabled") => void
-    setReasoningEffort: (v: "high" | "max") => void
+    setReasoningEffort: (v: "low" | "high" | "max") => void
     setModelType: (v: 'flash' | 'pro') => void
     setMarkdownEnabled: (v: boolean) => void
     messageFilterMode: 'all' | 'chat'

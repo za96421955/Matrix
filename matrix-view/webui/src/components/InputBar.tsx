@@ -342,10 +342,10 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                 <span className="hidden sm:inline">深度思考</span>
                             </button>
 
-                            {/*思考深度选择 (一般/深度) */}
+                            {/*思考深度选择 (L/H/M) */}
                             <div
                                 className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                {(['high', 'max'] as const).map((level) => (
+                                {(['low', 'high', 'max'] as const).map((level) => (
                                     <button
                                         key={level}
                                         onClick={() => setReasoningEffort(level)}
@@ -357,7 +357,7 @@ export default function InputBar({onSend, onStop, hideTopBorder}: InputBarProps)
                                         }
                                         aria-label={'思考深度: ' + level}
                                     >
-                                        {level === 'high' ? '一般' : '深度'}
+                                        {level === 'low' ? 'L' : level === 'high' ? 'H' : 'M'}
                                     </button>
                                 ))}
                             </div>

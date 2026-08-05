@@ -200,86 +200,75 @@ export default function TaskAuthModal({open, onClose}: TaskAuthModalProps) {
     return (
         <AnimatePresence>
             {open && (
-                <>
-                    {/**遮罩层 */}
-                    <motion.div
-                        initial={{opacity: 0}}
-                        animate={{opacity: 1}}
-                        exit={{opacity: 0}}
-                        transition={{duration: 0.15}}
-                        onClick={onClose}
-                        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-                    />
-                    {/**弹窗主体 */}
-                    <motion.div
-                        initial={{opacity: 0, scale: 0.95, y: 20}}
-                        animate={{opacity: 1, scale: 1, y: 0}}
-                        exit={{opacity: 0, scale: 0.95, y: 20}}
-                        transition={{type: 'spring', damping: 25, stiffness: 300}}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-lg max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-[#1c1c20] border border-gray-200 dark:border-white/[0.08] shadow-2xl"
-                        role="dialog"
-                        aria-label="任务授权"
-                    >
-                        {/** Header */}
-                        <div
-                            className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/[0.08] flex-shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
-                                    <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400"/>
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">任务授权</h2>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {loading ? '加载中...' : taskList.length > 0 ? taskList.length + '个任务待处理' : '暂无待授权任务'}
-                                    </p>
-                                </div>
+                <motion.div
+                    key="task-auth-modal"
+                    initial={{opacity: 0, x: 24, y: 24}}
+                    animate={{opacity: 1, x: 0, y: 0}}
+                    exit={{opacity: 0, x: 24, y: 24}}
+                    transition={{type: 'spring', damping: 25, stiffness: 300}}
+                    className="fixed right-5 bottom-5 z-50 w-[min(440px,92vw)] max-w-md max-h-[70vh] flex flex-col rounded-2xl bg-white dark:bg-[#1c1c20] border border-gray-200 dark:border-white/[0.08] shadow-2xl"
+                    role="dialog"
+                    aria-label="任务授权"
+                >
+                    {/** Header */}
+                    <div
+                        className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/[0.08] flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                                <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400"/>
                             </div>
-                            <button
-                                onClick={onClose}
-                                aria-label="关闭"
-                                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                            >
-                                <X className="w-5 h-5 text-gray-500"/>
-                            </button>
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">任务授权</h2>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {loading ? '加载中...' : taskList.length > 0 ? taskList.length + '个任务待处理' : '暂无待授权任务'}
+                                </p>
+                            </div>
                         </div>
+                        <button
+                            onClick={onClose}
+                            aria-label="关闭"
+                            className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                        >
+                            <X className="w-5 h-5 text-gray-500"/>
+                        </button>
+                    </div>
 
-                        {/** Body:任务列表 */}
-                        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
-                            {loading && taskList.length === 0 ? (
-                                <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="w-6 h-6 animate-spin text-gray-400"/>
-                                </div>
-                            ) : taskList.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <AlertTriangle className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3"/>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">暂无待授权任务</p>
-                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">所有任务已处理完毕</p>
-                                </div>
-                            ) : (
-                                taskList.map((task) => (
-                                    <TaskItem
-                                        key={task.taskId}
-                                        task={task}
-                                        onApprove={handleApprove}
-                                        onReject={handleReject}
-                                    />
-                                ))
-                            )}
-                        </div>
+                    {/** Body:任务列表 */}
+                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
+                        {loading && taskList.length === 0 ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="w-6 h-6 animate-spin text-gray-400"/>
+                            </div>
+                        ) : taskList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <AlertTriangle className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3"/>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">暂无待授权任务</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">所有任务已处理完毕</p>
+                            </div>
+                        ) : (
+                            taskList.map((task) => (
+                                <TaskItem
+                                    key={task.taskId}
+                                    task={task}
+                                    onApprove={handleApprove}
+                                    onReject={handleReject}
+                                />
+                            ))
+                        )}
+                    </div>
 
-                        {/** Footer */}
-                        <div
-                            className="flex-shrink-0 px-5 py-3 border-t border-gray-200 dark:border-white/[0.08] flex justify-end">
-                            <button
-                                onClick={onClose}
-                                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                            >
-                                关闭
-                            </button>
-                        </div>
-                    </motion.div>
-                </>
+                    {/** Footer */}
+                    <div
+                        className="flex-shrink-0 px-5 py-3 border-t border-gray-200 dark:border-white/[0.08] flex justify-end">
+                        <button
+                            onClick={onClose}
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                        >
+                            关闭
+                        </button>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     )

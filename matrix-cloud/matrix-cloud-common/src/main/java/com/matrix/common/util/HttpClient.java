@@ -9,6 +9,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 
@@ -16,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @description HTTP工具
@@ -25,6 +27,21 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 public class HttpClient {
+
+    private static PoolingHttpClientConnectionManager connectionManager =
+            new PoolingHttpClientConnectionManager();
+    static {
+        // 设置最大连接数
+        connectionManager.setMaxTotal(20);
+        connectionManager.setDefaultMaxPerRoute(5);
+    }
+    public static void reset() {
+        connectionManager.close();
+        // 重置连接池
+        connectionManager = new PoolingHttpClientConnectionManager();
+        connectionManager.setMaxTotal(20);
+        connectionManager.setDefaultMaxPerRoute(5);
+    }
 
     public static final String POST = "post";
     public static final String GET = "get";
@@ -40,7 +57,13 @@ public class HttpClient {
     private String result;
 
     private HttpClient(String url) {
-        this.client = HttpClients.createDefault();
+        // 构建客户端时启用自动清理（设置空闲超时）
+        // 空闲超过30秒的自动清除
+        this.client = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .evictIdleConnections(30, TimeUnit.SECONDS)
+                .evictExpiredConnections() // 过期连接自动清除
+                .build();
         this.url = url;
     }
 
@@ -174,7 +197,7 @@ public class HttpClient {
      *
      * @author 陈晨
      */
-    private HttpClient execute() {
+    private HttpClient execute() throws IOException {
         try (CloseableHttpResponse response = client.execute(request)) {
             status = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();
@@ -184,7 +207,7 @@ public class HttpClient {
         } catch (IOException e) {
             log.error("[Http请求] url={}, body={}, 请求异常: {}",
                     url, body, e.getMessage(), e);
-            throw new RuntimeException(e);
+            throw e;
         }
         return this;
     }
@@ -195,7 +218,7 @@ public class HttpClient {
      *
      * @author 陈晨
      */
-    public int asStatus() {
+    public int asStatus() throws IOException {
         if (status > 0) {
             return status;
         }
@@ -208,7 +231,7 @@ public class HttpClient {
      *
      * @author 陈晨
      */
-    public String asString() {
+    public String asString() throws IOException {
         if (StringUtils.isNotBlank(result)) {
             return result;
         }
@@ -221,7 +244,7 @@ public class HttpClient {
      *
      * @author 陈晨
      */
-    public String asFromData() {
+    public String asFromData() throws IOException {
         return this.header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_FORM_URLENCODED.getMimeType())
                 .asString();
     }

@@ -39,19 +39,19 @@ public class EvaluationService {
         service.calculateTotalWeight(evaluation);
 
 
-        String answer = Files.readString(Path.of("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md"));
-        System.out.println("\n\n\n---");
-        System.out.println("## Web Score (Pro):");
-        System.out.println("按以下评分标准，对<汇报结果>进行评分。计算得出总得分，及百分制得分：");
-        System.out.println("```");
-        System.out.println(evaluation.getAnswer());
-        System.out.println("---");
-        service.calculateTotalWeight(evaluation);
-        System.out.println("```");
-        System.out.println("\n## 汇报结果");
-        System.out.println("```");
-        System.out.println(answer);
-        System.out.println("```");
+//        String answer = Files.readString(Path.of("/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md"));
+//        System.out.println("\n\n\n---");
+//        System.out.println("## Web Score (Pro):");
+//        System.out.println("按以下评分标准，对<汇报结果>进行评分。计算得出总得分，及百分制得分：");
+//        System.out.println("```");
+//        System.out.println(evaluation.getAnswer());
+//        System.out.println("---");
+//        service.calculateTotalWeight(evaluation);
+//        System.out.println("```");
+//        System.out.println("\n## 汇报结果");
+//        System.out.println("```");
+//        System.out.println(answer);
+//        System.out.println("```");
     }
 
     public Evaluation read(String filePath) {

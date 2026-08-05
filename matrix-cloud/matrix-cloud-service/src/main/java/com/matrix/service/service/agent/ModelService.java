@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -61,53 +62,76 @@ public class ModelService {
      * @author 陈晨
      */
     public Response call(RegisterCommand.Model model, Request request) {
+        return this.call(model, request, 0);
+    }
+
+    public Response call(RegisterCommand.Model model, Request request, int retry) {
+        String error;
+        try {
+            log.debug("[模型同步请求] model={}, request={}, retry={}",
+                    model.getModel(), request, retry);
+            return this.callByThrowException(model, request);
+        } catch (IOException e) {
+            log.error("[模型同步请求] model={}, request={}, retry={}, IO异常, 重置连接池: {}",
+                    model.getModel(), request, retry, e.getMessage(), e);
+            HttpClient.reset();
+            error = e.getMessage();
+        } catch (Exception e) {
+            log.error("[模型同步请求] model={}, request={}, retry={}, 异常: {}",
+                    model.getModel(), request, retry, e.getMessage(), e);
+            error = e.getMessage();
+        }
+        if (retry >= 5) {
+            return Response.error(error);
+        }
+        try {
+            Thread.sleep(1000L * retry * retry);
+        } catch (Exception ignore) {}
+        return this.call(model, request, ++retry);
+    }
+
+    private Response callByThrowException(RegisterCommand.Model model, Request request) throws IOException {
         if (null == model || null == request || CollectionUtils.isEmpty(request.getMessages())) {
-            return Response.error(ErrorCode.MODEL_PARAM_INVALID.getMessage());
+            throw new RuntimeException(ErrorCode.MODEL_PARAM_INVALID.getMessage());
         }
 
         // 构建请求参数
         log.debug("[模型同步请求] model={}, request={}", model.getModel(), request);
-        try {
-            request.setModel(model.getModel());
-            String output = HttpClient.post(model.getBaseUrl() + Constant.Model.COMPLETIONS)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                    .authorization(model.getApiKey())
-                    .body(request.toString())
-                    .asString();
-            log.debug("[模型同步请求] model={}, output={}", model.getModel(), output);
-            if (StringUtils.isBlank(output)) {
-                return null;
-            }
-            Response response = Response.parseResponse(output);
-            // 错误
-            Response.Error error = response.getError();
-            if (null != error) {
-                log.error("[模型同步请求] model={}, request={}, 失败: {}",
-                        model.getModel(), request, error.getMessage());
-                return response;
-            }
-            // response is empty
-            if (StringUtils.isBlank(response.getReasoning())
-                    && StringUtils.isBlank(response.getAnswer())
-                    && CollectionUtils.isEmpty(response.getToolCalls())) {
-                log.error("[模型同步请求] model={}, request={}, 失败: 响应全部为空",
-                        model.getModel(), request);
-                return Response.error(ErrorCode.MODEL_MESSAGE_EMPTY.getMessage());
-            }
-            // 若 answer 为空, reasoning 不为空, 则 answer = reasoning
-            if (StringUtils.isNotBlank(response.getReasoning())
-                    && StringUtils.isBlank(response.getAnswer())) {
-                log.warn("[模型同步请求] model={}, request={}, answer 为空, reasoning 不为空, answer = reasoning",
-                        model.getModel(), request);
-                response.getMessage().setContent(response.getReasoning());
-            }
-            return response;
-        } catch (Exception e) {
-            log.error("[模型同步请求] model={}, request={}, 异常={}",
-                    model.getModel(), request, e.getMessage(), e);
-            return Response.error(ErrorCode.SYSTEM_ERROR.getMessage());
+        request.setModel(model.getModel());
+        String output = HttpClient.post(model.getBaseUrl() + Constant.Model.COMPLETIONS)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .authorization(model.getApiKey())
+                .body(request.toString())
+                .asString();
+        log.debug("[模型同步请求] model={}, output={}", model.getModel(), output);
+        if (StringUtils.isBlank(output)) {
+            return null;
         }
+        Response response = Response.parseResponse(output);
+        // 错误
+        Response.Error error = response.getError();
+        if (null != error) {
+            log.error("[模型同步请求] model={}, request={}, 失败: {}",
+                    model.getModel(), request, error.getMessage());
+            throw new RuntimeException(error.getMessage());
+        }
+        // response is empty
+        if (StringUtils.isBlank(response.getReasoning())
+                && StringUtils.isBlank(response.getAnswer())
+                && CollectionUtils.isEmpty(response.getToolCalls())) {
+            log.error("[模型同步请求] model={}, request={}, 失败: 响应全部为空",
+                    model.getModel(), request);
+            throw new RuntimeException(ErrorCode.MODEL_MESSAGE_EMPTY.getMessage());
+        }
+        // 若 answer 为空, reasoning 不为空, 则 answer = reasoning
+        if (StringUtils.isNotBlank(response.getReasoning())
+                && StringUtils.isBlank(response.getAnswer())) {
+            log.warn("[模型同步请求] model={}, request={}, answer 为空, reasoning 不为空, answer = reasoning",
+                    model.getModel(), request);
+            response.getMessage().setContent(response.getReasoning());
+        }
+        return response;
     }
 
     /**

@@ -102,19 +102,19 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         // isSimple
         AtomicBoolean isSimple = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
-            isSimple.set(this.callNoToolByClone(request, SIMPLE.formatted(task)).contains(OutputKeyword.TRUE));
+            isSimple.set(this.callByFlag(request, SIMPLE.formatted(task)).contains(OutputKeyword.TRUE));
             log.info("[场景分类] task={}, isSimple={}", task, isSimple);
         }));
         // isExecute
         AtomicBoolean isExecute = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
-            isExecute.set(this.callNoToolByClone(request, EXECUTE.formatted(task)).contains(OutputKeyword.TRUE));
+            isExecute.set(this.callByFlag(request, EXECUTE.formatted(task)).contains(OutputKeyword.TRUE));
             log.info("[场景分类] task={}, isExecute={}", task, isExecute);
         }));
         // isTask
         AtomicBoolean isTask = new AtomicBoolean(false);
         taskFutures.add(CompletableFuture.runAsync(() -> {
-            isTask.set(this.callNoToolByClone(request, TASK.formatted(task)).contains(OutputKeyword.TRUE));
+            isTask.set(this.callByFlag(request, TASK.formatted(task)).contains(OutputKeyword.TRUE));
             log.info("[场景分类] task={}, isTask={}", task, isTask);
         }));
         // 等待所有并行任务完成
@@ -152,7 +152,7 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
                     log.warn("\n\n======================\n\n\tS T O P: 场景分类【结束】\n\n======================");
                     return;
                 }
-                String result = this.callNoToolByClone(request, input.formatted(task));
+                String result = this.callByFlag(request, input.formatted(task));
                 boolean isScore = result.contains(OutputKeyword.TRUE);
                 log.info("[场景分类] input={}, result={}, isScore={}", input, result, isScore);
                 if (isScore) {

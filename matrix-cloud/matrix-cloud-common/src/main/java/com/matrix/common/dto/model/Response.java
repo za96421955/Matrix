@@ -169,35 +169,6 @@ public class Response implements Serializable {
                 .build();
     }
 
-    /**
-     * @description 构建错误信息
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public static Response done() {
-        return Response.builder()
-                .choices(List.of(Choice.builder()
-                        .delta(Message.builder()
-                                .role(Role.DONE)
-                                .build())
-                        .build()))
-                .build();
-    }
-
-    /**
-     * @description 判断输出流是否已结束
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    public boolean isDone() {
-        if (null == this.getMessage()) {
-            return false;
-        }
-        return Role.DONE.equalsIgnoreCase(this.getMessage().getRole());
-    }
-
     @Data
     @Builder
     @AllArgsConstructor

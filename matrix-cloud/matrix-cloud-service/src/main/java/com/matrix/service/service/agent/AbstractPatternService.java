@@ -14,7 +14,6 @@ import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.common.util.JSONUtil;
-import com.matrix.service.cache.ServiceCache;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.context.PatternContext;
 import com.matrix.service.context.RegisterContext;
@@ -56,8 +55,6 @@ import java.util.function.Consumer;
 public abstract class AbstractPatternService<T extends PatternRequest> implements PatternService<T, Response> {
 
     @Resource
-    protected ServiceCache serviceCache;
-    @Resource
     protected RegisterContext registerContext;
     @Resource
     protected ChatContext chatContext;
@@ -89,7 +86,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 if (customCall != null) {
                     customCall.accept(sink);
                 } else {
-                    this.call(sink, request);
+                    this.call(sink, request, false);
                 }
                 sink.complete();
             } catch (Exception e) {
@@ -106,7 +103,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected Response call(FluxSink<Response> sink, PatternRequest request) {
+    protected Response call(FluxSink<Response> sink, PatternRequest request, boolean flag) {
         // 获取参数
         long userId = request.getUserId();
         long sessionId = request.getSessionId();
@@ -142,7 +139,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 throw new RuntimeException(error.getMessage());
             }
             // 记录 Assistant 消息
-            this.saveMessage(userId, sessionId, Role.ASSISTANT, response);
+            this.saveMessage(userId, sessionId, Role.ASSISTANT, response, flag);
 
             // 【STOP】停止对话
             if (!TimerTool.getName().equals(request.getToolName())
@@ -168,14 +165,19 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         return response;
     }
 
-    /** callResultByClone操作 */
-    protected String callResultByClone(FluxSink<Response> sink, PatternRequest request, String prompt) {
+    /**
+     * @description 克隆调用
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected String callByClone(FluxSink<Response> sink, PatternRequest request, String prompt, boolean flag) {
         PatternRequest localRequest = request.clone();
         if (StringUtils.isNotBlank(prompt)) {
             localRequest.getMessages().add(Message.user(prompt));
         }
         try {
-            Response response = this.call(sink, localRequest);
+            Response response = this.call(sink, localRequest, flag);
             Message message = null != response ? response.getMessage() : null;
             if (null != message) {
                 return StringUtils.isNotBlank(message.getContent())
@@ -189,17 +191,29 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             throw new RuntimeException(e.getMessage());
         }
     }
-    protected String callResultByClone(PatternRequest request, String prompt) {
-        return this.callResultByClone(null, request, prompt);
+
+    /**
+     * @description 结果类调用（clone）
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected String callByResult(PatternRequest request, String prompt) {
+        return this.callByClone(null, request, prompt, false);
     }
 
-    /** callNoToolByClone操作 */
-    protected String callNoToolByClone(PatternRequest request, String prompt) {
+    /**
+     * @description 标记类调用（clone）
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected String callByFlag(PatternRequest request, String prompt) {
         PatternRequest localRequest = request.clone();
         if (!CollectionUtils.isEmpty(localRequest.getTools())) {
             localRequest.getTools().clear();
         }
-        return this.callResultByClone(localRequest, prompt);
+        return this.callByClone(null, localRequest, prompt, true);
     }
 
 
@@ -267,7 +281,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 sink.next(toolResult);
             }
             // 记录工具结果消息
-            this.saveMessage(userId, sessionId, Role.TOOL, toolResult);
+            this.saveMessage(userId, sessionId, Role.TOOL, toolResult, false);
         }
         // 追加系统消息
         if (!systemMessage.isEmpty()) {
@@ -413,7 +427,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected void saveMessage(Long userId, Long sessionId, String role, Response response) {
+    protected void saveMessage(Long userId, Long sessionId, String role, Response response, boolean flag) {
         Message message = response.getMessage();
         if (null == message) {
             log.info("[记录消息] userId={}, sessionId={}, message is null", userId, sessionId);
@@ -423,7 +437,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             MessageInfo save = MessageInfo.builder()
                     .userId(userId)
                     .sessionId(sessionId)
-                    .role(role)
+                    .role(flag ? Role.FLAG : role)
                     .content(message.getContent())
                     .reasoning_content(message.getReasoning_content())
                     .tool_call_id(message.getTool_call_id())
@@ -479,7 +493,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         try {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断执行计划生成模式");
-            planMode = this.callNoToolByClone(request, Prompt.CoT.PLAN_MODE);
+            planMode = this.callByFlag(request, Prompt.CoT.PLAN_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.ASPECT.getValue())) {
@@ -520,7 +534,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Plan）");
-            plan = this.callResultByClone(request, prompt);
+            plan = this.callByResult(request, prompt);
         } else {
             // 多计划综合评估
             List<String> plans;
@@ -548,7 +562,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                     smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                     smart.getRelevant(), smart.getTimeBound());
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "融合执行计划");
-            plan = this.callResultByClone(request, prompt);
+            plan = this.callByResult(request, prompt);
         }
         log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
                 request.getUserId(), request.getSessionId(), planMode, plan);
@@ -557,7 +571,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-信息补充检查");
-            String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
+            String check = this.callByFlag(request, Prompt.Check.PLAN);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);
             if (check.contains(OutputKeyword.TODO)) {
@@ -586,7 +600,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound(),
                         direction);
-                plans.add(this.callResultByClone(request, prompt));
+                plans.add(this.callByResult(request, prompt));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -611,15 +625,15 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                         direction);
                 localRequest.getMessages().add(Message.user(prompt));
                 // 生成执行计划
-                String plan = this.callResultByClone(localRequest, null);
+                String plan = this.callByResult(localRequest, null);
                 // 多方向评价
                 localRequest.getMessages().add(Message.assistant(plan));
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "评估执行计划");
-                String evaluation = this.callResultByClone(localRequest,
+                String evaluation = this.callByResult(localRequest,
                         Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
                 // 修正
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "修订执行计划");
-                plans.add(this.callResultByClone(localRequest, Prompt.MoA.REVISE.formatted(evaluation)));
+                plans.add(this.callByResult(localRequest, Prompt.MoA.REVISE.formatted(evaluation)));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -644,19 +658,19 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                         direction);
                 localRequest.getMessages().add(Message.user(prompt));
                 // 生成执行计划
-                String plan = this.callResultByClone(localRequest, null);
+                String plan = this.callByResult(localRequest, null);
                 // 思考帽/SWOT评价
                 localRequest.getMessages().add(Message.assistant(plan));
                 List<String> evaluations = new ArrayList<>();
                 for (String principle : Prompt.MoA.PRINCIPLES) {
-                    evaluations.add(this.callResultByClone(localRequest,
+                    evaluations.add(this.callByResult(localRequest,
                             Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle)));
                 }
                 // 修正
                 for (String evaluation : evaluations) {
                     localRequest.getMessages().add(Message.user(evaluation));
                 }
-                plans.add(this.callResultByClone(localRequest, null));
+                plans.add(this.callByResult(localRequest, null));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -673,7 +687,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 审查
         request.getMessages().add(Message.assistant(plan));
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-审查执行计划");
-        String result = this.callResultByClone(request, Prompt.MoA.DOMAIN_REVIEW);
+        String result = this.callByResult(request, Prompt.MoA.DOMAIN_REVIEW);
         // 计算结果
         int indexPass = result.indexOf(OutputKeyword.PASS);
         int indexRevise = result.indexOf(OutputKeyword.REVISE);
@@ -690,7 +704,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 修订
         if (isRevise) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
-            return this.callResultByClone(request, Prompt.MoA.REVISE.formatted(result));
+            return this.callByResult(request, Prompt.MoA.REVISE.formatted(result));
         }
         // 终止执行
         throw new RuntimeException(result);
@@ -719,10 +733,10 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             request.getMessages().add(Message.user(action));
             String result = this.actionExecute(request.clone(), action);
             request.getMessages().add(Message.assistant(result));
-            // TODO 待补充检查
+            // 待补充检查
             if (interruptible) {
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行结果-信息补充检查");
-                String check = this.callNoToolByClone(request, Prompt.Check.RESULT);
+                String check = this.callByFlag(request, Prompt.Check.RESULT);
                 log.info("[直接回答] userId={}, sessionId={}, result={}",
                         request.getUserId(), request.getSessionId(), check);
                 if (check.contains(OutputKeyword.TODO)) {
@@ -746,7 +760,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         String title = action.length() > 15 ? (action.substring(0, 15) + "...") : action;
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行任务：" + title);
-        result = this.callResultByClone(request, Prompt.CoT.EXECUTE_SUMMARY.formatted(action));
+        result = this.callByResult(request, Prompt.CoT.EXECUTE_SUMMARY.formatted(action));
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
         patternContext.setResult(request.getUserId(), request.getSessionId(), action, result);
@@ -766,7 +780,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(actions)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行方案列表");
-            actions = this.callResultByClone(request, Prompt.CoT.ACTIONS.formatted(
+            actions = this.callByResult(request, Prompt.CoT.ACTIONS.formatted(
                     JSONSchemaUtil.generate(TaskActions.class)));
         }
         try {
@@ -799,7 +813,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                 smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "观察执行结果");
-        String observe = this.callResultByClone(request, prompt);
+        String observe = this.callByResult(request, prompt);
         log.info("[任务模式] 任务执行结果观察, userId={}, sessionId={}, observe={}",
                 request.getUserId(), request.getSessionId(), observe);
 

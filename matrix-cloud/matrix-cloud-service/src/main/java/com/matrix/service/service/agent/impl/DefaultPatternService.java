@@ -80,7 +80,7 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断是否重置缓存");
-        String reset = this.callNoToolByClone(request, Prompt.Check.RESET.formatted(smart, plan));
+        String reset = this.callByFlag(request, Prompt.Check.RESET.formatted(smart, plan));
         log.info("[直接回答] userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), reset);
         if (reset.contains(OutputKeyword.SMART)) {

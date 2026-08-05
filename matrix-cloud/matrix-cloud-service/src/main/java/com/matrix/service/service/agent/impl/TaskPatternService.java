@@ -132,7 +132,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         String isSmart = patternContext.getIsSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(isSmart)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断是否需要 SMART 分析");
-            String result = this.callNoToolByClone(request, Prompt.Check.IS_SMART);
+            String result = this.callByFlag(request, Prompt.Check.IS_SMART);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), result);
             patternContext.setIsSmart(request.getUserId(), request.getSessionId(), result);
@@ -154,12 +154,12 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(smart)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成任务目标");
-            smart = this.callResultByClone(request, Prompt.CoT.SMART.formatted(
+            smart = this.callByResult(request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
             request.getMessages().add(Message.assistant(smart));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "任务目标-信息补充检查");
-            String check = this.callNoToolByClone(request, Prompt.Check.GOAL);
+            String check = this.callByFlag(request, Prompt.Check.GOAL);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);
             if (check.contains(OutputKeyword.TODO)) {

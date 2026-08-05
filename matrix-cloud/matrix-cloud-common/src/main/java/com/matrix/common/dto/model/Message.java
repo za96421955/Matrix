@@ -108,13 +108,6 @@ public class Message implements Serializable {
                 .build();
     }
 
-    /** done操作 */
-    public static Message done() {
-        return Message.builder()
-                .role(Role.DONE)
-                .build();
-    }
-
 //    public static Message latestReminder(String content) {
 //        return Message.builder()
 //                .role(Role.LATEST_REMINDER)

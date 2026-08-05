@@ -28,7 +28,7 @@ public class EvaluationService {
         System.out.println(evaluation.getProblem());
         System.out.println("\n---");
         System.out.println("## Score (Pro):");
-        System.out.println("本地库优先，缺失时联网补充：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
+        System.out.println("信息本地优先，缺失时联网补充：/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_source");
         System.out.println("直接完成以下任务");
         System.out.println("- 按以下评分标准，对 /Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test/answer/" + question + "_answer.md 进行评分：");
         System.out.println("```");

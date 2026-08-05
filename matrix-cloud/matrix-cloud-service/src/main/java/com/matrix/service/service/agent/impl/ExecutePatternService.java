@@ -81,11 +81,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
             localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(localRequest))) {
-                this.executeTaskAction(localRequest);
-            } else {
-                this.executeTaskChain(localRequest);
-            }
+            this.executeTaskAction(localRequest, false);
 
             // 3. 观察
             String observe = this.observe(localRequest, null);

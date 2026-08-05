@@ -6,7 +6,6 @@ import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
-import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.common.util.JSONUtil;
@@ -102,10 +101,10 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            if (TaskMode.SERIAL.getValue().equals(this.getActionMode(localRequest))) {
-                this.executeTaskAction(localRequest);
-            } else {
-                this.executeTaskChain(localRequest);
+            String result = this.executeTaskAction(localRequest, true);
+            if (null == result) {
+                // 用户 TODO
+                return;
             }
 
             // 3. 观察
@@ -159,7 +158,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
                     JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
             request.getMessages().add(Message.assistant(smart));
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "检查是否需要补充信息");
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "任务目标-信息补充检查");
             String check = this.callNoToolByClone(request, Prompt.Check.GOAL);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);

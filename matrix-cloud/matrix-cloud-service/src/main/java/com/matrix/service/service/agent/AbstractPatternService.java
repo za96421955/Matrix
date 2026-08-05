@@ -23,7 +23,6 @@ import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.service.agent.schema.Smart;
 import com.matrix.service.service.agent.schema.TaskActions;
-import com.matrix.service.service.agent.schema.TaskChain;
 import com.matrix.service.service.app.ApplicationService;
 import com.matrix.service.service.chat.MessageService;
 import com.matrix.service.service.task.Executor;
@@ -38,7 +37,10 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -554,7 +556,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 待补充检查
         if (interruptible) {
             request.getMessages().add(Message.assistant(plan));
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "检查是否需要补充信息");
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-信息补充检查");
             String check = this.callNoToolByClone(request, Prompt.Check.PLAN);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), check);
@@ -616,9 +618,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 String evaluation = this.callResultByClone(localRequest,
                         Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
                 // 修正
-                localRequest.getMessages().add(Message.user(evaluation));
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "修订执行计划");
-                plans.add(this.callResultByClone(localRequest, null));
+                plans.add(this.callResultByClone(localRequest, Prompt.MoA.REVISE.formatted(evaluation)));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -688,45 +689,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         // 修订
         if (isRevise) {
-            request.getMessages().add(Message.user(result));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
-            return this.callResultByClone(request, null);
+            return this.callResultByClone(request, Prompt.MoA.REVISE.formatted(result));
         }
         // 终止执行
         throw new RuntimeException(result);
-    }
-
-    /**
-     * @description 获取执行方案生成模式
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    protected String getActionMode(PatternRequest request) {
-        if (true) {
-            return TaskMode.SERIAL.getValue();
-        }
-        String actionMode = patternContext.getActionMode(request.getUserId(), request.getSessionId());
-        if (StringUtils.isNotBlank(actionMode)) {
-            return actionMode;
-        }
-        try {
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断执行方案生成模式");
-            actionMode = this.callNoToolByClone(request, Prompt.CoT.ACTION_MODE);
-            log.info("[直接回答] userId={}, sessionId={}, result={}",
-                    request.getUserId(), request.getSessionId(), actionMode);
-            if (actionMode.contains(TaskMode.PARALLEL.getValue())) {
-                actionMode = TaskMode.PARALLEL.getValue();
-            } else {
-                actionMode = TaskMode.SERIAL.getValue();
-            }
-            patternContext.setActionMode(request.getUserId(), request.getSessionId(), actionMode);
-            log.info("[任务模式] 执行方案生成模式, userId={}, sessionId={}, actionMode={}",
-                    request.getUserId(), request.getSessionId(), actionMode);
-            return actionMode;
-        } catch (Exception e) {
-            return TaskMode.SERIAL.getValue();
-        }
     }
 
     /**
@@ -735,7 +702,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected void executeTaskAction(PatternRequest request) {
+    protected String executeTaskAction(PatternRequest request, boolean interruptible) {
         // 1. 构建任务执行方案列表
         TaskActions actions = this.generateTaskActions(request, 0);
         if (null == actions) {
@@ -746,57 +713,24 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             // 【STOP】停止对话
             if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
                 log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                return;
+                return null;
             }
             // 方案执行
-            request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
-        }
-    }
-
-    /**
-     * @description 方案块执行
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    protected void executeTaskChain(PatternRequest request) {
-        // 1. 构建任务执行方案列表
-        TaskChain actions = this.generateTaskChain(request, 0);
-        if (null == actions) {
-            throw new RuntimeException("执行方案列表生成失败");
-        }
-        // 2. 执行
-        for (TaskChain.ActionBlock block : actions.getBlocks()) {
-            if (block.getIsSerial()) {
-                for (String action : block.getActions()) {
-                    // 【STOP】停止对话
-                    if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                        log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                        return;
-                    }
-                    // 方案执行
-                    request.getMessages().add(Message.assistant(this.actionExecute(request, action)));
+            request.getMessages().add(Message.user(action));
+            String result = this.actionExecute(request.clone(), action);
+            request.getMessages().add(Message.assistant(result));
+            // TODO 待补充检查
+            if (interruptible) {
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行结果-信息补充检查");
+                String check = this.callNoToolByClone(request, Prompt.Check.RESULT);
+                log.info("[直接回答] userId={}, sessionId={}, result={}",
+                        request.getUserId(), request.getSessionId(), check);
+                if (check.contains(OutputKeyword.TODO)) {
+                    return null;
                 }
-            } else {
-                List<CompletableFuture<Void>> taskFutures = new ArrayList<>();
-                PatternRequest localRequest = request.clone();
-                List<Message> results = new LinkedList<>();
-                for (String action : block.getActions()) {
-                    taskFutures.add(CompletableFuture.runAsync(() -> {
-                        // 【STOP】停止对话
-                        if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                            log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
-                            return;
-                        }
-                        // 方案执行
-                        results.add(Message.assistant(this.actionExecute(localRequest, action)));
-                    }));
-                }
-                // 等待所有并行任务完成
-                CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
-                request.getMessages().addAll(results);
             }
         }
+        return "已完成";
     }
 
     /**
@@ -808,7 +742,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     private String actionExecute(PatternRequest request, String action) {
         String result = patternContext.getResult(request.getUserId(), request.getSessionId(), action);
         if (StringUtils.isNotBlank(result)) {
-            request.getMessages().add(Message.user(action));
             return result;
         }
         String title = action.length() > 15 ? (action.substring(0, 15) + "...") : action;
@@ -817,7 +750,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
         patternContext.setResult(request.getUserId(), request.getSessionId(), action, result);
-        request.getMessages().add(Message.user(action));
         return result;
     }
 
@@ -853,41 +785,6 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             patternContext.clearActions(request.getUserId(), request.getSessionId());
             request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
             return this.generateTaskActions(request, ++retry);
-        }
-    }
-
-    /**
-     * @description 生成执行链
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private TaskChain generateTaskChain(PatternRequest request, int retry) {
-        if (retry >= 3) {
-            return null;
-        }
-        String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
-        if (StringUtils.isBlank(actions)) {
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行方案（块）列表");
-            actions = this.callResultByClone(request, Prompt.CoT.ACTIONS.formatted(
-                    JSONSchemaUtil.generate(TaskChain.class)));
-        }
-        try {
-            String json = ContentUtil.removeJsonMarkers(actions);
-            if (StringUtils.isBlank(json)) {
-                throw new RuntimeException("json content is empty");
-            }
-            TaskChain actionsObj = JSONUtil.parseObject(json, TaskChain.class);
-            if (null == actionsObj.getBlocks()) {
-                throw new RuntimeException("actions is empty");
-            }
-            patternContext.setActions(request.getUserId(), request.getSessionId(), json);
-            return actionsObj;
-        } catch (Exception e) {
-            // 格式错误，重试
-            patternContext.clearActions(request.getUserId(), request.getSessionId());
-            request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.generateTaskChain(request, ++retry);
         }
     }
 

@@ -20,11 +20,13 @@ public enum TaskMode {
     /** 直接计划 */
     PLAN("PLAN"),
 
-    /** 素朴切面 */
-    ASPECT("ASPECT"),
+    /** 审查修订 */
+    REVIEW("REVIEW"),
 
-    /** 评论修正 */
-    EVALUATION("EVALUATION");
+//    /** 评论修正 */
+//    EVALUATION("EVALUATION")
+
+    ;
 
     private final String value;
 

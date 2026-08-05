@@ -500,10 +500,10 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             planMode = this.callByFlag(request, Prompt.CoT.PLAN_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), planMode);
-            if (planMode.contains(TaskMode.ASPECT.getValue())) {
-                planMode = TaskMode.ASPECT.getValue();
-            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
-                planMode = TaskMode.EVALUATION.getValue();
+            if (planMode.contains(TaskMode.REVIEW.getValue())) {
+                planMode = TaskMode.REVIEW.getValue();
+//            } else if (planMode.contains(TaskMode.EVALUATION.getValue())) {
+//                planMode = TaskMode.EVALUATION.getValue();
             } else {
                 planMode = TaskMode.PLAN.getValue();
             }
@@ -532,43 +532,14 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (StringUtils.isNotBlank(plan)) {
             return plan;
         }
-        // 直接 Plan
-        if (TaskMode.PLAN.getValue().equals(planMode)) {
-            String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound());
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Plan）");
-            plan = this.callByResult(request, prompt);
-        } else {
-            // 多计划综合评估
-            List<String> plans;
-            // 切面 (MoA)
-            if (TaskMode.ASPECT.getValue().equals(planMode)) {
-                patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Aspect）");
-                plans = this.getPlansByAspect(request, smart);
-                log.info("[任务模式] 任务规划: 切面, userId={}, sessionId={}, planMode={}, plans={}",
-                        request.getUserId(), request.getSessionId(), planMode, plans);
-            }
-            // 切面 + 评论修正 (MoA)
-            else {
-                patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行计划（Evaluation）");
-                plans = this.getPlansByAspectAndEvaluation(request, smart);
-                log.info("[任务模式] 任务规划: 切面 + 思考帽/SWOT修正, userId={}, sessionId={}, planMode={}, plans={}",
-                        request.getUserId(), request.getSessionId(), planMode, plans);
-            }
-            // 融合
-            for (int i = 0; i < plans.size(); i++) {
-                request.getMessages().add(Message.assistant(
-                        "#执行计划 " + ((char) ('A' + i)) + ": \n" +
-                                plans.get(i)));
-            }
-            String prompt = null == smart ? Prompt.MoA.CONVERGE : Prompt.MoA.CONVERGE_SMART.formatted(
-                    smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                    smart.getRelevant(), smart.getTimeBound());
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "融合执行计划");
-            plan = this.callByResult(request, prompt);
-        }
-        log.info("[任务模式] 任务规划, userId={}, sessionId={}, planMode={}, plan={}",
+
+        // 生成执行计划
+        String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
+                smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                smart.getRelevant(), smart.getTimeBound());
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-生成");
+        plan = this.callByResult(request, prompt);
+        log.info("[任务模式] 执行计划 - 生成, userId={}, sessionId={}, planMode={}, plan={}",
                 request.getUserId(), request.getSessionId(), planMode, plan);
 
         // 待补充检查
@@ -583,102 +554,56 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             }
         }
 
+        // 审查修订
+        if (TaskMode.REVIEW.getValue().equals(planMode)) {
+            plan = this.review(request, plan);
+            log.info("[任务模式] 执行计划 - 审查修订, userId={}, sessionId={}, planMode={}, plan={}",
+                    request.getUserId(), request.getSessionId(), planMode, plan);
+        }
+
         // 领域专家审查、修订
         plan = this.domainReview(request.clone(), plan);
         patternContext.setPlan(request.getUserId(), request.getSessionId(), plan);
+        log.info("[任务模式] 执行计划 - 定稿, userId={}, sessionId={}, planMode={}, plan={}",
+                request.getUserId(), request.getSessionId(), planMode, plan);
         return plan;
     }
 
     /**
-     * @description 切面, 获取多个执行计划
+     * @description 审查、修订
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
      */
-    private List<String> getPlansByAspect(PatternRequest request, Smart smart) {
+    private String review(PatternRequest request, String plan) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
+        List<String> revises = new ArrayList<>();
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                plans.add(this.callByResult(request, prompt));
-            }));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
-    }
-
-    /**
-     * @description 切面 + 评论, 获取多个执行计划
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private List<String> getPlansByAspectAndEvaluation(PatternRequest request, Smart smart) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
-            futures.add(CompletableFuture.runAsync(() -> {
-                PatternRequest localRequest = request.clone();
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                localRequest.getMessages().add(Message.user(prompt));
-                // 生成执行计划
-                String plan = this.callByResult(localRequest, null);
-                // 多方向评价
-                localRequest.getMessages().add(Message.assistant(plan));
-                patternContext.setStatus(request.getUserId(), request.getSessionId(), "评估执行计划");
-                String evaluation = this.callByResult(localRequest,
-                        Prompt.MoA.EVALUATION_DIRECTION.formatted(String.join("、", Prompt.MoA.DIRECTIONS)));
-                // 修正
-                patternContext.setStatus(request.getUserId(), request.getSessionId(), "修订执行计划");
-                plans.add(this.callByResult(localRequest, Prompt.MoA.REVISE.formatted(evaluation)));
-            }));
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
-    }
-
-    /**
-     * @description 切面 + 原则, 获取多个执行计划
-     * <p> <功能详细描述> </p>
-     *
-     * @author 陈晨
-     */
-    private List<String> getPlansByAspectAndPrinciple(PatternRequest request, Smart smart) {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        List<String> plans = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
-            futures.add(CompletableFuture.runAsync(() -> {
-                PatternRequest localRequest = request.clone();
-                String prompt = null == smart ? Prompt.MoA.ASPECT : Prompt.MoA.ASPECT_SMART.formatted(
-                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                        smart.getRelevant(), smart.getTimeBound(),
-                        direction);
-                localRequest.getMessages().add(Message.user(prompt));
-                // 生成执行计划
-                String plan = this.callByResult(localRequest, null);
-                // 思考帽/SWOT评价
-                localRequest.getMessages().add(Message.assistant(plan));
-                List<String> evaluations = new ArrayList<>();
-                for (String principle : Prompt.MoA.PRINCIPLES) {
-                    evaluations.add(this.callByResult(localRequest,
-                            Prompt.MoA.EVALUATION_PRINCIPLE.formatted(principle)));
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-审查");
+                String result = this.callByResult(request, Prompt.MoA.DIRECTION_REVIEW.formatted(direction));
+                // 计算结果
+                int indexPass = result.indexOf(OutputKeyword.PASS);
+                int indexRevise = result.indexOf(OutputKeyword.REVISE);
+                boolean isPass = indexPass >= 0
+                        && (indexRevise < 0 || indexRevise > indexPass);
+                if (!isPass) {
+                    revises.add(result);
                 }
-                // 修正
-                for (String evaluation : evaluations) {
-                    localRequest.getMessages().add(Message.user(evaluation));
-                }
-                plans.add(this.callByResult(localRequest, null));
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return plans;
+
+        // 修订
+        if (!CollectionUtils.isEmpty(revises)) {
+            StringBuilder revise = new StringBuilder();
+            for (String r : revises) {
+                revise.append(r).append("\n---\n");
+            }
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-修订");
+            return this.callByResult(request, Prompt.MoA.CONVERGE.formatted(revise));
+        }
+        return plan;
     }
 
     /**
@@ -690,7 +615,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     private String domainReview(PatternRequest request, String plan) {
         // 审查
         request.getMessages().add(Message.assistant(plan));
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-审查执行计划");
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-领域专家审查");
         String result = this.callResultByFlag(request, Prompt.MoA.DOMAIN_REVIEW);
         // 计算结果
         int indexPass = result.indexOf(OutputKeyword.PASS);
@@ -707,7 +632,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         // 修订
         if (isRevise) {
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "领域专家-修订执行计划");
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-领域专家修订");
             return this.callByResult(request, Prompt.MoA.REVISE.formatted(result));
         }
         // 终止执行

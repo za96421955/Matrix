@@ -19,14 +19,13 @@ const API_BASE = getApiBaseUrl()
 
 // ===================== 模式 / 风险等级 视觉配置 =====================
 const MODE_CONFIG: Record<Pattern, { label: string; icon: React.ComponentType<{ className?: string }>; dot: string; text: string; border: string; ring: string; chip: string; gradient: string; color: string; hover: string }> = {
-    skill:  { label: '技能', icon: Wrench, dot: 'bg-violet-500',  text: 'text-violet-600 dark:text-violet-300',    border: 'border-violet-400/70 dark:border-violet-500/50',    ring: 'focus:ring-violet-500/50',    chip: 'bg-violet-50 dark:bg-violet-500/10', gradient: 'bg-gradient-to-r from-violet-500/10 to-violet-500/5', hover: 'hover:border-violet-500/80 dark:hover:border-violet-400/70', color: '#7c3aed' },
-    execute:{ label: '执行', icon: Zap,    dot: 'bg-red-500',     text: 'text-red-600 dark:text-red-300',          border: 'border-red-400/70 dark:border-red-500/50',          ring: 'focus:ring-red-500/50',       chip: 'bg-red-50 dark:bg-red-500/10', gradient: 'bg-gradient-to-r from-red-500/10 to-red-500/5', hover: 'hover:border-red-500/80 dark:hover:border-red-400/70', color: '#dc2626' },
-    plan:   { label: '规划', icon: Route,  dot: 'bg-blue-500',    text: 'text-blue-600 dark:text-blue-300',         border: 'border-blue-400/70 dark:border-blue-500/50',         ring: 'focus:ring-blue-500/50',      chip: 'bg-blue-50 dark:bg-blue-500/10', gradient: 'bg-gradient-to-r from-blue-500/10 to-blue-500/5', hover: 'hover:border-blue-500/80 dark:hover:border-blue-400/70', color: '#2563eb' },
-    review: { label: '审查', icon: Eye,    dot: 'bg-cyan-500',    text: 'text-cyan-600 dark:text-cyan-300',         border: 'border-cyan-400/70 dark:border-cyan-500/50',         ring: 'focus:ring-cyan-500/50',      chip: 'bg-cyan-50 dark:bg-cyan-500/10', gradient: 'bg-gradient-to-r from-cyan-500/10 to-cyan-500/5', hover: 'hover:border-cyan-500/80 dark:hover:border-cyan-400/70', color: '#0891b2' },
-    goal:   { label: '目标', icon: Target, dot: 'bg-green-500',   text: 'text-green-600 dark:text-green-300',       border: 'border-green-400/70 dark:border-green-500/50',       ring: 'focus:ring-green-500/50',     chip: 'bg-green-50 dark:bg-green-500/10', gradient: 'bg-gradient-to-r from-green-500/10 to-green-500/5', hover: 'hover:border-green-500/80 dark:hover:border-green-400/70', color: '#16a34a' },
-    deep:   { label: '深度', icon: Brain,  dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',       border: 'border-amber-400/70 dark:border-amber-500/50',       ring: 'focus:ring-amber-500/50',     chip: 'bg-amber-50 dark:bg-amber-500/10', gradient: 'bg-gradient-to-r from-amber-500/10 to-amber-500/5', hover: 'hover:border-amber-500/80 dark:hover:border-amber-400/70', color: '#d97706' },
+    skill:  { label: '技能', icon: Wrench, dot: 'bg-green-500',   text: 'text-green-600 dark:text-green-300',    border: 'border-green-400/70 dark:border-green-500/50',    ring: 'focus:ring-green-500/50',   chip: 'bg-green-50 dark:bg-green-500/10', gradient: 'bg-gradient-to-r from-green-500/10 to-green-500/5', hover: 'hover:border-green-500/80 dark:hover:border-green-400/70', color: '#16a34a' },
+    execute:{ label: '执行', icon: Zap,    dot: 'bg-cyan-500',    text: 'text-cyan-600 dark:text-cyan-300',       border: 'border-cyan-400/70 dark:border-cyan-500/50',       ring: 'focus:ring-cyan-500/50',  chip: 'bg-cyan-50 dark:bg-cyan-500/10', gradient: 'bg-gradient-to-r from-cyan-500/10 to-cyan-500/5', hover: 'hover:border-cyan-500/80 dark:hover:border-cyan-400/70', color: '#0891b2' },
+    plan:   { label: '规划', icon: Route,  dot: 'bg-blue-500',    text: 'text-blue-600 dark:text-blue-300',       border: 'border-blue-400/70 dark:border-blue-500/50',       ring: 'focus:ring-blue-500/50',  chip: 'bg-blue-50 dark:bg-blue-500/10', gradient: 'bg-gradient-to-r from-blue-500/10 to-blue-500/5', hover: 'hover:border-blue-500/80 dark:hover:border-blue-400/70', color: '#2563eb' },
+    review: { label: '审查', icon: Eye,    dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    border: 'border-amber-400/70 dark:border-amber-500/50',    ring: 'focus:ring-amber-500/50', chip: 'bg-amber-50 dark:bg-amber-500/10', gradient: 'bg-gradient-to-r from-amber-500/10 to-amber-500/5', hover: 'hover:border-amber-500/80 dark:hover:border-amber-400/70', color: '#d97706' },
+    goal:   { label: '目标', icon: Target, dot: 'bg-violet-500',  text: 'text-violet-600 dark:text-violet-300',   border: 'border-violet-400/70 dark:border-violet-500/50',   ring: 'focus:ring-violet-500/50', chip: 'bg-violet-50 dark:bg-violet-500/10', gradient: 'bg-gradient-to-r from-violet-500/10 to-violet-500/5', hover: 'hover:border-violet-500/80 dark:hover:border-violet-400/70', color: '#7c3aed' },
+    deep:   { label: '深度', icon: Brain,  dot: 'bg-red-500',     text: 'text-red-600 dark:text-red-300',         border: 'border-red-400/70 dark:border-red-500/50',         ring: 'focus:ring-red-500/50',   chip: 'bg-red-50 dark:bg-red-500/10', gradient: 'bg-gradient-to-r from-red-500/10 to-red-500/5', hover: 'hover:border-red-500/80 dark:hover:border-red-400/70', color: '#dc2626' },
 }
-
 
 const RISK_CONFIG: Record<number, { label: string; desc: string; color: string; dot: string; text: string; border: string; ring: string; chip: string; bg: string; hover: string }> = {
     '-1': { label: '禁止执行',   desc: '命令将被拒绝执行',   hover: 'hover:border-gray-500/80 dark:hover:border-gray-400/70', color: '#9ca3af', dot: 'bg-gray-400',    text: 'text-gray-500 dark:text-gray-400',    border: 'border-gray-300/70 dark:border-gray-600',        ring: 'focus:ring-gray-500/50',   chip: 'bg-gray-100 dark:bg-gray-500/10',      bg: 'bg-gradient-to-r from-gray-500/10 to-gray-500/5' },
@@ -1078,21 +1077,20 @@ export default function ChatArea() {
                     >
                         <span className={"flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 " + MODE_CONFIG[pattern].chip}>
                             {(() => { const Icon = MODE_CONFIG[pattern].icon; return <Icon className={"w-3.5 h-3.5 " + MODE_CONFIG[pattern].text}/> })()}
-                            {/*<span className={"w-1.5 h-1.5 rounded-full animate-pulse " + MODE_CONFIG[pattern].dot}/>*/}
                             <span className={"text-[10px] sm:text-xs font-extrabold tracking-tight " + MODE_CONFIG[pattern].text}>模式</span>
                         </span>
                         <select
                             value={pattern}
                             onChange={(e) => setPattern(e.target.value as Pattern)}
-                            className={"pl-2 pr-6 py-1 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-2 focus:ring-inset bg-transparent " + MODE_CONFIG[pattern].ring + " " + MODE_CONFIG[pattern].text}
+                            className={"pl-2 pr-6 py-1 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-0 focus:ring-inset bg-transparent " + MODE_CONFIG[pattern].ring + " " + MODE_CONFIG[pattern].text}
                             aria-label="模式选择"
                         >
-                            <option value="skill" style={{ color: pattern === "skill" ? "#7c3aed" : "#9ca3af", fontWeight: pattern === "skill" ? 700 : 400 }}>技能</option>
-                            <option value="execute" style={{ color: pattern === "execute" ? "#dc2626" : "#9ca3af", fontWeight: pattern === "execute" ? 700 : 400 }}>执行</option>
+                            <option value="skill" style={{ color: pattern === "skill" ? "#16a34a" : "#9ca3af", fontWeight: pattern === "skill" ? 700 : 400 }}>技能</option>
+                            <option value="execute" style={{ color: pattern === "execute" ? "#0891b2" : "#9ca3af", fontWeight: pattern === "execute" ? 700 : 400 }}>执行</option>
                             <option value="plan" style={{ color: pattern === "plan" ? "#2563eb" : "#9ca3af", fontWeight: pattern === "plan" ? 700 : 400 }}>规划</option>
-                            <option value="review" style={{ color: pattern === "review" ? "#0891b2" : "#9ca3af", fontWeight: pattern === "review" ? 700 : 400 }}>审查</option>
-                            <option value="goal" style={{ color: pattern === "goal" ? "#16a34a" : "#9ca3af", fontWeight: pattern === "goal" ? 700 : 400 }}>目标</option>
-                            <option value="deep" style={{ color: pattern === "deep" ? "#d97706" : "#9ca3af", fontWeight: pattern === "deep" ? 700 : 400 }}>深度</option>
+                            <option value="review" style={{ color: pattern === "review" ? "#d97706" : "#9ca3af", fontWeight: pattern === "review" ? 700 : 400 }}>审查</option>
+                            <option value="goal" style={{ color: pattern === "goal" ? "#7c3aed" : "#9ca3af", fontWeight: pattern === "goal" ? 700 : 400 }}>目标</option>
+                            <option value="deep" style={{ color: pattern === "deep" ? "#dc2626" : "#9ca3af", fontWeight: pattern === "deep" ? 700 : 400 }}>深度</option>
                         </select>
                     </div>
                     {/* 技能选择（仅在 skill 模式下显示） */}
@@ -1138,7 +1136,7 @@ export default function ChatArea() {
                     )}
 
                     {/* 授权等级选择 */}
-                    <div className="flex items-center gap-1 sm:gap-1.5">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-1 sm:ml-2">
                         {(() => {
                             const sid = currentSessionId
                             const isBack = sid && isBackendSessionId(sid)
@@ -1146,11 +1144,11 @@ export default function ChatArea() {
                             const currentLevel = isBack ? (session?.authLevel ?? 0) : userAuthLevel
                             return (
                                 <div
-                                    className={"flex items-stretch rounded-xl border bg-white dark:bg-[#18181B]/70 overflow-hidden shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-px " + RISK_CONFIG[currentLevel].border + " " + RISK_CONFIG[currentLevel].hover}
+                                    className={"flex items-stretch rounded-xl border overflow-hidden shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-px " + RISK_CONFIG[currentLevel].border + " " + RISK_CONFIG[currentLevel].hover}
                                     title={`授权等级：${RISK_CONFIG[currentLevel].label} —— ${RISK_CONFIG[currentLevel].desc}`}
                                 >
-                                    <span className={"flex items-center gap-1.5 px-2 py-1 border-r " + RISK_CONFIG[currentLevel].chip}>
-                                        <span className={"w-2 h-2 rounded-full " + RISK_CONFIG[currentLevel].dot}/>
+                                    <span className={"flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 " + RISK_CONFIG[currentLevel].chip}>
+                                        <span className={"w-1.5 h-1.5 rounded-full " + RISK_CONFIG[currentLevel].dot}/>
                                         {/*<span className={"w-1.5 h-1.5 rounded-full animate-pulse " + RISK_CONFIG[currentLevel].dot}/>*/}
                                         <span className={"text-[10px] sm:text-xs font-bold " + RISK_CONFIG[currentLevel].text}>授权</span>
                                     </span>
@@ -1167,7 +1165,7 @@ export default function ChatArea() {
                                                 setUserAuthLevel(val)
                                             }
                                         }}
-                                        className={"pl-2 pr-3 py-1 text-[10px] sm:text-xs font-semibold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-[#18181B] hover:brightness-105 risk-level-select " + RISK_CONFIG[currentLevel].text + " " + RISK_CONFIG[currentLevel].ring + " " + RISK_CONFIG[currentLevel].bg}
+                                        className={"pl-2 pr-3 py-1 text-[10px] sm:text-xs font-semibold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-0 focus:ring-offset-0 dark:focus:ring-offset-[#18181B] hover:brightness-105 risk-level-select " + RISK_CONFIG[currentLevel].text + " " + RISK_CONFIG[currentLevel].ring + " " + RISK_CONFIG[currentLevel].bg}
                                     >
                                         <option value={-1} className="risk-opt risk-opt--1" style={{ fontWeight: currentLevel === -1 ? 700 : 400 }}>禁止执行</option>
                                         <option value={0} className="risk-opt risk-opt-0" style={{ fontWeight: currentLevel === 0 ? 700 : 400 }}>仅限安全操作</option>

@@ -32,10 +32,7 @@ public class PatternContext {
      */
     public void clear(long userId, long sessionId) {
         this.clearPattern(userId, sessionId);
-        // 同时清除 status
         this.clearStatus(userId, sessionId);
-        // 同时清除 consume
-        this.clearConsume(userId, sessionId);
     }
     public void clearPattern(long userId, long sessionId) {
         log.info("[模式缓存] 清除模式, userId={}, sessionId={}", userId, sessionId);

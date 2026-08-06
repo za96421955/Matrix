@@ -100,6 +100,11 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 long curr = patternContext.getCurrConsume(request.getUserId(), request.getSessionId());
                 String consume = "耗时: " + DateUtil.formatTime(total + curr);
                 this.saveMessage(request.getUserId(), request.getSessionId(), Role.FLAG, Response.content(consume), true);
+                // 清除 consume
+                String pattern = patternContext.getPattern(request.getUserId(), request.getSessionId());
+                if (StringUtils.isBlank(pattern)) {
+                    patternContext.clearConsume(request.getUserId(), request.getSessionId());
+                }
             }
         }, FluxSink.OverflowStrategy.BUFFER);
     }

@@ -65,35 +65,20 @@ public interface Constant {
      */
     interface Pattern {
 
-        /** 自动模式 */
-        String AUTO = "auto";
-
-        /** 对话模式 */
-        String CHAT = "chat";
-
-        /** 智能体模式 */
-        String AGENT = "agent";
-
-        /** 计划模式 */
-        String PLAN = "plan";
-
-        /** 简单模式 */
-        String SIMPLE = "simple";
-
         /** 执行模式 */
         String EXECUTE = "execute";
 
-        /** 任务模式 */
-        String TASK = "task";
+        /** 规划模式 */
+        String PLAN = "plan";
 
-        /** 任务图模式 */
-        String TASK_GRAPH = "task-graph";
+        /** 审查模式 */
+        String REVIEW = "review";
 
-        /** 编码模式 */
-        String CODING = "coding";
+        /** 目标模式 */
+        String GOAL = "goal";
 
-        /** 资料模式 */
-        String INFORMATION = "information";
+        /** 深度模式 */
+        String DEEP = "deep";
 
     }
 

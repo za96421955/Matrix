@@ -28,11 +28,11 @@ import reactor.core.publisher.Flux;
 public class DefaultPatternService extends AbstractPatternService<PatternRequest> {
 
     @Resource
-    private SimplePatternService simplePatternService;
-    @Resource
     private ExecutePatternService executePatternService;
     @Resource
-    private TaskPatternService taskPatternService;
+    private PlanPatternService planPatternService;
+    @Resource
+    private GoalPatternService goalPatternService;
 
     private final ScenarioClassifier scenarioClassifier;
 
@@ -53,11 +53,11 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
         // 判断是否交互式任务场景
         String scenario = scenarioClassifier.getScenario(request);
         if (Constant.Pattern.TASK.equals(scenario)) {
-            patternService = taskPatternService;
+            patternService = goalPatternService;
         } else if (Constant.Pattern.EXECUTE.equals(scenario)) {
-            patternService = executePatternService;
+            patternService = planPatternService;
         } else {
-            patternService = simplePatternService;
+            patternService = executePatternService;
         }
         return patternService.call(request);
     }
@@ -93,7 +93,7 @@ public class DefaultPatternService extends AbstractPatternService<PatternRequest
             log.info("[默认模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
                     request.getUserId(), request.getSessionId(), reset);
         }
-        return Constant.Pattern.TASK.equals(pattern) ? taskPatternService : executePatternService;
+        return Constant.Pattern.TASK.equals(pattern) ? goalPatternService : planPatternService;
     }
 
 }

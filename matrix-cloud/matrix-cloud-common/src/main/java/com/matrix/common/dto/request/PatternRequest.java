@@ -29,6 +29,8 @@ public class PatternRequest extends Request {
     private String clientId;
     /** 工作目录 */
     private String itemPath;
+    /** 是否允许交互 */
+    private Boolean hook;
 
     /** 引用的会话ID列表，消息构建时优先加载这些会话的全量消息作为上下文 */
     private List<Long> referencedSessionIds;

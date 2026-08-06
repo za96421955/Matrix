@@ -654,7 +654,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             throw new RuntimeException("执行方案列表生成失败");
         }
         // 2. 执行
-        for (String action : actions.getActions()) {
+        for (int i = 0; i < actions.getActions().size(); i++) {
+            String action = actions.getActions().get(i);
             // 【STOP】停止对话
             if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
                 log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
@@ -662,7 +663,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             }
             // 方案执行
             request.getMessages().add(Message.user(action));
-            String result = this.actionExecute(request.clone(), action);
+            String result = this.actionExecute(request.clone(), action, i + 1, actions.getActions().size());
             request.getMessages().add(Message.assistant(result));
             // 待补充检查
             if (interruptible) {
@@ -684,13 +685,14 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    private String actionExecute(PatternRequest request, String action) {
+    private String actionExecute(PatternRequest request, String action, int curr, int size) {
         String result = patternContext.getResult(request.getUserId(), request.getSessionId(), action);
         if (StringUtils.isNotBlank(result)) {
             return result;
         }
         String title = action.length() > 15 ? (action.substring(0, 15) + "...") : action;
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行任务：" + title);
+        String status = "执行任务（%s/%s）：%s".formatted(curr, size, title);
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), status);
         result = this.callByResult(request, Prompt.CoT.EXECUTE_SUMMARY.formatted(action));
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);

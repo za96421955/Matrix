@@ -365,7 +365,7 @@ function BubbleActions({ showCopy, showDelete, onCopy, onDelete, copied }: {
 
     return (
         <>
-            <div className="absolute -top-2.5 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+            <div data-bubble-actions="true" className="absolute -top-2.5 right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
                 {showCopy && onCopy && (
                     <button
                         onClick={(e) => { e.stopPropagation(); onCopy() }}
@@ -433,10 +433,25 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
     const isSystem = message.role === 'system'
 
     const [copied, setCopied] = useState(false)
-    const [errorExpanded, setErrorExpanded] = useState(false)
-    const [flagExpanded, setFlagExpanded] = useState(false)
+
     const markdownEnabled = useChatStore((s) => s.markdownEnabled)
+    const expandedMsgIds = useChatStore((s) => s.expandedMsgIds)
+    const toggleMsgExpand = useChatStore((s) => s.toggleMsgExpand)
     const backendSessionList = useChatStore((s) => s.backendSessionList)
+    const sectionRef = useRef<HTMLDivElement>(null)
+    const prevExpandedRef = useRef(false)
+
+    const isExpanded = expandedMsgIds.includes(message.id)
+    useEffect(() => {
+        if (isExpanded && !prevExpandedRef.current && sectionRef.current) {
+            const timer = setTimeout(() => {
+                sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }, 350)
+            prevExpandedRef.current = isExpanded
+            return () => clearTimeout(timer)
+        }
+        prevExpandedRef.current = isExpanded
+    }, [isExpanded])
 
     const showToast = useCallback((msg: string) => {
         useToastStore.getState().addToast({type: 'success', message: msg})
@@ -752,7 +767,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                     <Flag className="w-4 h-4 text-indigo-500" />
                 </div>
                 <div className="flex-1 min-w-0 max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[70%] 2xl:max-w-[65%]">
-                    <div className="relative rounded-xl border-l-4 border-l-indigo-400 dark:border-l-indigo-500 border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 shadow-md shadow-indigo-200/20 dark:shadow-indigo-950/40">
+                    <div ref={sectionRef} data-expandable-msg-id={message.id} className="relative rounded-xl border-l-4 border-l-indigo-400 dark:border-l-indigo-500 border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 shadow-md shadow-indigo-200/20 dark:shadow-indigo-950/40">
                         <BubbleActions
                             showCopy={true}
                             showDelete={!!onDelete}
@@ -761,9 +776,9 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                             copied={copied}
                         />
                         <button
-                            onClick={() => setFlagExpanded(!flagExpanded)}
+                            onClick={() => toggleMsgExpand(message.id)}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-indigo-100/40 dark:hover:bg-indigo-950/70 rounded-r-xl"
-                            aria-label={flagExpanded ? '收起思考内容详情' : '展开思考内容详情'}
+                            aria-label={expandedMsgIds.includes(message.id) ? '收起思考内容详情' : '展开思考内容详情'}
                         >
                             <span className="flex items-center flex-shrink-0">
                                 <Flag className="w-3 h-3 text-indigo-500" />
@@ -774,7 +789,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                 </p>
                             </div>
                             <motion.span
-                                animate={{ rotate: flagExpanded ? 90 : 0 }}
+                                animate={{ rotate: expandedMsgIds.includes(message.id) ? 90 : 0 }}
                                 transition={{ duration: 0.2 }}
                                 className="flex-shrink-0"
                             >
@@ -782,7 +797,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                             </motion.span>
                         </button>
                         <AnimatePresence>
-                            {flagExpanded && (
+                            {expandedMsgIds.includes(message.id) && (
                                 <motion.div
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}
@@ -823,7 +838,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                     <AlertCircle className="w-4 h-4 text-red-500" />
                 </div>
                 <div className="flex-1 min-w-0 max-w-[90%] xs:max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] xl:max-w-[70%] 2xl:max-w-[65%]">
-                    <div className="relative rounded-xl border-l-4 border-l-red-500 dark:border-l-red-500 border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/50 shadow-md shadow-red-200/20 dark:shadow-red-950/40">
+                    <div ref={sectionRef} data-expandable-msg-id={message.id} className="relative rounded-xl border-l-4 border-l-red-500 dark:border-l-red-500 border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/50 shadow-md shadow-red-200/20 dark:shadow-red-950/40">
                         <BubbleActions
                             showCopy={true}
                             showDelete={!!onDelete}
@@ -832,9 +847,9 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                             copied={copied}
                         />
                         <button
-                            onClick={() => setErrorExpanded(!errorExpanded)}
+                            onClick={() => toggleMsgExpand(message.id)}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-red-100/40 dark:hover:bg-red-950/70 rounded-r-xl"
-                            aria-label={errorExpanded ? '收起错误详情' : '展开错误详情'}
+                            aria-label={expandedMsgIds.includes(message.id) ? '收起错误详情' : '展开错误详情'}
                         >
                             <span className="flex items-center gap-1.5 flex-shrink-0">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 whitespace-nowrap">处理失败</span>
@@ -845,7 +860,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                                 </p>
                             </div>
                             <motion.span
-                                animate={{ rotate: errorExpanded ? 90 : 0 }}
+                                animate={{ rotate: expandedMsgIds.includes(message.id) ? 90 : 0 }}
                                 transition={{ duration: 0.2 }}
                                 className="flex-shrink-0"
                             >
@@ -853,7 +868,7 @@ function MessageBubble({ message, isStreaming, onDelete, toolResultsMap, isToolC
                             </motion.span>
                         </button>
                         <AnimatePresence>
-                            {errorExpanded && (
+                            {expandedMsgIds.includes(message.id) && (
                                 <motion.div
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}

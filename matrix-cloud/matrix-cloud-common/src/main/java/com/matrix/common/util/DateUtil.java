@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -587,6 +588,14 @@ public abstract class DateUtil {
 
     public static String formatTime(Object date) {
         return format(date, TIME);
+    }
+
+    public static String formatTime(long time) {
+        Duration d = Duration.ofMillis(time);
+        long hours   = d.toHours();
+        long minutes = d.toMinutes() % 60;
+        long seconds = d.toSeconds() % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     /**

@@ -42,6 +42,7 @@ export function chatCompletion(
         model: store.modelType === 'flash' ? 'deepseek-v4-flash' : 'deepseek-v4-pro',
         agent: store.currentAgentName,
         pattern: store.pattern,
+        hook: store.hook,
         itemPath: store.itemPath || undefined,
         clientId: store.currentClientId || undefined,
     }

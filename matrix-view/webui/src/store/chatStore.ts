@@ -174,6 +174,7 @@ interface ChatState {
     setUserAuthLevel: (level: number) => void
     fetchUserAuthLevel: () => Promise<void>
     pattern: Pattern
+    hook: boolean
     itemPath: string
     setItemPath: (v: string) => void
     projectPathHistory: string[]
@@ -182,6 +183,10 @@ interface ChatState {
     currentClientId: string
     setCurrentClientId: (v: string) => void
     setPattern: (v: Pattern) => void
+    expandedMsgIds: string[]
+    setHook: (v: boolean) => void
+    toggleMsgExpand: (id: string) => void
+    collapseAllMsg: () => void
 }
 
 const PAGE_SIZE = 20
@@ -201,6 +206,7 @@ export const useChatStore = create<ChatState>()(
             modelType: 'flash',
             markdownEnabled: true,
             messageFilterMode: 'all',
+            expandedMsgIds: [],
             maxTokens: 8192,
             agentList: [],
             agentListLoading: false,
@@ -218,8 +224,9 @@ export const useChatStore = create<ChatState>()(
             sessionsLoaded: false,
             userAuthLevel: 0,
             referencedSessions: [],
-            pattern: 'auto',
+            pattern: 'plan',
             itemPath: '',
+            hook: false,
             projectPathHistory: [],
             currentClientId: '',
             createSession: () => {
@@ -741,6 +748,14 @@ export const useChatStore = create<ChatState>()(
             setModelType: (v) => set({modelType: v}),
             setMarkdownEnabled: (v) => set({markdownEnabled: v}),
             setMessageFilterMode: (mode) => set({messageFilterMode: mode}),
+            toggleMsgExpand: (id) => {
+                set((s) => ({
+                    expandedMsgIds: s.expandedMsgIds.includes(id)
+                        ? s.expandedMsgIds.filter((mid) => mid !== id)
+                        : [...s.expandedMsgIds, id],
+                }))
+            },
+            collapseAllMsg: () => set({ expandedMsgIds: [] }),
             setMaxTokens: (v) => set({maxTokens: v}),
             setUserAuthLevel: (level: number) => set({userAuthLevel: level}),
 
@@ -763,6 +778,7 @@ export const useChatStore = create<ChatState>()(
             setCurrentClientId: (v) => set({currentClientId: v}),
             setPattern: (v) => set({pattern: v}),
             setItemPath: (v) => set({itemPath: v}),
+            setHook: (v) => set({hook: v}),
             addProjectPath: (path: string) => {
                 const trimmed = path.trim()
                 if (!trimmed) return
@@ -884,6 +900,7 @@ export const useChatStore = create<ChatState>()(
         }),
         {
             name: 'matrix-chat',
+            version: 2,
             partialize: (state) => ({
                 currentSessionId: state.currentSessionId,
                 thinkingType: state.thinkingType,
@@ -897,6 +914,15 @@ export const useChatStore = create<ChatState>()(
                 projectPathHistory: state.projectPathHistory,
                 currentClientId: state.currentClientId,
             }),
+            migrate: (persistedState: any, version: number) => {
+                if (version < 2) {
+                    const validPatterns = ["skill", "execute", "plan", "revise", "goal", "deep"];
+                    if (typeof persistedState.pattern === "string" && !validPatterns.includes(persistedState.pattern)) {
+                        return { ...persistedState, pattern: "plan" as const };
+                    }
+                }
+                return persistedState as any;
+            },
         }
     )
 )

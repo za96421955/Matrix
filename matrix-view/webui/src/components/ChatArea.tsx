@@ -1,5 +1,5 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck, Activity} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
@@ -389,6 +389,8 @@ export default function ChatArea() {
     const fetchUserAuthLevel = useChatStore((s) => s.fetchUserAuthLevel)
     const pattern = useChatStore((s) => s.pattern)
     const setPattern = useChatStore((s) => s.setPattern)
+    const hook = useChatStore((s) => s.hook)
+    const setHook = useChatStore((s) => s.setHook)
     const [showApiKeyModal, setShowApiKeyModal] = useState(false)
 
     // Task Auth modal state
@@ -529,6 +531,29 @@ export default function ChatArea() {
             container.removeEventListener('wheel', markUserScroll)
             container.removeEventListener('touchmove', markUserScroll)
         }
+    }, [])
+
+    // ⑦ 消息折叠：点击消息列表空白区域全部折叠
+    useEffect(() => {
+        const container = messagesContainerRef.current
+        if (!container) return
+
+        const handleMouseDown = (e: MouseEvent) => {
+            const state = useChatStore.getState()
+            if (state.expandedMsgIds.length === 0) return
+            const target = e.target as HTMLElement
+            // 白名单：点击 bubble actions（复制/删除按钮）不折叠
+            if (target.closest('[data-bubble-actions="true"]')) return
+            // 白名单：点击任一展开的 flag/error 消息容器内部不折叠
+            for (const id of state.expandedMsgIds) {
+                const el = container.querySelector(`[data-expandable-msg-id="${id}"]`)
+                if (el && el.contains(target)) return
+            }
+            state.collapseAllMsg()
+        }
+
+        container.addEventListener('mousedown', handleMouseDown)
+        return () => container.removeEventListener('mousedown', handleMouseDown)
     }, [])
 
     // 加载更多历史消息时保持滚动位置
@@ -892,16 +917,6 @@ export default function ChatArea() {
 
 
     // ===================== 模式映射 =====================
-    const patternOptions: { value: Pattern; label: string }[] = [
-        {value: 'auto', label: '自动'},
-        {value: 'plan', label: '计划'},
-        {value: 'execute', label: '执行'},
-        {value: 'task', label: '任务'},
-        {value: 'task-graph', label: '目标'},
-        {value: 'agent', label: '技能'},
-        {value: 'coding', label: '需求开发'},
-        {value: 'information', label: '资料整理'},
-    ]
     // ===================== UI 渲染 =====================
     return (
         <div className="flex-1 flex flex-col h-full min-w-0">
@@ -1023,37 +1038,36 @@ export default function ChatArea() {
                     )}
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-1 sm:ml-2">
+                    {/* 允许交互 */}
+                    <button
+                        onClick={() => setHook(!hook)}
+                        aria-label={`允许交互：${hook ? '已开启' : '已关闭'}`}
+                        className={
+                            "flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium transition-colors " +
+                            (hook
+                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700")
+                        }
+                    >
+                        <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
+                        <span className="hidden sm:inline">{hook ? "交互中" : "交互"}</span>
+                    </button>
                     {/* 模式选择 */}
-                    <div
-                        className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        {patternOptions.map((opt) => {
-                            const disabledPatterns = ['auto', 'plan', 'execute', 'task', 'task-graph', 'agent', 'coding', 'information'];
-                            const isDisabled = disabledPatterns.includes(opt.value);
-                            const isHidden = ['auto', 'plan', 'execute', 'task', 'task-graph', 'agent', 'coding', 'information'].includes(opt.value);
-                            return (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => {if (!isDisabled) setPattern(opt.value)}}
-                                    disabled={isDisabled}
-                                    className={
-                                        'px-2 py-1.5 text-[10px] sm:text-xs font-medium transition-colors ' +
-                                        (isHidden ? 'hidden ' : '') +
-                                        (isDisabled
-                                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                            : pattern === opt.value
-                                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                                                : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900')
-                                    }
-                                    aria-label={'模式: ' + opt.label}
-                                >
-                                    {opt.label}
-                                </button>
-                            );
-                        })}
-
-                    </div>
-                    {/* 技能选择（仅在 agent 模式下显示） */}
-                    {pattern === 'agent' && (
+                    <select
+                        value={pattern}
+                        onChange={(e) => setPattern(e.target.value as Pattern)}
+                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-2 py-1.5 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
+                        aria-label="模式选择"
+                    >
+                        <option value="skill">技能</option>
+                        <option value="execute">执行</option>
+                        <option value="plan">规划</option>
+                        <option value="revise">审查</option>
+                        <option value="goal">目标</option>
+                        <option value="deep">深度</option>
+                    </select>
+                    {/* 技能选择（仅在 skill 模式下显示） */}
+                    {pattern === 'skill' && (
                         <div className="flex items-center gap-1 sm:gap-1.5">
                             {(() => {
                                 const sid = currentSessionId

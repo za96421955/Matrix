@@ -6,6 +6,7 @@ import com.matrix.common.dto.model.Message;
 import com.matrix.common.dto.model.Response;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.ErrorCode;
+import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.common.util.JSONUtil;
@@ -22,17 +23,16 @@ import reactor.core.publisher.FluxSink;
 import java.util.List;
 
 /**
- * @description 任务模式
+ * @description 目标模式
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
  */
 @Slf4j
 @Service
-public class TaskPatternService extends AbstractPatternService<PatternRequest> {
+public class GoalPatternService extends AbstractPatternService<PatternRequest> {
 
     @Override
-    /** call操作 */
     public Flux<Response> call(PatternRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
@@ -45,9 +45,9 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         request.setMessages(this.buildMessages(request, clients, null));
         // ReAct Agent Call
         return this.call(request, sink -> {
-            log.info("[任务模式] userId={}, 执行【开始】", request.getUserId());
+            log.info("[目标模式] userId={}, 执行【开始】", request.getUserId());
             this.executor(sink, request);
-            log.info("[任务模式] userId={}, 执行【结束】", request.getUserId());
+            log.info("[目标模式] userId={}, 执行【结束】", request.getUserId());
         });
     }
 
@@ -61,38 +61,34 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         if (null == sink || null == request) {
             return;
         }
-        // 记录：任务模式
-        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.TASK);
+        // 记录模式
+        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.GOAL);
 
-        // 1. 规划任务目标
-        Smart smart = null;
-        if (this.isSmart(request)) {
-            smart = this.generateSmart(request.clone(), 0);
-            log.info("[任务模式] 规划任务目标, userId={}, sessionId={}, smart={}",
-                    request.getUserId(), request.getSessionId(), smart);
-            if (null == smart) {
-                // 用户 TODO
-                return;
-            }
+        // 1. 确定任务目标
+        Smart smart = this.generateSmart(request.clone(), request.getHook(), 0);
+        log.info("[目标模式] 规划任务目标, userId={}, sessionId={}, smart={}",
+                request.getUserId(), request.getSessionId(), smart);
+        if (null == smart) {
+            // 用户交互
+            return;
         }
 
         // 2. CoT 执行
         int count = 0;
         while (true) {
-            log.info("[任务模式] 任务执行, userId={}, sessionId={}, 执行轮次: {}",
+            log.info("[目标模式] 任务执行, userId={}, sessionId={}, 执行轮次: {}",
                     request.getUserId(), request.getSessionId(), ++count);
             // 【STOP】停止对话
             if (!chatContext.isConversationByCache(request.getUserId(), request.getSessionId())) {
-                log.warn("\n\n======================\n\n\tS T O P: 任务模式 CoT【结束】\n\n======================");
+                log.warn("\n\n======================\n\n\tS T O P: 目标模式 CoT【结束】\n\n======================");
                 return;
             }
             PatternRequest localRequest = request.clone();
 
             // 1. 规划
-            String plan = this.getPlan(localRequest.clone(), smart, this.getPlanMode(localRequest.clone()),
-                    true);
+            String plan = this.getPlan(localRequest.clone(), smart, TaskMode.REVIEW.getValue(), request.getHook());
             if (null == plan) {
-                // 用户 TODO
+                // 用户交互
                 return;
             }
             if (StringUtils.isBlank(plan)) {
@@ -103,7 +99,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             // 2. 执行
             String result = this.executeTaskAction(localRequest, true);
             if (null == result) {
-                // 用户 TODO
+                // 用户交互
                 return;
             }
 
@@ -147,7 +143,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private Smart generateSmart(PatternRequest request, int retry) {
+    private Smart generateSmart(PatternRequest request, boolean interruptible, int retry) {
         if (retry >= 3) {
             return null;
         }
@@ -157,13 +153,15 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
             smart = this.callByResult(request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
-            request.getMessages().add(Message.assistant(smart));
-            patternContext.setStatus(request.getUserId(), request.getSessionId(), "任务目标-信息补充检查");
-            String check = this.callByFlag(request, Prompt.Check.GOAL);
-            log.info("[直接回答] userId={}, sessionId={}, result={}",
-                    request.getUserId(), request.getSessionId(), check);
-            if (check.contains(OutputKeyword.TODO)) {
-                return null;
+            if (interruptible) {
+                request.getMessages().add(Message.assistant(smart));
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "任务目标-信息补充检查");
+                String check = this.callByFlag(request, Prompt.Check.GOAL);
+                log.info("[直接回答] userId={}, sessionId={}, result={}",
+                        request.getUserId(), request.getSessionId(), check);
+                if (check.contains(OutputKeyword.TODO)) {
+                    return null;
+                }
             }
         }
         try {
@@ -177,7 +175,7 @@ public class TaskPatternService extends AbstractPatternService<PatternRequest> {
         } catch (Exception e) {
             // 格式错误，重试
             request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.generateSmart(request, ++retry);
+            return this.generateSmart(request, interruptible, ++retry);
         }
     }
 

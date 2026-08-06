@@ -5,6 +5,7 @@ import com.matrix.common.util.ContentUtil;
 import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -184,8 +185,8 @@ public class PatternContext {
                 userId, sessionId);
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
         String key = redisKey.generateKey(userId, sessionId);
-        Set<String> keys = serviceCache.keys(key);
-        if (CollectionUtils.isEmpty(keys)) {
+        String begin = serviceCache.getHash().get(key, "begin");
+        if (StringUtils.isBlank(begin)) {
             serviceCache.getHash().put(key, "begin", System.currentTimeMillis() + "", redisKey.getTtl());
             serviceCache.getHash().put(key, "consume", "0", redisKey.getTtl());
         }
@@ -194,10 +195,6 @@ public class PatternContext {
     public void end(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
         String key = redisKey.generateKey(userId, sessionId);
-        Set<String> keys = serviceCache.keys(key);
-        if (CollectionUtils.isEmpty(keys)) {
-            return;
-        }
         long consume = this.getTotalConsume(userId, sessionId) + this.getCurrConsume(userId, sessionId);
         serviceCache.getHash().put(key, "consume", consume + "", redisKey.getTtl());
         serviceCache.getHash().put(key, "curr", "0", redisKey.getTtl());
@@ -205,8 +202,8 @@ public class PatternContext {
     public long getTotalConsume(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
         String key = redisKey.generateKey(userId, sessionId);
-        Set<String> keys = serviceCache.keys(key);
-        if (CollectionUtils.isEmpty(keys)) {
+        String consume = serviceCache.getHash().get(key, "consume");
+        if (StringUtils.isBlank(consume)) {
             return 0;
         }
         return Long.parseLong(serviceCache.getHash().get(key, "consume"));
@@ -214,8 +211,8 @@ public class PatternContext {
     public long getCurrConsume(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
         String key = redisKey.generateKey(userId, sessionId);
-        Set<String> keys = serviceCache.keys(key);
-        if (CollectionUtils.isEmpty(keys)) {
+        String consume = serviceCache.getHash().get(key, "curr");
+        if (StringUtils.isBlank(consume)) {
             return 0;
         }
         long curr = Long.parseLong(serviceCache.getHash().get(key, "curr"));

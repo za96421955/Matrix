@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class EvaluationService {
     
-    private static final String BASE_PATH = "/Users/chenchen/Desktop/3-工作/Agent/matrix/draco_test";
+    private static final String BASE_PATH = "/Users/chenchen/Desktop/3-工作/== AI ==/git/Matrix-Draco";
 
     public static void main(String[] args) throws IOException {
         EvaluationService service = new EvaluationService();
@@ -37,7 +37,7 @@ public class EvaluationService {
         Evaluation evaluation = this.read(BASE_PATH + "/parquet/" + question + ".jsonl");
 //        System.out.println("\n---");
 //        System.out.println("## Answer (Flash):");
-        System.out.println("直接完成以下任务");
+        System.out.println("完成以下任务");
         System.out.println("- 结果输出至：" + BASE_PATH + "/answer/" + question + "_answer.md");
         System.out.println("- 源数据或临时文件存放：" + BASE_PATH + "/answer/" + question + "_source");
         System.out.println("- 互联网带格式的源文件，首先清洗后再使用");
@@ -46,9 +46,9 @@ public class EvaluationService {
 
 //        System.out.println("\n---");
 //        System.out.println("## Score (Pro):");
-//        System.out.println("信息本地优先，缺失时联网补充：" + BASE_PATH + "/answer/" + question + "_source");
-//        System.out.println("直接完成以下任务");
-//        System.out.println("- 按以下评分标准，对 " + BASE_PATH + "/answer/" + question + "_answer.md 进行评分：");
+//        System.out.println("完成以下任务");
+//        System.out.println("- 按以下评分标准，对 " + BASE_PATH + "/answer/" + question + "_answer.md 进行评分");
+//        System.out.println("- 信息本地优先，缺失时联网补充：" + BASE_PATH + "/answer/" + question + "_source");
 //        System.out.println("```");
 //        System.out.println(evaluation.getAnswer());
 //        System.out.println("```");

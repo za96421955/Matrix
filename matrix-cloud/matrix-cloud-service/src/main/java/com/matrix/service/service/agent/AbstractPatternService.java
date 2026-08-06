@@ -498,7 +498,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         if (StringUtils.isBlank(pattern)) {
             return;
         }
-        log.info("[默认模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
+        log.info("[任务模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
                 request.getUserId(), request.getSessionId(), pattern);
         // 判断模式缓存是否重置
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
@@ -509,12 +509,12 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 request.getUserId(), request.getSessionId(), reset);
         if (reset.contains(OutputKeyword.SMART)) {
             patternContext.clear(request.getUserId(), request.getSessionId());
-            log.info("[默认模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",
+            log.info("[任务模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",
                     request.getUserId(), request.getSessionId(), reset);
         }
-        else if (reset.contains(TaskMode.PLAN.getValue())) {
+        if (reset.contains(OutputKeyword.PLAN)) {
             patternContext.clearPlan(request.getUserId(), request.getSessionId());
-            log.info("[默认模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
+            log.info("[任务模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
                     request.getUserId(), request.getSessionId(), reset);
         }
     }
@@ -562,23 +562,25 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected String getPlan(PatternRequest request, Smart smart, String planMode, boolean interruptible) {
+    protected String getPlan(PatternRequest request, Smart smart, String planMode) {
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
         if (StringUtils.isNotBlank(plan)) {
             return plan;
         }
 
         // 生成执行计划
-        String prompt = null == smart ? Prompt.CoT.PLAN : Prompt.CoT.PLAN_SMART.formatted(
-                smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
-                smart.getRelevant(), smart.getTimeBound());
+        String prompt = null == smart
+                ? Prompt.CoT.PLAN.formatted(request.getHook() ? Prompt.CoT.HOOK_TRUE : Prompt.CoT.HOOK_FALSE)
+                : Prompt.CoT.PLAN_SMART.formatted(request.getHook() ? Prompt.CoT.HOOK_TRUE : Prompt.CoT.HOOK_FALSE,
+                        smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
+                        smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-生成");
         plan = this.callByResult(request, prompt);
         log.info("[任务模式] 执行计划 - 生成, userId={}, sessionId={}, planMode={}, plan={}",
                 request.getUserId(), request.getSessionId(), planMode, plan);
 
         // 待补充检查
-        if (interruptible) {
+        if (request.getHook()) {
             request.getMessages().add(Message.assistant(plan));
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-信息补充检查");
             String check = this.callByFlag(request, Prompt.Check.PLAN);
@@ -680,7 +682,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    protected String executeTaskAction(PatternRequest request, boolean interruptible) {
+    protected String executeTaskAction(PatternRequest request) {
         // 1. 构建任务执行方案列表
         TaskActions actions = this.generateTaskActions(request, 0);
         if (null == actions) {
@@ -699,7 +701,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             String result = this.actionExecute(request.clone(), action, i + 1, actions.getActions().size());
             request.getMessages().add(Message.assistant(result));
             // 待补充检查
-            if (interruptible) {
+            if (request.getHook()) {
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行结果-信息补充检查");
                 String check = this.callByFlag(request, Prompt.Check.RESULT);
                 log.info("[直接回答] userId={}, sessionId={}, result={}",

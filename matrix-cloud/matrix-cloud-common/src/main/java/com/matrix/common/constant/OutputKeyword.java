@@ -14,6 +14,8 @@ public interface OutputKeyword {
 
     String SMART = "SMART";
 
+    String PLAN = "PLAN";
+
     String PASS = "PASS";
 
     String CONTINUE = "CONTINUE";

@@ -67,7 +67,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
         patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.GOAL);
 
         // 1. 确定任务目标
-        Smart smart = this.generateSmart(request.clone(), request.getHook(), 0);
+        Smart smart = this.generateSmart(request.clone(), 0);
         log.info("[目标模式] 规划任务目标, userId={}, sessionId={}, smart={}",
                 request.getUserId(), request.getSessionId(), smart);
         if (null == smart) {
@@ -88,7 +88,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
             PatternRequest localRequest = request.clone();
 
             // 1. 规划
-            String plan = this.getPlan(localRequest.clone(), smart, TaskMode.REVIEW.getValue(), request.getHook());
+            String plan = this.getPlan(localRequest.clone(), smart, TaskMode.REVIEW.getValue());
             if (null == plan) {
                 // 用户交互
                 return;
@@ -99,7 +99,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
             localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            String result = this.executeTaskAction(localRequest, true);
+            String result = this.executeTaskAction(localRequest);
             if (null == result) {
                 // 用户交互
                 return;
@@ -145,7 +145,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private Smart generateSmart(PatternRequest request, boolean interruptible, int retry) {
+    private Smart generateSmart(PatternRequest request, int retry) {
         if (retry >= 3) {
             return null;
         }
@@ -155,7 +155,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
             smart = this.callByResult(request, Prompt.CoT.SMART.formatted(
                     JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
-            if (interruptible) {
+            if (request.getHook()) {
                 request.getMessages().add(Message.assistant(smart));
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "任务目标-信息补充检查");
                 String check = this.callByFlag(request, Prompt.Check.GOAL);
@@ -177,7 +177,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
         } catch (Exception e) {
             // 格式错误，重试
             request.getMessages().add(Message.user(Prompt.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
-            return this.generateSmart(request, interruptible, ++retry);
+            return this.generateSmart(request, ++retry);
         }
     }
 

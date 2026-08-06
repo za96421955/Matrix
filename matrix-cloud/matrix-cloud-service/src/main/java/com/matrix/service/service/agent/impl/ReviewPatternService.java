@@ -73,7 +73,7 @@ public class ReviewPatternService extends AbstractPatternService<PatternRequest>
             PatternRequest localRequest = request.clone();
 
             // 1. 规划
-            String plan = this.getPlan(localRequest.clone(), null, TaskMode.REVIEW.getValue(), request.getHook());
+            String plan = this.getPlan(localRequest.clone(), null, TaskMode.REVIEW.getValue());
             if (null == plan) {
                 // 用户交互
                 return;
@@ -84,7 +84,7 @@ public class ReviewPatternService extends AbstractPatternService<PatternRequest>
             localRequest.getMessages().add(Message.assistant(plan));
 
             // 2. 执行
-            String result = this.executeTaskAction(request, request.getHook());
+            String result = this.executeTaskAction(request);
             if (null == result) {
                 // 用户交互
                 return;

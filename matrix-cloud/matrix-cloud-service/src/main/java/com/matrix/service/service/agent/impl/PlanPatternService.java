@@ -61,7 +61,7 @@ public class PlanPatternService extends AbstractPatternService<PatternRequest> {
         patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.PLAN);
 
         // 1. 规划
-        String plan = this.getPlan(request.clone(), null, TaskMode.PLAN.getValue(), request.getHook());
+        String plan = this.getPlan(request.clone(), null, TaskMode.PLAN.getValue());
         if (null == plan) {
             // 用户交互
             return;
@@ -72,7 +72,7 @@ public class PlanPatternService extends AbstractPatternService<PatternRequest> {
         request.getMessages().add(Message.assistant(plan));
 
         // 2. 执行
-        String result = this.executeTaskAction(request, request.getHook());
+        String result = this.executeTaskAction(request);
         if (null == result) {
             // 用户交互
             return;

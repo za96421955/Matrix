@@ -61,7 +61,7 @@ public class SessionController {
         String curr = DateUtil.formatTime(patternContext.getCurrConsume(userInfo.getUserId(), sessionId));
         JSONObject result = new JSONObject();
         result.put("isConversation", isConversation);
-        result.put("status", status + "【 总耗时: %s, 当前: %s 】".formatted(total, curr));
+        result.put("status", status + "【 已用时: %s, 当前: %s 】".formatted(total, curr));
         return ResponseEntity.ok(CommonResponse.success(result));
     }
 

@@ -71,19 +71,18 @@ public class MemoryTool extends AbstractTool<MemoryTool.Request> {
                     return Flux.just(currMemory);
                 }
 
-                // 生成记忆
-                RegisterCommand.Model model = registerContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
-                String input = Prompt.MEMORY_MANAGER.formatted(currMemory, request.getRequire());
-                String newMemory = modelService.call(model, ContentUtil.removeMarkdownMarkers(input));
-                // 更新记忆
                 try {
+                    // 生成记忆
+                    RegisterCommand.Model model = registerContext.getModel(userId, Constant.Model.DEEPSEEK_V4_FLASH);
+                    String input = Prompt.MEMORY_MANAGER.formatted(currMemory, request.getRequire());
+                    String newMemory = ContentUtil.removeMarkdownMarkers(modelService.call(model, input));
+                    // 更新记忆
                     return this.writeMemory(request.getClientId(), newMemory).flux();
                 } catch (Exception e) {
                     log.error("userId={}, request={}, 记忆更新异常: {}",
                             userId, request, e.getMessage(), e);
                     return Flux.just(e.getMessage());
                 }
-//                return Flux.just("记忆修改完成");
             });
         } catch (Exception e) {
             log.error("userId={}, request={}, 记忆操作异常: {}",

@@ -290,3 +290,29 @@ pre.qrcode {
     font-weight: 600;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.15) inset;
 }
+
+/* ========== 风险等级下拉框 option 档位色带 ========== */
+/* 灰(禁止) → 绿(仅安全) → 黄绿(常规) → 橙黄(敏感) → 橘黄(始终允许) 渐变语义 */
+select.risk-level-select option.risk-opt {
+    padding: 0.25rem 0.5rem;
+    color: #71717a;
+    background-color: #fafafa;
+    cursor: pointer;
+}
+
+select.risk-level-select option.risk-opt--1 { background-color: #f4f4f5; color: #6b7280; }
+select.risk-level-select option.risk-opt-0  { background-color: #f0fdf4; color: #16a34a; }
+select.risk-level-select option.risk-opt-1  { background-color: #f7fee7; color: #4d7c0f; }
+select.risk-level-select option.risk-opt-2  { background-color: #fffbeb; color: #d97706; }
+select.risk-level-select option.risk-opt-3  { background-color: #fff7ed; color: #ea580c; }
+
+.dark select.risk-level-select option.risk-opt { background-color: #1c1c20; color: #a1a1aa; }
+.dark select.risk-level-select option.risk-opt--1 { background-color: #27272a; color: #9ca3af; }
+.dark select.risk-level-select option.risk-opt-0  { background-color: #052e16; color: #4ade80; }
+.dark select.risk-level-select option.risk-opt-1  { background-color: #1a2e05; color: #a3e635; }
+.dark select.risk-level-select option.risk-opt-2  { background-color: #2b1a0a; color: #fbbf24; }
+.dark select.risk-level-select option.risk-opt-3  { background-color: #2d1206; color: #fb923c; }
+
+select.risk-level-select option.risk-opt:hover {
+    filter: brightness(0.97);
+}

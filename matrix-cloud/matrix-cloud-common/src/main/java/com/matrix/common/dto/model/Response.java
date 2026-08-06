@@ -156,6 +156,20 @@ public class Response implements Serializable {
     }
 
     /**
+     * @description 构建普通信息
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public static Response content(String content) {
+        return Response.builder()
+                .choices(List.of(Choice.builder()
+                        .message(Message.builder().content(content).build())
+                        .build()))
+                .build();
+    }
+
+    /**
      * @description 构建错误信息
      * <p> <功能详细描述> </p>
      *

@@ -58,7 +58,7 @@ public class PlanPatternService extends AbstractPatternService<PatternRequest> {
             return;
         }
         // 记录模式
-        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.PLAN);
+//        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.PLAN);
 
         // 1. 规划
         String plan = this.getPlan(request.clone(), null, TaskMode.PLAN.getValue());

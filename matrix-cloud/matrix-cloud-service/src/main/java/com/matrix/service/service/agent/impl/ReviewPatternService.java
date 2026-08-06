@@ -58,7 +58,7 @@ public class ReviewPatternService extends AbstractPatternService<PatternRequest>
             return;
         }
         // 记录模式
-        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.REVIEW);
+//        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.REVIEW);
 
         // CoT 执行
         int count = 0;

@@ -12,6 +12,7 @@ import com.matrix.common.dto.model.Role;
 import com.matrix.common.dto.request.PatternRequest;
 import com.matrix.common.enums.TaskMode;
 import com.matrix.common.util.ContentUtil;
+import com.matrix.common.util.DateUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.common.util.JSONUtil;
 import com.matrix.service.context.ChatContext;
@@ -93,6 +94,12 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 // 记录 Error 消息
                 this.saveErrorMessage(request.getUserId(), request.getSessionId(), e.getMessage());
                 sink.error(e);
+            } finally {
+                // 记录耗时
+                long total = patternContext.getTotalConsume(request.getUserId(), request.getSessionId());
+                long curr = patternContext.getCurrConsume(request.getUserId(), request.getSessionId());
+                String consume = "耗时: " + DateUtil.formatTime(total + curr);
+                this.saveMessage(request.getUserId(), request.getSessionId(), Role.FLAG, Response.content(consume), true);
             }
         }, FluxSink.OverflowStrategy.BUFFER);
     }
@@ -494,12 +501,13 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      */
     protected void resetContext(PatternRequest request) {
         // 获取模式缓存
-        String pattern = patternContext.getPattern(request.getUserId(), request.getSessionId());
-        if (StringUtils.isBlank(pattern)) {
-            return;
-        }
-        log.info("[任务模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
-                request.getUserId(), request.getSessionId(), pattern);
+//        String pattern = patternContext.getPattern(request.getUserId(), request.getSessionId());
+//        if (StringUtils.isBlank(pattern)) {
+//            return;
+//        }
+//        log.info("[任务模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
+//                request.getUserId(), request.getSessionId(), pattern);
+
         // 判断模式缓存是否重置
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());

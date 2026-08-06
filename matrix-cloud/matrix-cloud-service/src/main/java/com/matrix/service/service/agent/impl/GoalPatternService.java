@@ -64,7 +64,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
             return;
         }
         // 记录模式
-        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.GOAL);
+//        patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.GOAL);
 
         // 1. 确定任务目标
         Smart smart = this.generateSmart(request.clone(), 0);

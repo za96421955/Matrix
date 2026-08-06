@@ -1,12 +1,14 @@
 package com.matrix.service.service.agent;
 
 import com.matrix.common.constant.Constant;
+import com.matrix.service.context.PatternContext;
 import com.matrix.service.service.agent.impl.ExecutePatternService;
 import com.matrix.service.service.agent.impl.GoalPatternService;
 import com.matrix.service.service.agent.impl.PlanPatternService;
 import com.matrix.service.service.agent.impl.ReviewPatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class PatternFactory {
 
+    @Resource
+    private PatternContext patternContext;
     @Resource
     private ExecutePatternService executePatternService;
     @Resource

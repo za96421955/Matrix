@@ -578,8 +578,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
 
         // 生成执行计划
         String prompt = null == smart
-                ? Prompt.CoT.PLAN.formatted(request.getHook() ? Prompt.CoT.HOOK_TRUE : Prompt.CoT.HOOK_FALSE)
-                : Prompt.CoT.PLAN_SMART.formatted(request.getHook() ? Prompt.CoT.HOOK_TRUE : Prompt.CoT.HOOK_FALSE,
+                ? Prompt.CoT.PLAN.formatted(request.getHook() ? Prompt.CoT.PLAN_HOOK : "")
+                : Prompt.CoT.PLAN_SMART.formatted(request.getHook() ? Prompt.CoT.PLAN_HOOK : "",
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-生成");
@@ -626,7 +626,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         for (String direction : Prompt.MoA.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-审查");
-                String result = this.callByResult(request, Prompt.MoA.DIRECTION_REVIEW.formatted(direction));
+                String result = this.callResultByFlag(request, Prompt.MoA.DIRECTION_REVIEW.formatted(direction));
                 // 计算结果
                 int indexPass = result.indexOf(OutputKeyword.PASS);
                 int indexRevise = result.indexOf(OutputKeyword.REVISE);

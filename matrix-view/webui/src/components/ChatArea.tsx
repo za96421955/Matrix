@@ -1,5 +1,5 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck, ArrowLeftRight} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck, ArrowLeftRight, Wrench, Zap, Route, Eye, Target, Brain} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
@@ -16,6 +16,25 @@ import {getAuthHeaders, getApiBaseUrl} from '../utils/apiClient';
 import MatrixLogo from "./MatrixLogo";
 
 const API_BASE = getApiBaseUrl()
+
+// ===================== 模式 / 风险等级 视觉配置 =====================
+const MODE_CONFIG: Record<Pattern, { label: string; icon: React.ComponentType<{ className?: string }>; dot: string; text: string; border: string; ring: string; chip: string; gradient: string; color: string; hover: string }> = {
+    skill:  { label: '技能', icon: Wrench, dot: 'bg-violet-500',  text: 'text-violet-600 dark:text-violet-300',    border: 'border-violet-400/70 dark:border-violet-500/50',    ring: 'focus:ring-violet-500/50',    chip: 'bg-violet-50 dark:bg-violet-500/10', gradient: 'bg-gradient-to-r from-violet-500/10 to-violet-500/5', hover: 'hover:border-violet-500/80 dark:hover:border-violet-400/70', color: '#7c3aed' },
+    execute:{ label: '执行', icon: Zap,    dot: 'bg-red-500',     text: 'text-red-600 dark:text-red-300',          border: 'border-red-400/70 dark:border-red-500/50',          ring: 'focus:ring-red-500/50',       chip: 'bg-red-50 dark:bg-red-500/10', gradient: 'bg-gradient-to-r from-red-500/10 to-red-500/5', hover: 'hover:border-red-500/80 dark:hover:border-red-400/70', color: '#dc2626' },
+    plan:   { label: '规划', icon: Route,  dot: 'bg-blue-500',    text: 'text-blue-600 dark:text-blue-300',         border: 'border-blue-400/70 dark:border-blue-500/50',         ring: 'focus:ring-blue-500/50',      chip: 'bg-blue-50 dark:bg-blue-500/10', gradient: 'bg-gradient-to-r from-blue-500/10 to-blue-500/5', hover: 'hover:border-blue-500/80 dark:hover:border-blue-400/70', color: '#2563eb' },
+    review: { label: '审查', icon: Eye,    dot: 'bg-cyan-500',    text: 'text-cyan-600 dark:text-cyan-300',         border: 'border-cyan-400/70 dark:border-cyan-500/50',         ring: 'focus:ring-cyan-500/50',      chip: 'bg-cyan-50 dark:bg-cyan-500/10', gradient: 'bg-gradient-to-r from-cyan-500/10 to-cyan-500/5', hover: 'hover:border-cyan-500/80 dark:hover:border-cyan-400/70', color: '#0891b2' },
+    goal:   { label: '目标', icon: Target, dot: 'bg-green-500',   text: 'text-green-600 dark:text-green-300',       border: 'border-green-400/70 dark:border-green-500/50',       ring: 'focus:ring-green-500/50',     chip: 'bg-green-50 dark:bg-green-500/10', gradient: 'bg-gradient-to-r from-green-500/10 to-green-500/5', hover: 'hover:border-green-500/80 dark:hover:border-green-400/70', color: '#16a34a' },
+    deep:   { label: '深度', icon: Brain,  dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',       border: 'border-amber-400/70 dark:border-amber-500/50',       ring: 'focus:ring-amber-500/50',     chip: 'bg-amber-50 dark:bg-amber-500/10', gradient: 'bg-gradient-to-r from-amber-500/10 to-amber-500/5', hover: 'hover:border-amber-500/80 dark:hover:border-amber-400/70', color: '#d97706' },
+}
+
+
+const RISK_CONFIG: Record<number, { label: string; desc: string; color: string; dot: string; text: string; border: string; ring: string; chip: string; bg: string; hover: string }> = {
+    '-1': { label: '禁止执行',   desc: '命令将被拒绝执行',   hover: 'hover:border-gray-500/80 dark:hover:border-gray-400/70', color: '#9ca3af', dot: 'bg-gray-400',    text: 'text-gray-500 dark:text-gray-400',    border: 'border-gray-300/70 dark:border-gray-600',        ring: 'focus:ring-gray-500/50',   chip: 'bg-gray-100 dark:bg-gray-500/10',      bg: 'bg-gradient-to-r from-gray-500/10 to-gray-500/5' },
+    0:  { label: '仅限安全操作', desc: '仅允许读取与无副作用查询', hover: 'hover:border-green-500/80 dark:hover:border-green-400/70', color: '#22c55e', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-300',  border: 'border-green-400/70 dark:border-green-500/50',   ring: 'focus:ring-green-500/50',   chip: 'bg-green-50 dark:bg-green-500/10',     bg: 'bg-gradient-to-r from-green-500/10 to-green-500/5' },
+    1:  { label: '允许常规操作', desc: '常规操作放行，危险指令需确认', hover: 'hover:border-lime-500/80 dark:hover:border-lime-400/70', color: '#84cc16', dot: 'bg-lime-500',  text: 'text-lime-600 dark:text-lime-300',    border: 'border-lime-400/70 dark:border-lime-500/50',     ring: 'focus:ring-lime-500/50',    chip: 'bg-lime-50 dark:bg-lime-500/10',       bg: 'bg-gradient-to-r from-lime-500/10 to-lime-500/5' },
+    2:  { label: '允许敏感操作', desc: '允许敏感操作，涉及修改需谨慎', hover: 'hover:border-amber-500/80 dark:hover:border-amber-400/70', color: '#f59e0b', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-300',  border: 'border-amber-400/70 dark:border-amber-500/50',   ring: 'focus:ring-amber-500/50',   chip: 'bg-amber-50 dark:bg-amber-500/10',     bg: 'bg-gradient-to-r from-amber-500/10 to-amber-500/5' },
+    3:  { label: '始终允许',     desc: '允许所有操作，含高风险指令', hover: 'hover:border-orange-500/80 dark:hover:border-orange-400/70', color: '#f97316', dot: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-300', border: 'border-orange-400/70 dark:border-orange-500/50', ring: 'focus:ring-orange-500/50',  chip: 'bg-orange-50 dark:bg-orange-500/10',   bg: 'bg-gradient-to-r from-orange-500/10 to-orange-500/5' },
+}
 
 function getOrCreateDeviceId(): string {
     const KEY = '__device_id__';
@@ -1053,19 +1072,29 @@ export default function ChatArea() {
                         <span className="hidden sm:inline">{hook ? "交互（开启）" : "交互（关闭）"}</span>
                     </button>
                     {/* 模式选择 */}
-                    <select
-                        value={pattern}
-                        onChange={(e) => setPattern(e.target.value as Pattern)}
-                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-2 py-1.5 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
-                        aria-label="模式选择"
+                    <div
+                        className={"flex items-stretch rounded-xl border bg-white dark:bg-[#18181B]/70 overflow-hidden shadow-sm transition-all hover:shadow-md " + MODE_CONFIG[pattern].border + " " + MODE_CONFIG[pattern].hover}
+                        title={`当前模式：${MODE_CONFIG[pattern].label}`}
                     >
-                        <option value="skill">技能</option>
-                        <option value="execute">执行</option>
-                        <option value="plan">规划</option>
-                        <option value="revise">审查</option>
-                        <option value="goal">目标</option>
-                        <option value="deep">深度</option>
-                    </select>
+                        <span className={"flex items-center gap-1.5 px-2 py-1 border-r " + MODE_CONFIG[pattern].chip}>
+                            {(() => { const Icon = MODE_CONFIG[pattern].icon; return <Icon className={"w-3 h-3 " + MODE_CONFIG[pattern].text}/> })()}
+                            <span className={"w-2 h-2 rounded-full animate-pulse " + MODE_CONFIG[pattern].dot}/>
+                            <span className={"text-[10px] sm:text-xs font-bold " + MODE_CONFIG[pattern].text}>模式</span>
+                        </span>
+                        <select
+                            value={pattern}
+                            onChange={(e) => setPattern(e.target.value as Pattern)}
+                            className={"pl-2 pr-3 py-1 text-[10px] sm:text-xs font-semibold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-[#18181B] hover:brightness-105 " + MODE_CONFIG[pattern].gradient + " " + MODE_CONFIG[pattern].text + " " + MODE_CONFIG[pattern].ring}
+                            aria-label="模式选择"
+                        >
+                            <option value="skill" style={{ color: pattern === "skill" ? "#7c3aed" : "#9ca3af", fontWeight: pattern === "skill" ? 600 : 400 }}>技能</option>
+                            <option value="execute" style={{ color: pattern === "execute" ? "#dc2626" : "#9ca3af", fontWeight: pattern === "execute" ? 600 : 400 }}>执行</option>
+                            <option value="plan" style={{ color: pattern === "plan" ? "#2563eb" : "#9ca3af", fontWeight: pattern === "plan" ? 600 : 400 }}>规划</option>
+                            <option value="review" style={{ color: pattern === "review" ? "#0891b2" : "#9ca3af", fontWeight: pattern === "review" ? 600 : 400 }}>审查</option>
+                            <option value="goal" style={{ color: pattern === "goal" ? "#16a34a" : "#9ca3af", fontWeight: pattern === "goal" ? 600 : 400 }}>目标</option>
+                            <option value="deep" style={{ color: pattern === "deep" ? "#d97706" : "#9ca3af", fontWeight: pattern === "deep" ? 600 : 400 }}>深度</option>
+                        </select>
+                    </div>
                     {/* 技能选择（仅在 skill 模式下显示） */}
                     {pattern === 'skill' && (
                         <div className="flex items-center gap-1 sm:gap-1.5">
@@ -1116,27 +1145,36 @@ export default function ChatArea() {
                             const session = isBack ? backendSessionList.find((s) => s.id === Number(sid)) : null
                             const currentLevel = isBack ? (session?.authLevel ?? 0) : userAuthLevel
                             return (
-                                <select
-                                    value={currentLevel}
-                                    onChange={(e) => {
-                                        const val = Number(e.target.value)
-                                        if (isBack && sid) {
-                                            const sidNum = Number(sid)
-                                            if (!isNaN(sidNum)) {
-                                                updateAuthLevel(sidNum, val)
-                                            }
-                                        } else {
-                                            setUserAuthLevel(val)
-                                        }
-                                    }}
-                                    className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B]/70 px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
+                                <div
+                                    className={"flex items-stretch rounded-xl border bg-white dark:bg-[#18181B]/70 overflow-hidden shadow-sm transition-all hover:shadow-md " + RISK_CONFIG[currentLevel].border + " " + RISK_CONFIG[currentLevel].hover}
+                                    title={`授权等级：${RISK_CONFIG[currentLevel].label} —— ${RISK_CONFIG[currentLevel].desc}`}
                                 >
-                                    <option value={-1}>禁止执行</option>
-                                    <option value={0}>仅限安全操作</option>
-                                    <option value={1}>允许常规操作</option>
-                                    <option value={2}>允许敏感操作</option>
-                                    <option value={3}>始终允许</option>
-                                </select>
+                                    <span className={"flex items-center gap-1.5 px-2 py-1 border-r " + RISK_CONFIG[currentLevel].chip}>
+                                        <span className={"w-2 h-2 rounded-full " + RISK_CONFIG[currentLevel].dot}/>
+                                        <span className={"text-[10px] sm:text-xs font-bold " + RISK_CONFIG[currentLevel].text}>授权</span>
+                                    </span>
+                                    <select
+                                        value={currentLevel}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value)
+                                            if (isBack && sid) {
+                                                const sidNum = Number(sid)
+                                                if (!isNaN(sidNum)) {
+                                                    updateAuthLevel(sidNum, val)
+                                                }
+                                            } else {
+                                                setUserAuthLevel(val)
+                                            }
+                                        }}
+                                        className={"pl-2 pr-3 py-1 text-[10px] sm:text-xs font-semibold outline-none cursor-pointer transition-colors duration-300 ease-in-out focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-[#18181B] hover:brightness-105 " + RISK_CONFIG[currentLevel].text + " " + RISK_CONFIG[currentLevel].ring + " " + RISK_CONFIG[currentLevel].bg}
+                                    >
+                                        <option value={-1} style={{ background: '#f4f4f5', color: currentLevel === -1 ? '#9ca3af' : '#9ca3af', fontWeight: currentLevel === -1 ? 600 : 400 }}>● 禁止执行</option>
+                                        <option value={0} style={{ background: '#f0fdf4', color: currentLevel === 0 ? '#22c55e' : '#16a34a', fontWeight: currentLevel === 0 ? 600 : 400 }}>● 仅限安全操作</option>
+                                        <option value={1} style={{ background: '#f7fee7', color: currentLevel === 1 ? '#84cc16' : '#65a30d', fontWeight: currentLevel === 1 ? 600 : 400 }}>● 允许常规操作</option>
+                                        <option value={2} style={{ background: '#fffbeb', color: currentLevel === 2 ? '#f59e0b' : '#d97706', fontWeight: currentLevel === 2 ? 600 : 400 }}>● 允许敏感操作</option>
+                                        <option value={3} style={{ background: '#fff7ed', color: currentLevel === 3 ? '#f97316' : '#ea580c', fontWeight: currentLevel === 3 ? 600 : 400 }}>● 始终允许</option>
+                                    </select>
+                                </div>
                             )
                         })()}
                     </div>

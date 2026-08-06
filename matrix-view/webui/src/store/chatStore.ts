@@ -916,7 +916,7 @@ export const useChatStore = create<ChatState>()(
             }),
             migrate: (persistedState: any, version: number) => {
                 if (version < 2) {
-                    const validPatterns = ["skill", "execute", "plan", "revise", "goal", "deep"];
+                    const validPatterns = ["skill", "execute", "plan", "review", "goal", "deep"];
                     if (typeof persistedState.pattern === "string" && !validPatterns.includes(persistedState.pattern)) {
                         return { ...persistedState, pattern: "plan" as const };
                     }

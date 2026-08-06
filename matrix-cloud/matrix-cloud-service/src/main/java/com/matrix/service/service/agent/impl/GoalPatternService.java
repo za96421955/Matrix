@@ -152,8 +152,8 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(smart)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成任务目标");
-            smart = this.callByResult(request, Prompt.CoT.SMART.formatted(
-                    JSONSchemaUtil.generate(Smart.class)));
+            smart = request.getHook() ? Prompt.CoT.SMART_HOOK : Prompt.CoT.SMART;
+            smart = this.callByResult(request, smart.formatted(JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
             if (request.getHook()) {
                 request.getMessages().add(Message.assistant(smart));

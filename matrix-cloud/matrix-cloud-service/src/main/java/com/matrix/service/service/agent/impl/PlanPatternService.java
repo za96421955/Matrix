@@ -27,11 +27,12 @@ import java.util.List;
 public class PlanPatternService extends AbstractPatternService<PatternRequest> {
 
     @Override
-    /** call操作 */
     public Flux<Response> call(PatternRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
         }
+        // 重置上下文
+        this.resetContext(request);
         // 终端
         List<ClientInfo> clients = clientService.getByUserIdAndOnline(request.getUserId());
         // 工具

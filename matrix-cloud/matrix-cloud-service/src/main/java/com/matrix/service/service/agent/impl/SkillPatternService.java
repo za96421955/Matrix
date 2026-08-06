@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 /**
- * @description 智能体模式
+ * @description 技能模式
  * <p> <功能详细描述> </p>
  *
  * @author 陈晨
@@ -20,7 +20,6 @@ import reactor.core.publisher.Flux;
 public class SkillPatternService extends AbstractPatternService<AgentRequest> {
 
     @Override
-    /** call操作 */
     public Flux<Response> call(AgentRequest request) {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.SKILL_REQUEST_INVALID.getMessage()));

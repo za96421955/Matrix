@@ -10,7 +10,8 @@ import com.matrix.common.enums.ErrorCode;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.dal.entity.SessionInfo;
-import com.matrix.service.service.agent.impl.DefaultPatternService;
+import com.matrix.service.service.agent.PatternFactory;
+import com.matrix.service.service.agent.PatternService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,7 +41,7 @@ public class ChatService {
     @Resource
     private MessageService messageService;
     @Resource
-    private DefaultPatternService defaultPatternService;
+    private PatternFactory patternFactory;
 
     /**
      * @description 对话入口（SSE 流式）
@@ -53,7 +54,7 @@ public class ChatService {
             return Flux.just(Response.error(ErrorCode.IN_THE_CONVERSATION.getMessage()));
         }
         // 获取模式服务
-//        PatternService patternService = defaultPatternService.getPatternService(request.getPattern());
+        PatternService patternService = patternFactory.getPatternService(request.getPattern());
         // 流式响应
         return Mono.fromCallable(() -> sessionService.getOrCreateSession(request, request.getMessages().getFirst().getContent()))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -81,7 +82,7 @@ public class ChatService {
 
                     // 2. 构建共享的 agent 流
                     // 将冷流变为热流，多播给多个订阅者
-                    Flux<Response> sharedAgentFlux = defaultPatternService.call(request).share();
+                    Flux<Response> sharedAgentFlux = patternService.call(request).share();
 
                     // 3. 独立的后台消费者：负责处理业务逻辑（完全不受客户端断开影响）
                     sharedAgentFlux.subscribeOn(Schedulers.boundedElastic())  // 在弹性线程池中执行，避免阻塞

@@ -1,5 +1,5 @@
 import React, {useEffect, useLayoutEffect, useRef, useCallback, useState, useMemo} from 'react'
-import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck, Activity} from 'lucide-react'
+import {Menu, Key, Loader2, ChevronUp, RefreshCw, FileText, MessageSquare, Folder, Monitor, ShieldCheck, ArrowLeftRight} from 'lucide-react'
 import {useChatStore, isBackendSessionId} from '../store/chatStore'
 import {useApiKeyStore} from '../store/apiKeyStore'
 import {useToastStore} from '../store/toastStore'
@@ -1049,8 +1049,8 @@ export default function ChatArea() {
                                 : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700")
                         }
                     >
-                        <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
-                        <span className="hidden sm:inline">{hook ? "交互中" : "交互"}</span>
+                        <ArrowLeftRight className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
+                        <span className="hidden sm:inline">{hook ? "交互（开启）" : "交互（关闭）"}</span>
                     </button>
                     {/* 模式选择 */}
                     <select

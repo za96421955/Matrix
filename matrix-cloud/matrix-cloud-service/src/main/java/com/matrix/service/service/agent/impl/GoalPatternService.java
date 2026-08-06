@@ -37,6 +37,8 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
         if (request == null) {
             return Flux.just(Response.error(ErrorCode.AGENT_REQUEST_INVALID.getMessage()));
         }
+        // 重置上下文
+        this.resetContext(request);
         // 终端
         List<ClientInfo> clients = clientService.getByUserIdAndOnline(request.getUserId());
         // 工具

@@ -487,6 +487,39 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     }
 
     /**
+     * @description 重置上下文
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    protected void resetContext(PatternRequest request) {
+        // 获取模式缓存
+        String pattern = patternContext.getPattern(request.getUserId(), request.getSessionId());
+        if (StringUtils.isBlank(pattern)) {
+            return;
+        }
+        log.info("[默认模式] 获取模式缓存, userId={}, sessionId={}, pattern={}",
+                request.getUserId(), request.getSessionId(), pattern);
+        // 判断模式缓存是否重置
+        String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
+        String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断是否重置缓存");
+        String reset = this.callByFlag(request, Prompt.Check.RESET.formatted(smart, plan));
+        log.info("[直接回答] userId={}, sessionId={}, result={}",
+                request.getUserId(), request.getSessionId(), reset);
+        if (reset.contains(OutputKeyword.SMART)) {
+            patternContext.clear(request.getUserId(), request.getSessionId());
+            log.info("[默认模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",
+                    request.getUserId(), request.getSessionId(), reset);
+        }
+        else if (reset.contains(TaskMode.PLAN.getValue())) {
+            patternContext.clearPlan(request.getUserId(), request.getSessionId());
+            log.info("[默认模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
+                    request.getUserId(), request.getSessionId(), reset);
+        }
+    }
+
+    /**
      * @description 获取执行计划生成模式
      * <p> <功能详细描述> </p>
      *

@@ -120,18 +120,18 @@ public class ScenarioClassifier extends AbstractPatternService<PatternRequest> {
         // 等待所有并行任务完成
         CompletableFuture.allOf(taskFutures.toArray(new CompletableFuture[0])).join();
         if (isSimple.get()) {
-            return Constant.Pattern.SIMPLE;
-        }
-        if (isExecute.get()) {
             return Constant.Pattern.EXECUTE;
         }
+        if (isExecute.get()) {
+            return Constant.Pattern.PLAN;
+        }
         if (isTask.get()) {
-            return Constant.Pattern.TASK;
+            return Constant.Pattern.GOAL;
         }
         // score >= 2 ? execute : task
         int score = this.getRelayScore(request);
         log.info("[场景分类] score={}", score);
-        return score >= 2 ? Constant.Pattern.EXECUTE : Constant.Pattern.TASK;
+        return score >= 2 ? Constant.Pattern.PLAN : Constant.Pattern.GOAL;
     }
 
     /**

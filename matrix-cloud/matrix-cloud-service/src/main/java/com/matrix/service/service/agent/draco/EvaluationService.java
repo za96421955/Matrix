@@ -1,5 +1,6 @@
 package com.matrix.service.service.agent.draco;
 
+import com.matrix.common.dto.model.Message;
 import com.matrix.common.util.JSONUtil;
 import com.matrix.service.service.agent.ModelService;
 
@@ -8,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -116,26 +118,27 @@ public class EvaluationService {
             int sectionPositiveTotal = 0;
             int sectionNegativeTotal = 0;
             for (Evaluation.Criterion criterion : section.getCriteria()) {
+                String result = """
+                    ## 汇报结果
+                    ```
+                    %s
+                    ```
+                    """.formatted(answer);
                 String input = """
                     按以下<评分标准>，对<汇报结果>进行评分，直接输出分数
                     - 总分 > 0: 得分区间为 [0, 总分]，包含0
                     - 总分 < 0: 得分区间为 [总分, 0]，包含0
                     
-                    ## 汇报结果
-                    ```
-                    %s
-                    ```
+                    ## 总分：%s
                     
                     ## 评分标准
                     ```
                     %s
                     ```
                     
-                    ## 总分：%s
-                    
                     直接输出分数（整数），不要任何解释：
-                    """.formatted(answer, criterion.getRequirement(), criterion.getWeight());
-                int score = this.evaluation(input, 0);
+                    """.formatted(criterion.getWeight(), criterion.getRequirement());
+                int score = this.evaluation(result, input, 0);
                 if (criterion.getWeight() > 0) {
                     sectionPositiveTotal += criterion.getWeight();
                     gain += score;
@@ -168,12 +171,15 @@ public class EvaluationService {
         Files.write(path, output.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    private int evaluation(String input, int retry) {
+    private int evaluation(String result, String input, int retry) {
         try {
-            String result = modelService.call(input);
-            return Integer.parseInt(result);
+            List<Message> messages = new ArrayList<>();
+            messages.add(Message.user(result));
+            messages.add(Message.user(input));
+            String score = modelService.call(messages);
+            return Integer.parseInt(score);
         } catch (Exception e) {
-            return this.evaluation(input, ++retry);
+            return this.evaluation(result, input, ++retry);
         }
     }
 

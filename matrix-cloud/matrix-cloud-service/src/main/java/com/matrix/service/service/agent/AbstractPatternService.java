@@ -441,13 +441,15 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
             MessageInfo save = MessageInfo.builder()
                     .userId(userId)
                     .sessionId(sessionId)
-                    .role(flag ? Role.FLAG : role)
+                    .role(role)
                     .content(message.getContent())
                     .reasoning_content(message.getReasoning_content())
                     .tool_call_id(message.getTool_call_id())
                     .build();
             if (!CollectionUtils.isEmpty(message.getTool_calls())) {
                 save.setTool_calls(JSONArray.toJSONString(message.getTool_calls()));
+            } else if (flag) {
+                save.setRole(Role.FLAG);
             }
             messageService.save(save);
             log.info("[记录消息] userId={}, sessionId={}, 消息入库: {}",

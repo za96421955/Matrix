@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.matrix.common.constant.SystemParam;
 import com.matrix.common.dto.response.UserResponse;
 import com.matrix.common.response.CommonResponse;
+import com.matrix.common.util.DateUtil;
 import com.matrix.service.context.ChatContext;
 import com.matrix.service.context.PatternContext;
 import com.matrix.service.dal.entity.SessionInfo;
@@ -56,9 +57,11 @@ public class SessionController {
                                                                      @PathVariable("sessionId") Long sessionId) {
         boolean isConversation = chatContext.isConversation(userInfo.getUserId(), sessionId);
         String status = patternContext.getStatus(userInfo.getUserId(), sessionId);
+        String total = DateUtil.formatTime(patternContext.getTotalConsume(userInfo.getUserId(), sessionId));
+        String curr = DateUtil.formatTime(patternContext.getCurrConsume(userInfo.getUserId(), sessionId));
         JSONObject result = new JSONObject();
         result.put("isConversation", isConversation);
-        result.put("status", status);
+        result.put("status", status + " (总耗时: %s, 当前任务已耗时: %s)".formatted(total, curr));
         return ResponseEntity.ok(CommonResponse.success(result));
     }
 

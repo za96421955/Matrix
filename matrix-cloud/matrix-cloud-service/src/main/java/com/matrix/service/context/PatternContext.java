@@ -6,6 +6,9 @@ import com.matrix.service.cache.ServiceCache;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
+import java.util.Set;
 
 /**
  * @description 模式上下文
@@ -28,6 +31,10 @@ public class PatternContext {
      */
     public void clear(long userId, long sessionId) {
         this.clearPattern(userId, sessionId);
+        // 同时清除 status
+        this.clearStatus(userId, sessionId);
+        // 同时清除 consume
+        this.clearConsume(userId, sessionId);
     }
     public void clearPattern(long userId, long sessionId) {
         log.info("[模式缓存] 清除模式, userId={}, sessionId={}", userId, sessionId);
@@ -38,13 +45,19 @@ public class PatternContext {
         } catch (Exception ignore) {}
         // 同时清除 smart
         this.clearSmart(userId, sessionId);
-        // 同时清除 status
-        this.clearStatus(userId, sessionId);
     }
     public void clearStatus(long userId, long sessionId) {
         log.info("[模式缓存] 清除模式 status, userId={}, sessionId={}", userId, sessionId);
         try {
             RedisKey redisKey = RedisKey.PATTERN_STATUS;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
+    public void clearConsume(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 consume, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_CONSUME;
             String key = redisKey.generateKey(userId, sessionId);
             serviceCache.delete(key);
         } catch (Exception ignore) {}
@@ -149,11 +162,64 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.PATTERN_STATUS;
         String key = redisKey.generateKey(userId, sessionId);
         serviceCache.set(key, status, redisKey.getTtl());
+        // 上一步结束
+        this.end(userId, sessionId);
+        // 下一步开始
+        this.begin(userId, sessionId);
     }
     public String getStatus(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN_STATUS;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+
+    /**
+     * @description 缓存: status
+     * <p> <功能详细描述> </p>
+     *
+     * @author 陈晨
+     */
+    public void begin(long userId, long sessionId) {
+        log.info("[模式缓存] 设置模式 consume, userId={}, sessionId={}",
+                userId, sessionId);
+        RedisKey redisKey = RedisKey.PATTERN_CONSUME;
+        String key = redisKey.generateKey(userId, sessionId);
+        Set<String> keys = serviceCache.keys(key);
+        if (CollectionUtils.isEmpty(keys)) {
+            serviceCache.getHash().put(key, "begin", System.currentTimeMillis() + "", redisKey.getTtl());
+            serviceCache.getHash().put(key, "consume", "0", redisKey.getTtl());
+        }
+        serviceCache.getHash().put(key, "curr", System.currentTimeMillis() + "", redisKey.getTtl());
+    }
+    public void end(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.PATTERN_CONSUME;
+        String key = redisKey.generateKey(userId, sessionId);
+        Set<String> keys = serviceCache.keys(key);
+        if (CollectionUtils.isEmpty(keys)) {
+            return;
+        }
+        long consume = this.getTotalConsume(userId, sessionId) + this.getCurrConsume(userId, sessionId);
+        serviceCache.getHash().put(key, "consume", consume + "", redisKey.getTtl());
+        serviceCache.getHash().put(key, "curr", "0", redisKey.getTtl());
+    }
+    public long getTotalConsume(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.PATTERN_CONSUME;
+        String key = redisKey.generateKey(userId, sessionId);
+        Set<String> keys = serviceCache.keys(key);
+        if (CollectionUtils.isEmpty(keys)) {
+            return 0;
+        }
+        return Long.parseLong(serviceCache.getHash().get(key, "consume"));
+    }
+    public long getCurrConsume(long userId, long sessionId) {
+        RedisKey redisKey = RedisKey.PATTERN_CONSUME;
+        String key = redisKey.generateKey(userId, sessionId);
+        Set<String> keys = serviceCache.keys(key);
+        if (CollectionUtils.isEmpty(keys)) {
+            return 0;
+        }
+        long curr = Long.parseLong(serviceCache.getHash().get(key, "curr"));
+        return System.currentTimeMillis() - curr;
     }
 
     /**

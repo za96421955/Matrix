@@ -35,7 +35,14 @@ public class SimplePatternService extends AbstractPatternService<PatternRequest>
         // 消息
         request.setMessages(this.buildMessages(request, clients, Prompt.CoT.EXECUTE));
         // ReAct Agent Call
-        return this.call(request, null);
+        return this.call(request, sink -> {
+            log.info("[简单模式] userId={}, 执行【开始】", request.getUserId());
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), "简单任务执行中");
+            this.call(sink, request, false);
+            // 清除模式缓存
+            patternContext.clear(request.getUserId(), request.getSessionId());
+            log.info("[简单模式] userId={}, 执行【结束】", request.getUserId());
+        });
     }
 
 }

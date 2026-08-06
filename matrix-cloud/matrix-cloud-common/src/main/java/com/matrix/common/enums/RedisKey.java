@@ -44,6 +44,8 @@ public enum RedisKey {
     PATTERN("matrix:pattern:%s:%s", 24 * 60 * 60L),
     /** 模式：任务状态 */
     PATTERN_STATUS("matrix:pattern:status:%s:%s", PATTERN.getTtl()),
+    /** 模式：任务耗时 */
+    PATTERN_CONSUME("matrix:pattern:consume:%s:%s", PATTERN.getTtl()),
     /** 模式：是否需要 SMART 分析 */
     PATTERN_IS_SMART("matrix:pattern:is-smart:%s:%s", PATTERN.getTtl()),
     /** 模式：SMART 分析 */

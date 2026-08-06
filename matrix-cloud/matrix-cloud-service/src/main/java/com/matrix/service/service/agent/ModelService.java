@@ -191,7 +191,7 @@ public class ModelService {
         }
         RegisterCommand.Model model = RegisterCommand.Model.builder()
                 .baseUrl(Constant.Model.BASE_URL)
-                .model(Constant.Model.DEEPSEEK_V4_PRO)
+                .model(Constant.Model.DEEPSEEK_V4_FLASH)
                 .apiKey(System.getenv("DEEPSEEK_API_KEY"))
                 .build();
         Request request = Request.builder()

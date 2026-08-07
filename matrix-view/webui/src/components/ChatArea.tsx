@@ -132,7 +132,7 @@ const MessageList = React.memo(
                         Matrix
                     </h2>
                     <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 max-w-xs sm:max-w-sm md:max-w-md leading-relaxed">
-                        {isBackendSession ? '会话暂无消息记录' : '大道至简。'}
+                        {isBackendSession ? '会话暂无消息记录' : '大道至简'}
                     </p>
                 </div>
             )

@@ -101,7 +101,7 @@ public class PatternContext {
      *
      * @author 陈晨
      */
-    public void begin(long userId, long sessionId) {
+    public synchronized void begin(long userId, long sessionId) {
         log.info("[模式缓存] 设置模式 consume, userId={}, sessionId={}",
                 userId, sessionId);
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
@@ -113,7 +113,7 @@ public class PatternContext {
         }
         serviceCache.getHash().put(key, "curr", System.currentTimeMillis() + "", redisKey.getTtl());
     }
-    public void end(long userId, long sessionId) {
+    public synchronized void end(long userId, long sessionId) {
         RedisKey redisKey = RedisKey.PATTERN_CONSUME;
         String key = redisKey.generateKey(userId, sessionId);
         long consume = this.getTotalConsume(userId, sessionId) + this.getCurrConsume(userId, sessionId);
@@ -137,6 +137,9 @@ public class PatternContext {
             return 0;
         }
         long curr = Long.parseLong(serviceCache.getHash().get(key, "curr"));
+        if (curr <= 0) {
+            return 0;
+        }
         return System.currentTimeMillis() - curr;
     }
     public void clearConsume(long userId, long sessionId) {

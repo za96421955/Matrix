@@ -24,6 +24,10 @@ public interface OutputKeyword {
 
     String REVISE = "REVISE";
 
+    String SINGLE = "SINGLE";
+
+    String MULTI = "MULTI";
+
 }
 
 

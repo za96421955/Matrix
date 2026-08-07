@@ -74,13 +74,13 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
 
         // 1. 违规初筛
         String primary = this.primary(request.clone());
-        if (StringUtils.isNotBlank(primary)) {
+        if (StringUtils.isBlank(primary)) {
             throw new RuntimeException(primary);
         }
 
         // 2. 制定目标 (hook) (add context)
         String goal = this.getGoal(request.clone());
-        if (StringUtils.isNotBlank(goal)) {
+        if (StringUtils.isBlank(goal)) {
             return;
         }
         request.getMessages().add(Message.assistant(goal));
@@ -115,7 +115,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
 
         // 8. 制定执行计划 (hook) (add context)
         String plan = this.getPlan(request.clone());
-        if (StringUtils.isNotBlank(plan)) {
+        if (StringUtils.isBlank(plan)) {
             return;
         }
         request.getMessages().add(Message.assistant(plan));
@@ -126,17 +126,14 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             throw new RuntimeException(fenceCheckResults.toString());
         }
 
-        // TODO 10. 递进生成执行方案 (多大深度 3)
-        // TODO 10.1. 判断执行方案单步/多步
-        // TODO 10.2. 生成执行方案 -> 10.1
-        // TODO 10.3. 输出执行方案列表
+        // 10. 递进生成执行方案 (多大深度 3)
+        Actions actions = this.getTaskActions(request.clone(), plan, 0, 0);
 
-        // TODO 11. 循环执行方案列表
-        // TODO 11.1. 方案执行 (hook)
-        // TODO 11.2. 结果审查 -> PASS/REVISE
-        // TODO 11.3. 修订建议合并至下一次执行 -> 11.1.
-
-        // TODO 12. 最后一次结果修订 (如果有)
+        // 11. 循环执行方案列表 (hook)
+        String result = this.taskExecute(request.clone(), actions);
+        if (StringUtils.isBlank(result)) {
+            return;
+        }
 
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
@@ -325,6 +322,92 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         return results;
+    }
+
+    /**
+     * @description 递进生成执行方案
+     * <p>
+     *      1. 判断执行方案单步/多步
+     *      2. 生成执行方案
+     *      3. 输出执行方案列表
+     * </p>
+     *
+     * @author 陈晨
+     */
+    private Actions getTaskActions(PatternRequest request, String plan, int deep, int retry) {
+        // 最大深度 3
+        if (deep >= 3) {
+            return Actions.builder().actions(List.of(plan)).build();
+        }
+        if (retry >= 3) {
+            throw new RuntimeException("<执行方案>生成失败, 超出最大重试次数");
+        }
+
+        // 1. 判断执行方案单步/多步
+        String result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
+        if (result.contains(OutputKeyword.SINGLE)) {
+            return Actions.builder().actions(List.of(plan)).build();
+        }
+
+        // 2. 生成执行方案 -> 10.1
+        String prompt = PromptDeep.Action.DEVELOP.formatted(plan, JSONSchemaUtil.generate(Actions.class));
+        result = this.callByResult(request, prompt);
+        try {
+            String json = ContentUtil.removeJsonMarkers(result);
+            if (StringUtils.isBlank(json)) {
+                throw new RuntimeException("json content is empty");
+            }
+            Actions actions = JSONUtil.parseObject(json, Actions.class);
+            // 必须保持执行顺序
+            Actions resultAction = Actions.builder().actions(new ArrayList<>()).build();
+            for (String action : actions.getActions()) {
+                // deep + 1
+                Actions next = this.getTaskActions(request, action, deep + 1, 0);
+                resultAction.getActions().addAll(next.getActions());
+            }
+            // 3. 输出执行方案列表
+            return resultAction;
+        } catch (Exception e) {
+            // 格式错误，重试
+            request.getMessages().add(Message.user(PromptDeep.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
+            return this.getTaskActions(request, plan, deep, retry + 1);
+        }
+    }
+
+    /**
+     * @description 执行信息收集
+     * <p>
+     *      1. 方案执行 (hook)
+     *      2. 结果审查 -> PASS/REVISE
+     *      3. 修订建议合并至下一次执行
+     *      4. 最后修订 (如果有)
+     * </p>
+     *
+     * @author 陈晨
+     */
+    private String taskExecute(PatternRequest request, Actions actions) {
+        String revise = null;
+        for (String action : actions.getActions()) {
+            // 执行
+            String prompt = request.getHook() ? PromptDeep.Action.EXECUTE_HOOK : PromptDeep.Action.EXECUTE;
+            String result = this.callByResult(request, prompt.formatted(action));
+            if (StringUtils.isBlank(result)) {
+                return null;
+            }
+            request.getMessages().add(Message.assistant(result));
+            // 检查
+            revise = this.callResultByFlag(request, PromptDeep.Action.REVIEW);
+            if (revise.contains(OutputKeyword.PASS)) {
+                revise = null;
+            } else {
+                request.getMessages().add(Message.user(revise));
+            }
+        }
+        // 最后修订
+        if (StringUtils.isNotBlank(revise)) {
+            this.callByResult(request, revise);
+        }
+        return "已完成";
     }
 
 }

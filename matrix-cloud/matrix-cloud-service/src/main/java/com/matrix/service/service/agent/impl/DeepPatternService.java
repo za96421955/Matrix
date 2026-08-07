@@ -307,7 +307,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             patternDeepContext.setInfoReview(request.getUserId(), request.getSessionId());
             return;
         }
-        // 清除信息收集缓存
+        // 重置信息收集
         patternDeepContext.clearInfos(request.getUserId(), request.getSessionId());
         throw new RuntimeException(result);
     }
@@ -386,6 +386,10 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         if (!CollectionUtils.isEmpty(results)) {
+            // 重置初筛
+            patternDeepContext.clearPrimary(request.getUserId(), request.getSessionId());
+            // 重置安全围栏
+            patternDeepContext.clearFences(request.getUserId(), request.getSessionId());
             throw new RuntimeException(results.toString());
         }
         patternDeepContext.setFenceCheck(request.getUserId(), request.getSessionId());

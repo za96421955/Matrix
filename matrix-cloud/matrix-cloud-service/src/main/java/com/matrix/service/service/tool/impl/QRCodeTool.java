@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.paho.mqttv5.common.MqttException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.tools.qrcode", havingValue = "true")
 public class QRCodeTool extends AbstractTool<QRCodeTool.Request> {
 
     @Override

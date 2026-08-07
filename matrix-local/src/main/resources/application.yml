@@ -63,3 +63,16 @@ matrix:
     ack: /v1/task/ack
   github:
     token:
+  tools:
+    assistant: true
+    memory: true
+    timer: true
+    risk-level-manager: true
+    skill: true
+    skill-manager: true
+    location: true
+    weather: true
+    query-typhoon: false
+    github: false
+    init-html: true
+    qrcode: false

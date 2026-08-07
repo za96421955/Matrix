@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,6 +34,7 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.tools.init-html", havingValue = "true")
 public class InitHtmlTool extends AbstractTool<InitHtmlTool.Request> {
 
     /** 保留的结构标签（白名单） */
@@ -68,7 +70,7 @@ public class InitHtmlTool extends AbstractTool<InitHtmlTool.Request> {
     @Override
     /** 获取组件名称 */
     public String name() {
-        return "initHtml";
+        return "init-html";
     }
 
     @Override

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.paho.mqttv5.common.MqttException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 import reactor.core.publisher.Flux;
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.tools.skill-manager", havingValue = "true")
 public class SkillManagerTool extends AbstractTool<SkillManagerTool.Request> {
 
     @Override

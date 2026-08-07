@@ -54,5 +54,18 @@ matrix:
     max-reconnect-delay: 128
   github:
     token:
+  tools:
+    assistant: true
+    memory: true
+    timer: true
+    risk-level-manager: true
+    skill: true
+    skill-manager: true
+    location: true
+    weather: true
+    query-typhoon: true
+    github: true
+    init-html: true
+    qrcode: true
 
 

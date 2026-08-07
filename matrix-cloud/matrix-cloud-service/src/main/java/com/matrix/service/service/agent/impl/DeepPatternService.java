@@ -302,11 +302,13 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
         // 过程不记录上下文
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "【6/11】事实核查中...");
-        String result = this.callResultByFlag(request, PromptDeep.Information.REVIEW);
+        String result = this.callResultByFlag(request, PromptDeep.Information.REVIEW + PromptDeep.Fence.CHECK);
         if (result.contains(OutputKeyword.PASS)) {
             patternDeepContext.setInfoReview(request.getUserId(), request.getSessionId());
             return;
         }
+        // 清除信息收集缓存
+        patternDeepContext.clearInfos(request.getUserId(), request.getSessionId());
         throw new RuntimeException(result);
     }
 
@@ -418,7 +420,12 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 "【10/11】判断第%s层执行方案，单步/多步... (最深3层，重试 %s 次)".formatted(deep + 1, retry));
         result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
         if (result.contains(OutputKeyword.SINGLE)) {
-            return Actions.builder().actions(List.of(plan)).build();
+            Actions resultAction = Actions.builder().actions(List.of(plan)).build();
+            // 最终输出时缓存
+            if (deep == 0) {
+                patternDeepContext.setActions(request.getUserId(), request.getSessionId(), resultAction.toString());
+            }
+            return resultAction;
         }
 
         // 2. 生成执行方案
@@ -440,7 +447,8 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 Actions next = this.getTaskActions(request, action, deep + 1, 0);
                 resultAction.getActions().addAll(next.getActions());
             }
-            // 3. 输出执行方案列表, 最终输出时缓存
+            // 3. 输出执行方案列表
+            // 最终输出时缓存
             if (deep == 0) {
                 patternDeepContext.setActions(request.getUserId(), request.getSessionId(), resultAction.toString());
             }

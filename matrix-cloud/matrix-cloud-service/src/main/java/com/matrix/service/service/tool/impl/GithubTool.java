@@ -12,12 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "matrix.tools.github", havingValue = "true")
 public class GithubTool extends AbstractTool<GithubTool.Request> {
 
     @Value("${matrix.github.token}")

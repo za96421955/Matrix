@@ -67,6 +67,16 @@ public class PatternDeepContext {
             serviceCache.delete(key);
         } catch (Exception ignore) {}
     }
+    public void clearFlag(long userId, long sessionId, String flag) {
+        log.info("[模式缓存] 清除缓存 flag, userId={}, sessionId={}, flag={}",
+                userId, sessionId, flag);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_DEEP_FLAG;
+            String key = redisKey.generateKey(userId, sessionId);
+            String hashKey = ContentUtil.sha256Hex(flag);
+            serviceCache.getHash().remove(key, hashKey);
+        } catch (Exception ignore) {}
+    }
     /** primary */
     public void setPrimary(long userId, long sessionId) {
         this.setFlag(userId, sessionId, "FLAG_PRIMARY");
@@ -74,6 +84,9 @@ public class PatternDeepContext {
     public boolean isPrimary(long userId, long sessionId) {
         String flag = this.getFlag(userId, sessionId, "FLAG_PRIMARY");
         return StringUtils.isNotBlank(flag);
+    }
+    public void clearPrimary(long userId, long sessionId) {
+        this.clearFlag(userId, sessionId, "FLAG_PRIMARY");
     }
     /** infos */
     public void setInfos(long userId, long sessionId) {
@@ -83,6 +96,9 @@ public class PatternDeepContext {
         String flag = this.getFlag(userId, sessionId, "FLAG_INFOS");
         return StringUtils.isNotBlank(flag);
     }
+    public void clearInfos(long userId, long sessionId) {
+        this.clearFlag(userId, sessionId, "FLAG_INFOS");
+    }
     /** infoReview */
     public void setInfoReview(long userId, long sessionId) {
         this.setFlag(userId, sessionId, "FLAG_INFO_REVIEW");
@@ -90,6 +106,9 @@ public class PatternDeepContext {
     public boolean isInfoReview(long userId, long sessionId) {
         String flag = this.getFlag(userId, sessionId, "FLAG_INFO_REVIEW");
         return StringUtils.isNotBlank(flag);
+    }
+    public void clearInfoReview(long userId, long sessionId) {
+        this.clearFlag(userId, sessionId, "FLAG_INFO_REVIEW");
     }
     /** forwardLooking */
     public void setForwardLooking(long userId, long sessionId) {
@@ -99,6 +118,9 @@ public class PatternDeepContext {
         String flag = this.getFlag(userId, sessionId, "FLAG_FORWARD_LOOKING");
         return StringUtils.isNotBlank(flag);
     }
+    public void clearForwardLooking(long userId, long sessionId) {
+        this.clearFlag(userId, sessionId, "FLAG_FORWARD_LOOKING");
+    }
     /** fenceCheck */
     public void setFenceCheck(long userId, long sessionId) {
         this.setFlag(userId, sessionId, "FLAG_FENCE_CHECK");
@@ -107,6 +129,9 @@ public class PatternDeepContext {
         String flag = this.getFlag(userId, sessionId, "FLAG_FENCE_CHECK");
         return StringUtils.isNotBlank(flag);
     }
+    public void clearFenceCheck(long userId, long sessionId) {
+        this.clearFlag(userId, sessionId, "FLAG_FENCE_CHECK");
+    }
     /** action */
     public void setAction(long userId, long sessionId, String action) {
         this.setFlag(userId, sessionId, action);
@@ -114,6 +139,9 @@ public class PatternDeepContext {
     public boolean isAction(long userId, long sessionId, String action) {
         String flag = this.getFlag(userId, sessionId, action);
         return StringUtils.isNotBlank(flag);
+    }
+    public void clearAction(long userId, long sessionId, String action) {
+        this.clearFlag(userId, sessionId, action);
     }
 
     /**

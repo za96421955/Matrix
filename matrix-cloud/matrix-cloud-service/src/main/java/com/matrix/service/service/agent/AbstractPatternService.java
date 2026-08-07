@@ -21,8 +21,8 @@ import com.matrix.service.context.RegisterContext;
 import com.matrix.service.context.ToolContext;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.entity.MessageInfo;
+import com.matrix.service.service.agent.schema.Actions;
 import com.matrix.service.service.agent.schema.Smart;
-import com.matrix.service.service.agent.schema.TaskActions;
 import com.matrix.service.service.app.ApplicationService;
 import com.matrix.service.service.chat.MessageService;
 import com.matrix.service.service.task.Executor;
@@ -520,16 +520,13 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         String reset = this.callByFlag(request, Prompt.Check.RESET.formatted(smart, plan));
         log.info("[直接回答] userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), reset);
-        if (reset.contains(OutputKeyword.SMART)) {
-            patternContext.clear(request.getUserId(), request.getSessionId());
-            log.info("[任务模式] 清理目标、计划缓存, userId={}, sessionId={}, reset={}",
-                    request.getUserId(), request.getSessionId(), reset);
+        if (reset.contains(OutputKeyword.PASS)) {
+            return;
         }
-        if (reset.contains(OutputKeyword.PLAN)) {
-            patternContext.clearPlan(request.getUserId(), request.getSessionId());
-            log.info("[任务模式] 清理计划缓存, userId={}, sessionId={}, reset={}",
-                    request.getUserId(), request.getSessionId(), reset);
-        }
+        // 重置缓存
+        patternContext.clear(request.getUserId(), request.getSessionId());
+        log.info("[任务模式] 清除模式缓存, userId={}, sessionId={}, reset={}",
+                request.getUserId(), request.getSessionId(), reset);
     }
 
     /**
@@ -545,7 +542,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         }
         try {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断执行计划生成模式");
-            planMode = this.callByFlag(request, Prompt.CoT.PLAN_MODE);
+            planMode = this.callByFlag(request, Prompt.Plan.PLAN_MODE);
             log.info("[直接回答] userId={}, sessionId={}, result={}",
                     request.getUserId(), request.getSessionId(), planMode);
             if (planMode.contains(TaskMode.REVIEW.getValue())) {
@@ -583,8 +580,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
 
         // 生成执行计划
         String prompt = null == smart
-                ? Prompt.CoT.PLAN.formatted(request.getHook() ? Prompt.CoT.PLAN_HOOK : "")
-                : Prompt.CoT.PLAN_SMART.formatted(request.getHook() ? Prompt.CoT.PLAN_HOOK : "",
+                ? Prompt.Plan.PLAN.formatted(request.getHook() ? Prompt.Plan.PLAN_HOOK : "")
+                : Prompt.Plan.PLAN_SMART.formatted(request.getHook() ? Prompt.Plan.PLAN_HOOK : "",
                         smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                         smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-生成");
@@ -628,10 +625,10 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     private String review(PatternRequest request, String plan) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         List<String> revises = new ArrayList<>();
-        for (String direction : Prompt.MoA.DIRECTIONS) {
+        for (String direction : Prompt.Plan.DIRECTIONS) {
             futures.add(CompletableFuture.runAsync(() -> {
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-审查");
-                String result = this.callResultByFlag(request, Prompt.MoA.DIRECTION_REVIEW.formatted(direction));
+                String result = this.callResultByFlag(request, Prompt.Plan.DIRECTION_REVIEW.formatted(direction));
                 // 计算结果
                 int indexPass = result.indexOf(OutputKeyword.PASS);
                 int indexRevise = result.indexOf(OutputKeyword.REVISE);
@@ -651,7 +648,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
                 revise.append(r).append("\n---\n");
             }
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-修订");
-            return this.callByResult(request, Prompt.MoA.CONVERGE.formatted(revise));
+            return this.callByResult(request, Prompt.Plan.CONVERGE.formatted(revise));
         }
         return plan;
     }
@@ -666,7 +663,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 审查
         request.getMessages().add(Message.assistant(plan));
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-领域专家审查");
-        String result = this.callResultByFlag(request, Prompt.MoA.DOMAIN_REVIEW);
+        String result = this.callResultByFlag(request, Prompt.Plan.DOMAIN_REVIEW);
         // 计算结果
         int indexPass = result.indexOf(OutputKeyword.PASS);
         int indexRevise = result.indexOf(OutputKeyword.REVISE);
@@ -683,7 +680,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         // 修订
         if (isRevise) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "执行计划-领域专家修订");
-            return this.callByResult(request, Prompt.MoA.REVISE.formatted(result));
+            return this.callByResult(request, Prompt.Plan.REVISE.formatted(result));
         }
         // 终止执行
         throw new RuntimeException(result);
@@ -697,7 +694,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      */
     protected String executeTaskAction(PatternRequest request) {
         // 1. 构建任务执行方案列表
-        TaskActions actions = this.generateTaskActions(request, 0);
+        Actions actions = this.generateTaskActions(request, 0);
         if (null == actions) {
             throw new RuntimeException("执行方案列表生成失败");
         }
@@ -741,7 +738,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
         String title = action.length() > 15 ? (action.substring(0, 15) + "...") : action;
         String status = "执行任务（%s/%s）：%s".formatted(curr, size, title);
         patternContext.setStatus(request.getUserId(), request.getSessionId(), status);
-        result = this.callByResult(request, Prompt.CoT.EXECUTE_SUMMARY.formatted(action));
+        result = this.callByResult(request, Prompt.Action.EXECUTE_SUMMARY.formatted(action));
         log.info("[任务模式] 方案执行, userId={}, sessionId={}, result={}",
                 request.getUserId(), request.getSessionId(), result);
         patternContext.setResult(request.getUserId(), request.getSessionId(), action, result);
@@ -754,22 +751,22 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      *
      * @author 陈晨
      */
-    private TaskActions generateTaskActions(PatternRequest request, int retry) {
+    private Actions generateTaskActions(PatternRequest request, int retry) {
         if (retry >= 3) {
             return null;
         }
         String actions = patternContext.getActions(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(actions)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成执行方案列表");
-            actions = this.callByResult(request, Prompt.CoT.ACTIONS.formatted(
-                    JSONSchemaUtil.generate(TaskActions.class)));
+            actions = this.callByResult(request, Prompt.Action.ACTIONS.formatted(
+                    JSONSchemaUtil.generate(Actions.class)));
         }
         try {
             String json = ContentUtil.removeJsonMarkers(actions);
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            TaskActions actionsObj = JSONUtil.parseObject(json, TaskActions.class);
+            Actions actionsObj = JSONUtil.parseObject(json, Actions.class);
             if (null == actionsObj.getActions()) {
                 throw new RuntimeException("actions is empty");
             }
@@ -790,7 +787,7 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
      * @author 陈晨
      */
     protected String observe(PatternRequest request, Smart smart) {
-        String prompt = null == smart ? Prompt.CoT.OBSERVE : Prompt.CoT.OBSERVE_SMART.formatted(
+        String prompt = null == smart ? Prompt.Observe.OBSERVE : Prompt.Observe.OBSERVE_SMART.formatted(
                 smart.getSpecific(), smart.getMeasurable(), smart.getAchievable(),
                 smart.getRelevant(), smart.getTimeBound());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "观察执行结果");

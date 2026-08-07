@@ -113,9 +113,6 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
             // 任务继续
             request.getMessages().add(Message.user(observe));
         }
-
-        // 3. 结果总结
-//        this.callResultByClone(sink, request, Prompt.Common.BRIEF_SUMMARY);
         // 清除模式缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
     }
@@ -152,7 +149,7 @@ public class GoalPatternService extends AbstractPatternService<PatternRequest> {
         String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
         if (StringUtils.isBlank(smart)) {
             patternContext.setStatus(request.getUserId(), request.getSessionId(), "生成任务目标");
-            smart = request.getHook() ? Prompt.CoT.SMART_HOOK : Prompt.CoT.SMART;
+            smart = request.getHook() ? Prompt.Goal.SMART_HOOK : Prompt.Goal.SMART;
             smart = this.callByResult(request, smart.formatted(JSONSchemaUtil.generate(Smart.class)));
             // 待补充检查
             if (request.getHook()) {

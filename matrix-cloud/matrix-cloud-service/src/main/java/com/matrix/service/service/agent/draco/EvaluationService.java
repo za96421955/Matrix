@@ -24,9 +24,9 @@ public class EvaluationService {
     public static void main(String[] args) throws IOException {
         EvaluationService service = new EvaluationService();
         String question = "13";
-        service.outputProblem(question);
+//        service.outputProblem(question);
 //        service.outputScore(question);
-//        service.calculateAndWriteScore(question);
+        service.calculateAndWriteScore(question);
 
 //        for (int i = 9; i <= 11; i++) {
 //            service.calculateAndWriteScore(i + "");

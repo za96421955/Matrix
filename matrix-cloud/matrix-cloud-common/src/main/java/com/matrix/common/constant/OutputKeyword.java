@@ -12,7 +12,7 @@ public interface OutputKeyword {
 
     String TODO = "TODO";
 
-    String SMART = "SMART";
+    String RESET = "RESET";
 
     String PLAN = "PLAN";
 

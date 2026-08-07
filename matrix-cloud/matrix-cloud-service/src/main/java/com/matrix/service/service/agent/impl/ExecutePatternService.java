@@ -34,7 +34,7 @@ public class ExecutePatternService extends AbstractPatternService<PatternRequest
         // 工具
         request.setTools(this.buildTools());
         // 消息
-        request.setMessages(this.buildMessages(request, clients, Prompt.CoT.EXECUTE));
+        request.setMessages(this.buildMessages(request, clients, Prompt.Action.EXECUTE));
         // ReAct Agent Call
         return this.call(request, sink -> {
             log.info("[执行模式] userId={}, 执行【开始】", request.getUserId());

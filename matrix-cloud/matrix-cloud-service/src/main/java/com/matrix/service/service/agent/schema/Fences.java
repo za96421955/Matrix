@@ -13,10 +13,10 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskActions {
+public class Fences {
 
-    @Description("执行方案列表")
-    private List<String> actions;
+    @Description("安全边界")
+    private List<String> fences;
 
     @Override
     public String toString() {

@@ -40,7 +40,7 @@ public class EvaluationService {
         System.out.println("完成以下任务");
         System.out.println("- 结果输出至：" + BASE_PATH + "/answer/" + question + "_answer.md");
         System.out.println("- 源数据或临时文件存放：" + BASE_PATH + "/answer/" + question + "_source");
-        System.out.println("- 互联网带格式的源文件，首先清洗后再使用");
+//        System.out.println("- 互联网带格式的源文件，首先清洗后再使用");
         System.out.println("---");
         System.out.println(evaluation.getProblem());
 

@@ -38,6 +38,9 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class DeepPatternService extends AbstractPatternService<PatternRequest> {
 
+    private static final int maxRetry = 3;
+    private static final int maxDeep = 2;
+
     @Override
     public Flux<Response> call(PatternRequest request) {
         if (request == null) {
@@ -97,7 +100,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         this.informationExecute(request, informationActions);
 
         // 6. 事实核查
-        this.informationReview(request.clone());
+        this.informationReview(request.clone(), informationActions);
 
         // 7. 前瞻决策 (add context)
         this.getForwardLooking(request);
@@ -188,7 +191,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return JSONUtil.parseObject(result, Fences.class);
         }
 
-        if (retry >= 3) {
+        if (retry >= maxRetry) {
             throw new RuntimeException("<安全边界>生成失败, 超出最大重试次数");
         }
         String prompt = request.getHook() ? PromptDeep.Fence.DEVELOP_HOOK : PromptDeep.Fence.DEVELOP;
@@ -210,6 +213,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 throw new RuntimeException("json content is empty");
             }
             Fences fences = JSONUtil.parseObject(json, Fences.class);
+            if (CollectionUtils.isEmpty(fences.getFences())) {
+                throw new RuntimeException("fences is empty");
+            }
             patternDeepContext.setFences(request.getUserId(), request.getSessionId(), fences.toString());
             return fences;
         } catch (Exception e) {
@@ -231,7 +237,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return JSONUtil.parseObject(result, Actions.class);
         }
 
-        if (retry >= 3) {
+        if (retry >= maxRetry) {
             throw new RuntimeException("<信息收集方案>生成失败, 超出最大重试次数");
         }
         String prompt = request.getHook() ? PromptDeep.Information.DEVELOP_HOOK : PromptDeep.Information.DEVELOP;
@@ -253,6 +259,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 throw new RuntimeException("json content is empty");
             }
             Actions actions = JSONUtil.parseObject(json, Actions.class);
+            if (CollectionUtils.isEmpty(actions.getActions())) {
+                throw new RuntimeException("actions is empty");
+            }
             patternDeepContext.setInfoActions(request.getUserId(), request.getSessionId(), actions.toString());
             return actions;
         } catch (Exception e) {
@@ -269,6 +278,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private void informationExecute(PatternRequest request, Actions actions) {
+        if (CollectionUtils.isEmpty(actions.getActions())) {
+            return;
+        }
         if (patternDeepContext.isInfos(request.getUserId(), request.getSessionId())) {
             return;
         }
@@ -277,9 +289,13 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         List<String> results = new LinkedList<>();
         for (String action : actions.getActions()) {
             futures.add(CompletableFuture.runAsync(() -> {
+                if (patternDeepContext.isAction(request.getUserId(), request.getSessionId(), action)) {
+                    return;
+                }
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "【5/11】信息收集中...");
                 String result = this.callByResult(localRequest, PromptDeep.Information.EXECUTE.formatted(action));
                 results.add(result);
+                patternDeepContext.setAction(request.getUserId(), request.getSessionId(), action);
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -296,7 +312,10 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private void informationReview(PatternRequest request) {
+    private void informationReview(PatternRequest request, Actions actions) {
+        if (CollectionUtils.isEmpty(actions.getActions())) {
+            return;
+        }
         if (patternDeepContext.isInfoReview(request.getUserId(), request.getSessionId())) {
             return;
         }
@@ -308,6 +327,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return;
         }
         // 重置信息收集
+        for (String action : actions.getActions()) {
+            patternDeepContext.clearAction(request.getUserId(), request.getSessionId(), action);
+        }
         patternDeepContext.clearInfos(request.getUserId(), request.getSessionId());
         throw new RuntimeException(result);
     }
@@ -367,6 +389,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private void fenceCheck(PatternRequest request, Fences fences) {
+        if (CollectionUtils.isEmpty(fences.getFences())) {
+            return;
+        }
         if (patternDeepContext.isFenceCheck(request.getUserId(), request.getSessionId())) {
             return;
         }
@@ -375,10 +400,14 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         List<String> results = new LinkedList<>();
         for (String fence : fences.getFences()) {
             futures.add(CompletableFuture.runAsync(() -> {
+                if (patternDeepContext.isAction(request.getUserId(), request.getSessionId(), fence)) {
+                    return;
+                }
                 // 过程不记录上下文
                 patternContext.setStatus(request.getUserId(), request.getSessionId(), "【9/11】安全围栏检查中...");
-                String result = this.callResultByFlag(request, fence + PromptDeep.Fence.CHECK);
+                String result = this.callResultByFlag(request, PromptDeep.Fence.CHECK_PLAN.formatted(fence));
                 if (result.contains(OutputKeyword.PASS)) {
+                    patternDeepContext.setAction(request.getUserId(), request.getSessionId(), fence);
                     return;
                 }
                 results.add(result);
@@ -388,8 +417,12 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         if (!CollectionUtils.isEmpty(results)) {
             // 重置初筛
             patternDeepContext.clearPrimary(request.getUserId(), request.getSessionId());
-            // 重置安全围栏
-            patternDeepContext.clearFences(request.getUserId(), request.getSessionId());
+            // 重置执行计划
+            patternDeepContext.clearPlan(request.getUserId(), request.getSessionId());
+            // 重置安全围栏检查
+            for (String fence : fences.getFences()) {
+                patternDeepContext.clearAction(request.getUserId(), request.getSessionId(), fence);
+            }
             throw new RuntimeException(results.toString());
         }
         patternDeepContext.setFenceCheck(request.getUserId(), request.getSessionId());
@@ -411,17 +444,17 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return JSONUtil.parseObject(result, Actions.class);
         }
 
-        // 最大深度 3
-        if (deep >= 3) {
+        // 最大深度
+        if (deep >= maxDeep) {
             return Actions.builder().actions(List.of(plan)).build();
         }
-        if (retry >= 3) {
+        if (retry >= maxRetry) {
             throw new RuntimeException("<执行方案>生成失败, 超出最大重试次数");
         }
 
         // 1. 判断执行方案单步/多步
         patternContext.setStatus(request.getUserId(), request.getSessionId(),
-                "【10/11】判断第%s层执行方案，单步/多步... (最深3层，重试 %s 次)".formatted(deep + 1, retry));
+                "【10/11】判断第%s层执行方案，单步/多步... (最深%s层，重试 %s 次)".formatted(deep + 1, maxDeep, retry));
         result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
         if (result.contains(OutputKeyword.SINGLE)) {
             Actions resultAction = Actions.builder().actions(List.of(plan)).build();
@@ -436,7 +469,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         String prompt = PromptDeep.Action.DEVELOP.formatted(plan, JSONSchemaUtil.generate(Actions.class));
         // 过程不记录上下文
         patternContext.setStatus(request.getUserId(), request.getSessionId(),
-                "【10/11】生成第%s层执行方案中... (最深3层，重试 %s 次)".formatted(deep + 1, retry));
+                "【10/11】生成第%s层执行方案中... (最深%s层，重试 %s 次)".formatted(deep + 1, maxDeep, retry));
         result = this.callResultByFlag(request, prompt);
         try {
             String json = ContentUtil.removeJsonMarkers(result);
@@ -444,6 +477,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 throw new RuntimeException("json content is empty");
             }
             Actions actions = JSONUtil.parseObject(json, Actions.class);
+            if (CollectionUtils.isEmpty(actions.getActions())) {
+                throw new RuntimeException("actions is empty");
+            }
             // 必须保持执行顺序
             Actions resultAction = Actions.builder().actions(new ArrayList<>()).build();
             for (String action : actions.getActions()) {
@@ -478,7 +514,8 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
     private String taskExecute(PatternRequest request, Actions actions) {
         PatternRequest localRequest = request.clone();
         String revise = null;
-        for (int i = 1; i <= actions.getActions().size(); i++) {
+        int size = actions.getActions().size();
+        for (int i = 0; i < size; i++) {
             String action = actions.getActions().get(i);
             if (patternDeepContext.isAction(request.getUserId(), request.getSessionId(), action)) {
                 continue;
@@ -486,7 +523,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
 
             // 设置状态
             String title = action.length() > 15 ? action.substring(0, 15) : action;
-            String status = "【11/11】任务执行中：%s... (%s/%s)".formatted(i, actions.getActions().size(), title);
+            String status = "【11/11】任务执行中：%s... (%s/%s)".formatted(title, i * 2 + 1, size * 2);
             patternContext.setStatus(request.getUserId(), request.getSessionId(), status);
 
             // 执行
@@ -499,6 +536,8 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             patternDeepContext.setAction(request.getUserId(), request.getSessionId(), action);
 
             // 检查
+            status = "【11/11】结果核查中：%s... (%s/%s)".formatted(title, i * 2 + 2, size * 2);
+            patternContext.setStatus(request.getUserId(), request.getSessionId(), status);
             revise = this.callByResult(localRequest, PromptDeep.Action.REVIEW);
             if (revise.contains(OutputKeyword.PASS)) {
                 revise = null;

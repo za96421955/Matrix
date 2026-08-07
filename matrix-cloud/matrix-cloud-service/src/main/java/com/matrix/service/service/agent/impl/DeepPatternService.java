@@ -194,7 +194,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         String prompt = request.getHook() ? PromptDeep.Fence.DEVELOP_HOOK : PromptDeep.Fence.DEVELOP;
         // 过程不记录上下文
         patternContext.setStatus(request.getUserId(), request.getSessionId(),
-                "【3/11】制定安全边界中... (%s/%s)".formatted(retry + 1, retry + 1));
+                "【3/11】制定安全边界中... (重试 %s 次)".formatted(retry));
         result = this.callResultByFlag(request, prompt.formatted(JSONSchemaUtil.generate(Fences.class)));
         // 待补充检查
         if (request.getHook()) {
@@ -237,7 +237,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         String prompt = request.getHook() ? PromptDeep.Information.DEVELOP_HOOK : PromptDeep.Information.DEVELOP;
         // 过程不记录上下文
         patternContext.setStatus(request.getUserId(), request.getSessionId(),
-                "【4/11】制定信息收集方案中... (%s/%s)".formatted(retry + 1, retry + 1));
+                "【4/11】制定信息收集方案中... (重试 %s 次)".formatted(retry));
         result = this.callResultByFlag(request, prompt.formatted(JSONSchemaUtil.generate(Actions.class)));
         // 待补充检查
         if (request.getHook()) {
@@ -277,7 +277,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         List<String> results = new LinkedList<>();
         for (String action : actions.getActions()) {
             futures.add(CompletableFuture.runAsync(() -> {
-                patternContext.setStatus(request.getUserId(), request.getSessionId(), "【5/11】执行信息收集中...");
+                patternContext.setStatus(request.getUserId(), request.getSessionId(), "【5/11】信息收集中...");
                 String result = this.callByResult(localRequest, PromptDeep.Information.EXECUTE.formatted(action));
                 results.add(result);
             }));
@@ -301,7 +301,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return;
         }
         // 过程不记录上下文
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "【6/11】信息事实核查中...");
+        patternContext.setStatus(request.getUserId(), request.getSessionId(), "【6/11】事实核查中...");
         String result = this.callResultByFlag(request, PromptDeep.Information.REVIEW);
         if (result.contains(OutputKeyword.PASS)) {
             patternDeepContext.setInfoReview(request.getUserId(), request.getSessionId());
@@ -414,7 +414,8 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
 
         // 1. 判断执行方案单步/多步
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "【10/11】判断第%s层执行方案，单步/多步... (最深3层)".formatted(deep + 1));
+        patternContext.setStatus(request.getUserId(), request.getSessionId(),
+                "【10/11】判断第%s层执行方案，单步/多步... (最深3层，重试 %s 次)".formatted(deep + 1, retry));
         result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
         if (result.contains(OutputKeyword.SINGLE)) {
             return Actions.builder().actions(List.of(plan)).build();
@@ -423,7 +424,8 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         // 2. 生成执行方案
         String prompt = PromptDeep.Action.DEVELOP.formatted(plan, JSONSchemaUtil.generate(Actions.class));
         // 过程不记录上下文
-        patternContext.setStatus(request.getUserId(), request.getSessionId(), "【10/11】生成第%s层执行方案中... (最深3层)".formatted(deep + 1));
+        patternContext.setStatus(request.getUserId(), request.getSessionId(),
+                "【10/11】生成第%s层执行方案中... (最深3层，重试 %s 次)".formatted(deep + 1, retry));
         result = this.callResultByFlag(request, prompt);
         try {
             String json = ContentUtil.removeJsonMarkers(result);

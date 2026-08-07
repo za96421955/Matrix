@@ -15,10 +15,7 @@ import com.matrix.common.util.ContentUtil;
 import com.matrix.common.util.DateUtil;
 import com.matrix.common.util.JSONSchemaUtil;
 import com.matrix.common.util.JSONUtil;
-import com.matrix.service.context.ChatContext;
-import com.matrix.service.context.PatternContext;
-import com.matrix.service.context.RegisterContext;
-import com.matrix.service.context.ToolContext;
+import com.matrix.service.context.*;
 import com.matrix.service.dal.entity.ClientInfo;
 import com.matrix.service.dal.entity.MessageInfo;
 import com.matrix.service.service.agent.schema.Actions;
@@ -63,6 +60,8 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
     protected ToolContext toolContext;
     @Resource
     protected PatternContext patternContext;
+    @Resource
+    protected PatternDeepContext patternDeepContext;
 
     @Resource
     protected Executor executor;
@@ -514,17 +513,14 @@ public abstract class AbstractPatternService<T extends PatternRequest> implement
 //                request.getUserId(), request.getSessionId(), pattern);
 
         // 判断模式缓存是否重置
-        String smart = patternContext.getSmart(request.getUserId(), request.getSessionId());
-        String plan = patternContext.getPlan(request.getUserId(), request.getSessionId());
         patternContext.setStatus(request.getUserId(), request.getSessionId(), "判断是否重置缓存");
-        String reset = this.callByFlag(request, Prompt.Check.RESET.formatted(smart, plan));
-        log.info("[直接回答] userId={}, sessionId={}, result={}",
-                request.getUserId(), request.getSessionId(), reset);
+        String reset = this.callByFlag(request, Prompt.Check.RESET);
         if (reset.contains(OutputKeyword.PASS)) {
             return;
         }
         // 重置缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
+        patternDeepContext.clear(request.getUserId(), request.getSessionId());
         log.info("[任务模式] 清除模式缓存, userId={}, sessionId={}, reset={}",
                 request.getUserId(), request.getSessionId(), reset);
     }

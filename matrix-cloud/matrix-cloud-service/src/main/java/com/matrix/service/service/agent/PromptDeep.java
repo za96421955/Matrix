@@ -8,11 +8,57 @@ package com.matrix.service.service.agent;
  */
 public interface PromptDeep {
 
-    String HOOK = """
+    /** 钩子: 人类在环 */
+    interface Hook {
+
+        String TODO = """
             ---
             ## 信息补充
             - 发现任何问题或疑问，立即向用户提出
             """;
+
+    }
+
+    /** 检查 */
+    interface Check {
+
+        String GOAL = """
+            检查<任务目标>是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String FENCE = """
+            检查<安全便捷>是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String INFO = """
+            检查<信息收集方案>是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String PLAN = """
+            检查<执行计划>是否有疑问或需要用户补充的信息
+            - 通过: PASS; 有疑问: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String RESULT = """
+            检查<执行结果>是否有疑问或需要用户补充的信息
+            - 通过: PASS; 需要暂停: TODO
+            - 仅输出 PASS/TODO, 不要任何解释
+            """;
+
+        String OUTPUT_FORMAT = """
+            格式错误: %s
+            ---
+            按<输出格式> (JSON Schema) 要求生成 JSON Object
+            """;
+
+    }
 
     /** 目标 */
     interface Goal {
@@ -28,7 +74,7 @@ public interface PromptDeep {
             - 禁止执行任何写操作
             """;
 
-        String DEVELOP_HOOK = DEVELOP + HOOK;
+        String DEVELOP_HOOK = DEVELOP + Hook.TODO;
 
     }
 
@@ -71,7 +117,7 @@ public interface PromptDeep {
             ```
             """;
 
-        String DEVELOP_HOOK = DEVELOP + HOOK;
+        String DEVELOP_HOOK = DEVELOP + Hook.TODO;
 
     }
 
@@ -82,7 +128,7 @@ public interface PromptDeep {
             查看上下文，制定信息收集方案
             - 信息来源必须为本地或互联网公开信息
             - 数据源必须真实可核查、证据链充分、立场保持客观中立
-            - 最多制定3个执行步骤
+            - 最多制定3个没有前后关系、可同时进行的执行步骤
 
             ## 约束
             - 输出时，不要使用任何 emoji 表情
@@ -94,7 +140,22 @@ public interface PromptDeep {
             ```
             """;
 
-        String DEVELOP_HOOK = DEVELOP + HOOK;
+        String DEVELOP_HOOK = DEVELOP + Hook.TODO;
+
+        String EXECUTE = """
+            你是整个执行计划的一环
+            - 按执行方案收集信息
+            - 详细总结执行过程及结果
+
+            ## 约束
+            - 输出时，不要使用任何 emoji 表情
+            - 你仅负责收集信息，不执行任何信息收集任务以外的其他任务
+            
+            ## 执行方案
+            ```
+            %s
+            ```
+            """;
 
         String REVIEW = """
             查看上下文，对收集的信息进行事实核查
@@ -154,7 +215,7 @@ public interface PromptDeep {
             ```
             """;
 
-        String DEVELOP_HOOK = DEVELOP + HOOK;
+        String DEVELOP_HOOK = DEVELOP + Hook.TODO;
 
     }
 
@@ -178,7 +239,7 @@ public interface PromptDeep {
             - `MULTI`
             """;
 
-        String ACTIONS = """
+        String DEVELOP = """
             查看上下文，生成执行方案
             - 围绕任务目标和执行计划，输出执行方案
             - 最多制定3个执行步骤
@@ -203,7 +264,7 @@ public interface PromptDeep {
             ```
             """;
 
-        String DEVELOP = """
+        String EXECUTE = """
             你是整个执行计划的一环
             - 调用工具，按执行方案，完成当前步骤任务
             - 详细总结执行过程及结果，不要使用任何 emoji 表情
@@ -214,7 +275,7 @@ public interface PromptDeep {
             ```
             """;
 
-        String DEVELOP_HOOK = DEVELOP + HOOK;
+        String EXECUTE_HOOK = EXECUTE + Hook.TODO;
 
         String REVIEW = """
             查看上下文，对执行结果进行事实核查

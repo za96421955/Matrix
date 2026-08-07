@@ -1,14 +1,9 @@
 package com.matrix.service.service.agent;
 
 import com.matrix.common.constant.Constant;
-import com.matrix.service.context.PatternContext;
-import com.matrix.service.service.agent.impl.ExecutePatternService;
-import com.matrix.service.service.agent.impl.GoalPatternService;
-import com.matrix.service.service.agent.impl.PlanPatternService;
-import com.matrix.service.service.agent.impl.ReviewPatternService;
+import com.matrix.service.service.agent.impl.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,8 +17,6 @@ import org.springframework.stereotype.Service;
 public class PatternFactory {
 
     @Resource
-    private PatternContext patternContext;
-    @Resource
     private ExecutePatternService executePatternService;
     @Resource
     private PlanPatternService planPatternService;
@@ -31,6 +24,8 @@ public class PatternFactory {
     private ReviewPatternService reviewPatternService;
     @Resource
     private GoalPatternService goalPatternService;
+    @Resource
+    private DeepPatternService deepPatternService;
 
     public PatternService getPatternService(String pattern) {
         if (Constant.Pattern.EXECUTE.equals(pattern)) {
@@ -44,6 +39,9 @@ public class PatternFactory {
         }
         if (Constant.Pattern.GOAL.equals(pattern)) {
             return goalPatternService;
+        }
+        if (Constant.Pattern.DEEP.equals(pattern)) {
+            return deepPatternService;
         }
         // 模式直接执行
         return executePatternService;

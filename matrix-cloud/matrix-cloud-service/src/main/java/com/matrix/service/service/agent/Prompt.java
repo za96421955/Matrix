@@ -76,19 +76,9 @@ public interface Prompt {
     interface Check {
 
         String RESET = """
-            根据上下文分析用户意图，判断是否需要重置任务目标或执行计划
+            根据上下文分析用户意图，判断是否需要重置任务缓存
             - 不需要重置, 输出: PASS
             - 需要重置, 输出: RESET
-            
-            ## 任务目标:
-            ```
-            %s
-            ```
-            
-            ## 执行计划:
-            ```
-            %s
-            ```
             
             输出`PASS/RESET` (不要任何解释):
             """;

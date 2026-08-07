@@ -79,11 +79,10 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
 
         // 2. 制定目标 (hook) (add context)
-        String goal = this.getGoal(request.clone());
+        String goal = this.getGoal(request);
         if (StringUtils.isBlank(goal)) {
             return;
         }
-        request.getMessages().add(Message.assistant(goal));
 
         // 3. 制定安全边界 (hook)
         Fences fences = this.getFences(request.clone(), 0);
@@ -98,33 +97,22 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
 
         // 5. 执行信息收集 (add context)
-        List<String> infos = this.informationExecute(request.clone(), informationActions);
-        for (String information : infos) {
-            request.getMessages().add(Message.assistant(information));
-        }
+        this.informationExecute(request, informationActions);
 
         // 6. 事实核查
-        String infoReview = this.informationReview(request.clone());
-        if (StringUtils.isNotBlank(infoReview)) {
-            throw new RuntimeException(infoReview);
-        }
+        this.informationReview(request.clone());
 
         // 7. 前瞻决策 (add context)
-        String forwardLooking = this.getForwardLooking(request.clone());
-        request.getMessages().add(Message.assistant(forwardLooking));
+        this.getForwardLooking(request);
 
         // 8. 制定执行计划 (hook) (add context)
-        String plan = this.getPlan(request.clone());
+        String plan = this.getPlan(request);
         if (StringUtils.isBlank(plan)) {
             return;
         }
-        request.getMessages().add(Message.assistant(plan));
 
         // 9. 安全围栏检查
-        List<String> fenceCheckResults = this.fenceCheck(request.clone(), fences);
-        if (!CollectionUtils.isEmpty(fenceCheckResults)) {
-            throw new RuntimeException(fenceCheckResults.toString());
-        }
+        this.fenceCheck(request.clone(), fences);
 
         // 10. 递进生成执行方案 (多大深度 3)
         Actions actions = this.getTaskActions(request.clone(), plan, 0, 0);
@@ -135,8 +123,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             return;
         }
 
-        // 清除模式缓存
+        // 清除缓存
         patternContext.clear(request.getUserId(), request.getSessionId());
+        patternDeepContext.clear(request.getUserId(), request.getSessionId());
     }
 
     /**
@@ -146,8 +135,14 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private String primary(PatternRequest request) {
+        if (patternDeepContext.isPrimary(request.getUserId(), request.getSessionId())) {
+            return null;
+        }
+
+        // 过程不记录上下文
         String result = this.callResultByFlag(request, PromptDeep.Fence.PRIMARY);
         if (result.contains(OutputKeyword.PASS)) {
+            patternDeepContext.setPrimary(request.getUserId(), request.getSessionId());
             return null;
         }
         return result;
@@ -160,16 +155,25 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private String getGoal(PatternRequest request) {
-        String prompt = request.getHook() ? PromptDeep.Goal.DEVELOP_HOOK : PromptDeep.Goal.DEVELOP;
-        String result = this.callByResult(request, prompt);
+        String result = patternDeepContext.getGoal(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(result)) {
+            return result;
+        }
+
+        PatternRequest localRequest = request.clone();
+        String prompt = localRequest.getHook() ? PromptDeep.Goal.DEVELOP_HOOK : PromptDeep.Goal.DEVELOP;
+        result = this.callByResult(localRequest, prompt);
         // 待补充检查
-        if (request.getHook()) {
-            request.getMessages().add(Message.assistant(result));
-            String check = this.callByFlag(request, PromptDeep.Check.GOAL);
+        if (localRequest.getHook()) {
+            localRequest.getMessages().add(Message.assistant(result));
+            String check = this.callByFlag(localRequest, PromptDeep.Check.GOAL);
             if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }
         }
+        // add context
+        request.getMessages().add(Message.assistant(result));
+        patternDeepContext.setGoal(request.getUserId(), request.getSessionId(), result);
         return result;
     }
 
@@ -180,11 +184,17 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private Fences getFences(PatternRequest request, int retry) {
+        String result = patternDeepContext.getFences(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(result)) {
+            return JSONUtil.parseObject(result, Fences.class);
+        }
+
         if (retry >= 3) {
             throw new RuntimeException("<安全边界>生成失败, 超出最大重试次数");
         }
         String prompt = request.getHook() ? PromptDeep.Fence.DEVELOP_HOOK : PromptDeep.Fence.DEVELOP;
-        String result = this.callByResult(request, prompt.formatted(JSONSchemaUtil.generate(Fences.class)));
+        // 过程不记录上下文
+        result = this.callResultByFlag(request, prompt.formatted(JSONSchemaUtil.generate(Fences.class)));
         // 待补充检查
         if (request.getHook()) {
             request.getMessages().add(Message.assistant(result));
@@ -198,7 +208,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            return JSONUtil.parseObject(json, Fences.class);
+            Fences fences = JSONUtil.parseObject(json, Fences.class);
+            patternDeepContext.setFences(request.getUserId(), request.getSessionId(), fences.toString());
+            return fences;
         } catch (Exception e) {
             // 格式错误，重试
             request.getMessages().add(Message.user(PromptDeep.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
@@ -213,11 +225,17 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private Actions getInformationActions(PatternRequest request, int retry) {
+        String result = patternDeepContext.getInfoActions(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(result)) {
+            return JSONUtil.parseObject(result, Actions.class);
+        }
+
         if (retry >= 3) {
             throw new RuntimeException("<信息收集方案>生成失败, 超出最大重试次数");
         }
         String prompt = request.getHook() ? PromptDeep.Information.DEVELOP_HOOK : PromptDeep.Information.DEVELOP;
-        String result = this.callByResult(request, prompt.formatted(JSONSchemaUtil.generate(Actions.class)));
+        // 过程不记录上下文
+        result = this.callResultByFlag(request, prompt.formatted(JSONSchemaUtil.generate(Actions.class)));
         // 待补充检查
         if (request.getHook()) {
             request.getMessages().add(Message.assistant(result));
@@ -231,7 +249,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             if (StringUtils.isBlank(json)) {
                 throw new RuntimeException("json content is empty");
             }
-            return JSONUtil.parseObject(json, Actions.class);
+            Actions actions = JSONUtil.parseObject(json, Actions.class);
+            patternDeepContext.setInfoActions(request.getUserId(), request.getSessionId(), actions.toString());
+            return actions;
         } catch (Exception e) {
             // 格式错误，重试
             request.getMessages().add(Message.user(PromptDeep.Check.OUTPUT_FORMAT.formatted(e.getMessage())));
@@ -245,17 +265,25 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private List<String> informationExecute(PatternRequest request, Actions actions) {
+    private void informationExecute(PatternRequest request, Actions actions) {
+        if (patternDeepContext.isInfos(request.getUserId(), request.getSessionId())) {
+            return;
+        }
+        PatternRequest localRequest = request.clone();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         List<String> results = new LinkedList<>();
         for (String action : actions.getActions()) {
             futures.add(CompletableFuture.runAsync(() -> {
-                String result = this.callByResult(request, PromptDeep.Information.EXECUTE.formatted(action));
+                String result = this.callByResult(localRequest, PromptDeep.Information.EXECUTE.formatted(action));
                 results.add(result);
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return results;
+        // add context
+        for (String information : results) {
+            request.getMessages().add(Message.assistant(information));
+        }
+        patternDeepContext.setInfos(request.getUserId(), request.getSessionId());
     }
 
     /**
@@ -264,12 +292,17 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private String informationReview(PatternRequest request) {
+    private void informationReview(PatternRequest request) {
+        if (patternDeepContext.isInfoReview(request.getUserId(), request.getSessionId())) {
+            return;
+        }
+        // 过程不记录上下文
         String result = this.callResultByFlag(request, PromptDeep.Information.REVIEW);
         if (result.contains(OutputKeyword.PASS)) {
-            return null;
+            patternDeepContext.setInfoReview(request.getUserId(), request.getSessionId());
+            return;
         }
-        return result;
+        throw new RuntimeException(result);
     }
 
     /**
@@ -278,8 +311,15 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private String getForwardLooking(PatternRequest request) {
-        return this.callResultByFlag(request, PromptDeep.Plan.FORWARD_LOOKING);
+    private void getForwardLooking(PatternRequest request) {
+        if (patternDeepContext.isForwardLooking(request.getUserId(), request.getSessionId())) {
+            return;
+        }
+        PatternRequest localRequest = request.clone();
+        String result = this.callByResult(localRequest, PromptDeep.Plan.FORWARD_LOOKING);
+        // add context
+        request.getMessages().add(Message.assistant(result));
+        patternDeepContext.setForwardLooking(request.getUserId(), request.getSessionId());
     }
 
     /**
@@ -289,16 +329,25 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private String getPlan(PatternRequest request) {
-        String prompt = request.getHook() ? PromptDeep.Plan.DEVELOP_HOOK : PromptDeep.Plan.DEVELOP;
-        String result = this.callByResult(request, prompt);
+        String result = patternDeepContext.getPlan(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(result)) {
+            return result;
+        }
+
+        PatternRequest localRequest = request.clone();
+        String prompt = localRequest.getHook() ? PromptDeep.Plan.DEVELOP_HOOK : PromptDeep.Plan.DEVELOP;
+        result = this.callByResult(localRequest, prompt);
         // 待补充检查
-        if (request.getHook()) {
-            request.getMessages().add(Message.assistant(result));
-            String check = this.callByFlag(request, PromptDeep.Check.PLAN);
+        if (localRequest.getHook()) {
+            localRequest.getMessages().add(Message.assistant(result));
+            String check = this.callByFlag(localRequest, PromptDeep.Check.PLAN);
             if (check.contains(OutputKeyword.TODO)) {
                 return null;
             }
         }
+        // add context
+        request.getMessages().add(Message.assistant(result));
+        patternDeepContext.setPlan(request.getUserId(), request.getSessionId(), result);
         return result;
     }
 
@@ -308,12 +357,17 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private List<String> fenceCheck(PatternRequest request, Fences fences) {
+    private void fenceCheck(PatternRequest request, Fences fences) {
+        if (patternDeepContext.isFenceCheck(request.getUserId(), request.getSessionId())) {
+            return;
+        }
+
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         List<String> results = new LinkedList<>();
         for (String fence : fences.getFences()) {
             futures.add(CompletableFuture.runAsync(() -> {
-                String result = this.callByResult(request, fence + PromptDeep.Fence.CHECK);
+                // 过程不记录上下文
+                String result = this.callResultByFlag(request, fence + PromptDeep.Fence.CHECK);
                 if (result.contains(OutputKeyword.PASS)) {
                     return;
                 }
@@ -321,7 +375,10 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
             }));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return results;
+        if (!CollectionUtils.isEmpty(results)) {
+            throw new RuntimeException(results.toString());
+        }
+        patternDeepContext.setFenceCheck(request.getUserId(), request.getSessionId());
     }
 
     /**
@@ -335,6 +392,11 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private Actions getTaskActions(PatternRequest request, String plan, int deep, int retry) {
+        String result = patternDeepContext.getActions(request.getUserId(), request.getSessionId());
+        if (StringUtils.isNotBlank(result)) {
+            return JSONUtil.parseObject(result, Actions.class);
+        }
+
         // 最大深度 3
         if (deep >= 3) {
             return Actions.builder().actions(List.of(plan)).build();
@@ -344,14 +406,15 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         }
 
         // 1. 判断执行方案单步/多步
-        String result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
+        result = this.callByFlag(request, PromptDeep.Action.SINGLE_RUN.formatted(plan));
         if (result.contains(OutputKeyword.SINGLE)) {
             return Actions.builder().actions(List.of(plan)).build();
         }
 
-        // 2. 生成执行方案 -> 10.1
+        // 2. 生成执行方案
         String prompt = PromptDeep.Action.DEVELOP.formatted(plan, JSONSchemaUtil.generate(Actions.class));
-        result = this.callByResult(request, prompt);
+        // 过程不记录上下文
+        result = this.callResultByFlag(request, prompt);
         try {
             String json = ContentUtil.removeJsonMarkers(result);
             if (StringUtils.isBlank(json)) {
@@ -365,7 +428,10 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
                 Actions next = this.getTaskActions(request, action, deep + 1, 0);
                 resultAction.getActions().addAll(next.getActions());
             }
-            // 3. 输出执行方案列表
+            // 3. 输出执行方案列表, 最终输出时缓存
+            if (deep == 0) {
+                patternDeepContext.setActions(request.getUserId(), request.getSessionId(), resultAction.toString());
+            }
             return resultAction;
         } catch (Exception e) {
             // 格式错误，重试
@@ -386,26 +452,33 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      * @author 陈晨
      */
     private String taskExecute(PatternRequest request, Actions actions) {
+        PatternRequest localRequest = request.clone();
         String revise = null;
         for (String action : actions.getActions()) {
+            if (patternDeepContext.isAction(request.getUserId(), request.getSessionId(), action)) {
+                continue;
+            }
+
             // 执行
-            String prompt = request.getHook() ? PromptDeep.Action.EXECUTE_HOOK : PromptDeep.Action.EXECUTE;
-            String result = this.callByResult(request, prompt.formatted(action));
+            String prompt = localRequest.getHook() ? PromptDeep.Action.EXECUTE_HOOK : PromptDeep.Action.EXECUTE;
+            String result = this.callByResult(localRequest, prompt.formatted(action));
             if (StringUtils.isBlank(result)) {
                 return null;
             }
-            request.getMessages().add(Message.assistant(result));
+            localRequest.getMessages().add(Message.assistant(result));
+            patternDeepContext.setAction(request.getUserId(), request.getSessionId(), action);
+
             // 检查
-            revise = this.callResultByFlag(request, PromptDeep.Action.REVIEW);
+            revise = this.callByResult(localRequest, PromptDeep.Action.REVIEW);
             if (revise.contains(OutputKeyword.PASS)) {
                 revise = null;
             } else {
-                request.getMessages().add(Message.user(revise));
+                localRequest.getMessages().add(Message.user(revise));
             }
         }
         // 最后修订
         if (StringUtils.isNotBlank(revise)) {
-            this.callByResult(request, revise);
+            this.callByResult(localRequest, revise);
         }
         return "已完成";
     }

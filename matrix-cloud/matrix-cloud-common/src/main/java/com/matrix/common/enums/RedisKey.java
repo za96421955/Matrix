@@ -61,6 +61,19 @@ public enum RedisKey {
     /** 模式：执行结果 */
     PATTERN_RESULT("matrix:pattern:result:%s:%s", PATTERN.getTtl()),
 
+    /** 深度模式：已完成标记 */
+    PATTERN_DEEP_FLAG("matrix:pattern:deep:flag:%s:%s", PATTERN.getTtl()),
+    /** 深度模式：目标 */
+    PATTERN_DEEP_GOAL("matrix:pattern:deep:goal:%s:%s", PATTERN.getTtl()),
+    /** 深度模式：安全边界 */
+    PATTERN_DEEP_FENCES("matrix:pattern:deep:fences:%s:%s", PATTERN.getTtl()),
+    /** 深度模式：信息收集 */
+    PATTERN_DEEP_INFO_ACTIONS("matrix:pattern:deep:info:actions:%s:%s", PATTERN.getTtl()),
+    /** 深度模式：执行计划 */
+    PATTERN_DEEP_PLAN("matrix:pattern:deep:plan:%s:%s", PATTERN.getTtl()),
+    /** 深度模式：执行方案 */
+    PATTERN_DEEP_ACTIONS("matrix:pattern:deep:actions:%s:%s", PATTERN.getTtl()),
+
 //    /** 任务模式：任务图 */
 //    TASK_PATTERN_GRAPH("matrix:task:graph:pattern:%s:%s", 6 * 60 * 60L),
 //    /** 编程模式：环节编号 */

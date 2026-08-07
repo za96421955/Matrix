@@ -34,100 +34,6 @@ public class PatternContext {
         this.clearPattern(userId, sessionId);
         this.clearStatus(userId, sessionId);
     }
-    public void clearPattern(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-        // 同时清除 smart
-        this.clearSmart(userId, sessionId);
-    }
-    public void clearStatus(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 status, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_STATUS;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
-    public void clearConsume(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 consume, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_CONSUME;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
-    public void clearIsSmart(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 isSmart, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_IS_SMART;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
-    public void clearSmart(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 smart, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_SMART;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-        // 同时清除 isSmart
-        this.clearIsSmart(userId, sessionId);
-        // 同时清除 plan
-        this.clearPlan(userId, sessionId);
-    }
-    public void clearPlanMode(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 planMode, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_PLAN_MODE;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
-    public void clearPlan(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 plan, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_PLAN;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-        // 同时清除 planMode
-        this.clearPlanMode(userId, sessionId);
-        // 同时清除 actions
-        this.clearActions(userId, sessionId);
-    }
-    public void clearActionMode(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 actionMode, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_ACTION_MODE;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
-    public void clearActions(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 actions, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_ACTIONS;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-        // 同时清除 actionMode
-        this.clearActionMode(userId, sessionId);
-        // 同时清除 actionResult
-        this.clearResult(userId, sessionId);
-    }
-    public void clearResult(long userId, long sessionId) {
-        log.info("[模式缓存] 清除模式 result, userId={}, sessionId={}", userId, sessionId);
-        try {
-            RedisKey redisKey = RedisKey.PATTERN_RESULT;
-            String key = redisKey.generateKey(userId, sessionId);
-            serviceCache.delete(key);
-        } catch (Exception ignore) {}
-    }
 
     /**
      * @description 缓存: pattern
@@ -146,6 +52,16 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.PATTERN;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+    public void clearPattern(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+        // 同时清除 smart
+        this.clearSmart(userId, sessionId);
     }
 
     /**
@@ -170,9 +86,17 @@ public class PatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }
+    public void clearStatus(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 status, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_STATUS;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
 
     /**
-     * @description 缓存: status
+     * @description 缓存: consume
      * <p> <功能详细描述> </p>
      *
      * @author 陈晨
@@ -215,6 +139,14 @@ public class PatternContext {
         long curr = Long.parseLong(serviceCache.getHash().get(key, "curr"));
         return System.currentTimeMillis() - curr;
     }
+    public void clearConsume(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 consume, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_CONSUME;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
 
     /**
      * @description 缓存: isSmart
@@ -237,6 +169,14 @@ public class PatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }
+    public void clearIsSmart(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 isSmart, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_IS_SMART;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
 
     /**
      * @description 缓存: smart
@@ -257,6 +197,18 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.PATTERN_SMART;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+    public void clearSmart(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 smart, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_SMART;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+        // 同时清除 isSmart
+        this.clearIsSmart(userId, sessionId);
+        // 同时清除 plan
+        this.clearPlan(userId, sessionId);
     }
 
     /**
@@ -280,6 +232,14 @@ public class PatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }
+    public void clearPlanMode(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 planMode, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_PLAN_MODE;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
 
     /**
      * @description 缓存: plan
@@ -300,6 +260,18 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.PATTERN_PLAN;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+    public void clearPlan(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 plan, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_PLAN;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+        // 同时清除 planMode
+        this.clearPlanMode(userId, sessionId);
+        // 同时清除 actions
+        this.clearActions(userId, sessionId);
     }
 
     /**
@@ -323,6 +295,14 @@ public class PatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
     }
+    public void clearActionMode(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 actionMode, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_ACTION_MODE;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+    }
 
     /**
      * @description 缓存: actions
@@ -341,6 +321,18 @@ public class PatternContext {
         RedisKey redisKey = RedisKey.PATTERN_ACTIONS;
         String key = redisKey.generateKey(userId, sessionId);
         return serviceCache.get(key);
+    }
+    public void clearActions(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 actions, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_ACTIONS;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
+        // 同时清除 actionMode
+        this.clearActionMode(userId, sessionId);
+        // 同时清除 actionResult
+        this.clearResult(userId, sessionId);
     }
 
     /**
@@ -362,6 +354,14 @@ public class PatternContext {
         String key = redisKey.generateKey(userId, sessionId);
         String hashKey = ContentUtil.sha256Hex(action);
         return serviceCache.getHash().get(key, hashKey);
+    }
+    public void clearResult(long userId, long sessionId) {
+        log.info("[模式缓存] 清除模式 result, userId={}, sessionId={}", userId, sessionId);
+        try {
+            RedisKey redisKey = RedisKey.PATTERN_RESULT;
+            String key = redisKey.generateKey(userId, sessionId);
+            serviceCache.delete(key);
+        } catch (Exception ignore) {}
     }
 
 }

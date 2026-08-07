@@ -73,10 +73,7 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         patternContext.setPattern(request.getUserId(), request.getSessionId(), Constant.Pattern.DEEP);
 
         // 1. 违规初筛
-        String primary = this.primary(request.clone());
-        if (StringUtils.isBlank(primary)) {
-            throw new RuntimeException(primary);
-        }
+        this.primary(request.clone());
 
         // 2. 制定目标 (hook) (add context)
         String goal = this.getGoal(request);
@@ -134,9 +131,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
      *
      * @author 陈晨
      */
-    private String primary(PatternRequest request) {
+    private void primary(PatternRequest request) {
         if (patternDeepContext.isPrimary(request.getUserId(), request.getSessionId())) {
-            return null;
+            return;
         }
 
         // 过程不记录上下文
@@ -144,9 +141,9 @@ public class DeepPatternService extends AbstractPatternService<PatternRequest> {
         String result = this.callResultByFlag(request, PromptDeep.Fence.PRIMARY);
         if (result.contains(OutputKeyword.PASS)) {
             patternDeepContext.setPrimary(request.getUserId(), request.getSessionId());
-            return null;
+            return;
         }
-        return result;
+        throw new RuntimeException(result);
     }
 
     /**
